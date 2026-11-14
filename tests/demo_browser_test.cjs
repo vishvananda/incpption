@@ -29,6 +29,7 @@ const server = http.createServer((req, res) => {
   const report={browser:browser.version(),mode,errors};
   try {
     const page=await browser.newPage({viewport:{width:1440,height:1000},acceptDownloads:true});
+    if (process.env.DEMO_TEST_CPU_RATE) {const cdp=await page.context().newCDPSession(page); await cdp.send('Emulation.setCPUThrottlingRate',{rate:Number(process.env.DEMO_TEST_CPU_RATE)});}
     const liveWorkers = new Set();
     page.on('worker', worker => {liveWorkers.add(worker); worker.on('close', () => liveWorkers.delete(worker));});
     async function buildWorkersStopped() {
@@ -162,7 +163,9 @@ const server = http.createServer((req, res) => {
       if(await page.evaluate(()=>window.gameError))throw Error(await page.evaluate(()=>window.gameError));
       await page.waitForFunction(()=>window.openLaraGame?.drawCalls>150,null,{timeout:60000});
       if(!await page.locator('#game-modal').evaluate(e=>e.open))throw Error('Workflow did not open game modal');
+      await page.evaluate(()=>window.openLaraGame.module.pauseMainLoop());
       await page.screenshot({path:path.join(out,'site-game.png'),fullPage:true});
+      await page.evaluate(()=>window.openLaraGame.module.resumeMainLoop());
       await page.locator('#game-close').click();
       if(await page.evaluate(()=>window.gamePlaying))throw Error('Closed modal kept game running');
       report.firstGame=await page.evaluate(()=>window.lastGameBuild);
