@@ -1,0 +1,102 @@
+#!/usr/bin/env python3
+"""Assemble site source around an immutable, hash-pinned compiler/game payload."""
+import argparse
+from concurrent.futures import ThreadPoolExecutor
+import hashlib
+import json
+from pathlib import Path
+import shutil
+import subprocess
+
+from inspector_vendor import prepare_vendor
+
+ROOT = Path(__file__).resolve().parents[1]
+LIMIT = 25 * 1024 * 1024
+
+
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--artifact-dir', type=Path, help='existing qualified static payload; never modified')
+    parser.add_argument('--output', type=Path, default=ROOT / 'dist')
+    parser.add_argument('--force', action='store_true')
+    args = parser.parse_args()
+    config = json.loads((ROOT / 'site.json').read_text())
+    lock_path = ROOT / config['artifact_lock']
+    lock = json.loads(lock_path.read_text())
+    entries = {r['path']: r for r in lock['files'] if r['path'] != '_headers'}
+    payload = args.artifact_dir or ROOT / '.cache' / sha(lock_path)
+    payload = payload.resolve()
+    if not args.artifact_dir:
+        payload.mkdir(parents=True, exist_ok=True)
+    def ensure(row):
+        relative = Path(row['path'])
+        if relative.is_absolute() or '..' in relative.parts:
+            raise RuntimeError('invalid artifact path')
+        target = payload / relative
+        if target.is_file() and sha(target) == row['sha256']:
+            return
+        if args.artifact_dir:
+            raise RuntimeError('artifact changed or missing: ' + str(target))
+        target.parent.mkdir(parents=True, exist_ok=True)
+        temporary = target.with_name(target.name + '.download')
+        subprocess.run(['curl', '-fsSL', '--retry', '3', '--max-time', '120',
+                        lock['url'] + '/' + row['path'], '-o', str(temporary)], check=True)
+        if sha(temporary) != row['sha256']:
+            raise RuntimeError('download hash mismatch: ' + row['path'])
+        temporary.replace(target)
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        list(pool.map(ensure, entries.values()))
+    output = args.output.resolve()
+    if output.exists():
+        if not args.force or output not in [ROOT / 'dist', ROOT / 'build']:
+            raise RuntimeError('use a new output directory or --force for dist/build')
+        shutil.rmtree(output)
+    output.mkdir(parents=True)
+    # Original compiler and game manifests remain byte-identical. Website UI
+    # updates have their own Git revision and never rebind compiler provenance.
+    manifest = json.loads((payload / 'manifest.json').read_text())
+    seed = json.loads((payload / 'w1-complete.json').read_text())
+    names = set(manifest['runner_files']) | set(manifest['shim_files'])
+    names |= {'manifest.json', 'manifest.sha256', 'bundle.bin', 'w1-complete.json'}
+    names |= {'inputs/' + r['output'] for r in seed['commands']}
+    names |= {f'inputs/x86-check/checks__floating.cpp.o.O{level}.native.o' for level in [0, 2]}
+    def copy(name, target):
+        if name not in entries:
+            raise RuntimeError('artifact is not pinned: ' + name)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(payload / name, target)
+    for name in sorted(names):
+        copy(name, output / 'compiler' / name)
+    for name in sorted(n for n in entries if n.startswith('openlara/')):
+        copy(name, output / 'game' / name.removeprefix('openlara/'))
+    for name in sorted(n for n in entries if n.startswith('licenses/') or n.startswith('shim/')):
+        copy(name, output / name)
+    for path in (ROOT / 'web').rglob('*'):
+        if path.is_file():
+            target = output / path.relative_to(ROOT / 'web')
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(path, target)
+    shutil.copyfile(output / 'wasi_demo.html', output / 'index.html')
+    prepare_vendor(output / 'vendor')
+    shutil.copyfile(ROOT / 'config/_headers', output / '_headers')
+    credits = (payload / 'credits.html').read_text().replace('href="manifest.json"', 'href="compiler/manifest.json"')
+    credits = credits.replace('href="openlara/manifest.json"', 'href="game/manifest.json"')
+    (output / 'credits.html').write_text(credits)
+    revision_result = subprocess.run(['git', 'rev-parse', '--verify', 'HEAD'], cwd=ROOT,
+                                     capture_output=True, text=True)
+    revision = revision_result.stdout.strip() if revision_result.returncode == 0 else 'uncommitted'
+    (output / 'site-release.json').write_text(json.dumps(dict(site=config['name'], domain=config['domain'],
+        git_revision=revision, artifact_url=lock['url'], artifact_lock_sha256=sha(lock_path),
+        compiler_manifest_sha256=sha(payload / 'manifest.json'), compiler_sha256=seed['commands'][-1]['sha256']), indent=2) + '\n')
+    files = [p for p in output.rglob('*') if p.is_file()]
+    if len(files) > 20000 or any(p.stat().st_size > LIMIT for p in files):
+        raise RuntimeError('Cloudflare Pages asset limits exceeded')
+    print(f'Built {len(files)} files in {output}; compiler {seed["commands"][-1]["sha256"]}')
+
+
+if __name__ == '__main__':
+    main()

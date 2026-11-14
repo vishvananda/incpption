@@ -1,0 +1,10 @@
+node_modules/
+dist/
+build/
+.cache/
+.wrangler/
+__pycache__/
+*.pyc
+.env
+.env.*
+*.token
