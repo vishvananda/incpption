@@ -181,8 +181,14 @@ function stopGame() {
   if (!playing && !opening && !window.openLaraGame) return;
   gameLaunch++; opening = false;
   const frame = $('game-frame');
-  frame?.contentWindow?.stopGame?.()?.catch?.(() => {});
-  frame?.remove();
+  const cleanup = frame?.contentWindow?.stopGame?.();
+  if (frame) {
+    frame.hidden = true; frame.removeAttribute('id');
+    // Let the closed dialog paint and the input event finish before disposal.
+    Promise.resolve(cleanup).catch(() => {}).then(() => {
+      requestAnimationFrame(() => setTimeout(() => frame.remove(), 0));
+    });
+  }
   playing = false; window.gamePlaying = false; window.openLaraGame = null;
 }
 $('game-close').onclick = closeGame;
@@ -200,7 +206,7 @@ async function openGame() {
     const frame = document.createElement('iframe');
     frame.id = 'game-frame'; frame.src = 'game_frame.html';
     frame.title = 'OpenLara built in this browser'; frame.allow = 'autoplay; fullscreen';
-    $('game-surface').replaceChildren(frame);
+    $('game-surface').append(frame);
     if (!frame.contentWindow.startGame) await new Promise((resolve,reject) => {
       const timeout = setTimeout(() => reject(Error('Game frame did not load')), 15000);
       frame.addEventListener('load', () => {clearTimeout(timeout); resolve();}, {once:true});

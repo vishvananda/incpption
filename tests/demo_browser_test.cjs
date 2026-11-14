@@ -180,8 +180,13 @@ const server = http.createServer((req, res) => {
       });
       await page.evaluate(()=>window.openLaraGame.module.pauseMainLoop());
       await page.screenshot({path:path.join(out,'site-game.png'),fullPage:true});
-      await page.evaluate(()=>window.openLaraGame.module.resumeMainLoop());
+      await page.evaluate(()=>{window.openLaraGame.module.resumeMainLoop();window.lastClosedGame=window.openLaraGame;});
       await page.locator('#game-close').click();
+      const closedDraws=await page.evaluate(()=>window.lastClosedGame.drawCalls);
+      await page.waitForTimeout(300);
+      if(await page.evaluate(()=>window.lastClosedGame.drawCalls)!==closedDraws)throw Error('Closed game continued rendering');
+      await page.waitForFunction(()=>window.lastClosedGame.audioContext.state==='closed');
+      await page.evaluate(()=>delete window.lastClosedGame);
       if(await page.evaluate(()=>window.gamePlaying))throw Error('Closed modal kept game running');
       report.firstGame=await page.evaluate(()=>window.lastGameBuild);
       await buildWorkersStopped();
