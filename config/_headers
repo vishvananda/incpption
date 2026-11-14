@@ -3,3 +3,12 @@
   Referrer-Policy: same-origin
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Embedder-Policy: require-corp
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/wasi_demo.css
+  Cache-Control: public, max-age=0, must-revalidate
+
+/game_controls.css
+  Cache-Control: public, max-age=0, must-revalidate

@@ -80,6 +80,20 @@ def main():
             target = output / path.relative_to(ROOT / 'web')
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(path, target)
+    # Pages gives CSS a four-hour browser cache lifetime. Give each version a
+    # distinct URL so fresh HTML cannot pick up styling from an older release.
+    styles = {}
+    for path in sorted((ROOT / 'web').glob('*.css')):
+        name = f'assets/{path.stem}.{sha(path)[:16]}.css'
+        target = output / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(path, target)
+        styles[path.name] = name
+    for path in output.glob('*.html'):
+        content = path.read_text()
+        for original, versioned in styles.items():
+            content = content.replace(f'href="{original}"', f'href="{versioned}"')
+        path.write_text(content)
     shutil.copyfile(output / 'wasi_demo.html', output / 'index.html')
     prepare_vendor(output / 'vendor')
     shutil.copyfile(ROOT / 'config/_headers', output / '_headers')
