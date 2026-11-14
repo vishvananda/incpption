@@ -120,7 +120,9 @@ use their supplied Wasm SDK profiles. The editable example supports both targets
 ## Compiler portability experiments
 
 `tools/prepare_emscripten.py` prepares a private Emscripten 4.0.9 profile with
-libc++ ABI version 1. It records header patches and rebuilt runtime archive
+libc++ ABI version 1 and cppgm's `wasm32-unknown-emscripten` target. This selects
+the SDK's eight-byte alignment for `long double` and default allocations. It records
+header patches and rebuilt runtime archive
 hashes. The public visibility-event member is protected from musl's internal
 `hidden` macro when compiling SDK sources.
 

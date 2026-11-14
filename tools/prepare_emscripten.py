@@ -89,7 +89,7 @@ def main():
     command = ['python3', str(private / 'embuilder.py'), '--force', 'build', 'libc++-noexcept', 'libc++abi-noexcept']
     with (directory / 'runtime-build.log').open('wb') as log:
         subprocess.run(command, env=environment, stdout=log, stderr=subprocess.STDOUT, check=True)
-    flags = ['--target=wasm32-unknown-unknown', '--sysroot=emscripten/cache/sysroot',
+    flags = ['--target=wasm32-unknown-emscripten', '--sysroot=emscripten/cache/sysroot',
              '-isystem', 'emscripten/cache/sysroot/include/compat', '-include', 'cppgm_compat.h',
              '-std=gnu++17', '-fno-exceptions', '-O3', '-D__EMSCRIPTEN__=1',
              '-D__EMSCRIPTEN_major__=4', '-D__EMSCRIPTEN_minor__=0', '-D__EMSCRIPTEN_tiny__=9',
