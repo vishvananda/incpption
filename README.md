@@ -16,7 +16,10 @@ frozen inputs and settings; it does not establish general compiler correctness.
 
 Compilation, linking, comparisons, code views and gameplay run locally.
 The server supplies static inputs. Edited source and generated code are never
-uploaded. The game opens in a modal; closing it stops its rendering and audio.
+uploaded. The game opens in a modal on a separate static origin, so a busy renderer
+cannot block the build page or its Close button. Browser-built bytes pass
+directly between the two frames with postMessage; neither host receives them.
+Closing the modal removes the player and stops its rendering and audio.
 
 ## Build and test
 
@@ -118,9 +121,19 @@ use their supplied Wasm SDK profiles. The editable example supports both targets
 
 Cloudflare Pages project: `cpp-inception`. Domain: `incpption.com`.
 Account and project are in `site.json`; isolation headers are in `config/_headers`.
+The small player uses Pages project `cpp-inception-player` and
+`wrangler-player.toml`. `tools/player_build.py` extracts only its host code,
+Emscripten glue and notices. It contains no prebuilt game or compiler. Pin its
+immutable `game_frame.html` URL in `site.json` before deploying the main site.
+The player adds Cross-Origin-Resource-Policy so the isolated build page can
+embed it. Local tests use a separate loopback hostname to exercise the same
+origin boundary.
 Use authenticated Wrangler 4.127.0 after validation:
 
 ```sh
+python3 tools/player_build.py --site dist --output build/player
+wrangler pages deploy build/player --config wrangler-player.toml --project-name cpp-inception-player --branch main
+# Pin the returned immutable player URL in site.json, then rebuild dist.
 wrangler pages deploy dist --project-name cpp-inception --branch main
 ```
 

@@ -1,3 +1,4 @@
+import {PlayerSession} from './player_session.mjs';
 import {BuildSession} from './build_session.mjs';
 import {showJourney} from './journey.mjs';
 const $ = id => document.getElementById(id);
@@ -11,6 +12,7 @@ const paths = {game: ['game'], inception: ['match', 'game'], roundtrip: ['llvm',
 const workflows = Object.fromEntries(Object.keys(paths).map(name => [name, {phases: {}, completed: false}]));
 const sourceNames = {};
 let scenario, active, session, deadline, automatic = false, selected = -1, urls = [], playing = false, opening = false, gameLaunch = 0;
+let player;
 let visiblePhase, buttons = [], peak = 0;
 const clock = seconds => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 const projectEvent = (project, kind, detail = {}) => window.dispatchEvent(new CustomEvent('project-build', {detail: {project, kind, ...detail}}));
@@ -178,41 +180,22 @@ function chooseScenario(name) {
 for (const button of document.querySelectorAll('[data-journey]')) button.onclick = () => chooseScenario(button.dataset.journey);
 function closeGame() {if ($('game-modal').open) {$('game-modal').close(); stopGame();}}
 function stopGame() {
-  if (!playing && !opening && !window.openLaraGame) return;
+  if (!playing && !opening && !player) return;
   gameLaunch++; opening = false;
-  const frame = $('game-frame');
-  frame?.contentWindow?.pauseGame?.();
-  if (frame) {
-    frame.hidden = true; frame.removeAttribute('id');
-    // Let the closed dialog paint and the input event finish before disposal.
-    requestAnimationFrame(() => setTimeout(() => {
-      Promise.resolve(frame.contentWindow?.stopGame?.()).catch(() => {}).then(() => frame.remove());
-    }, 0));
-  }
+  player?.close(); player = null;
   playing = false; window.gamePlaying = false; window.openLaraGame = null;
 }
 $('game-close').onclick = closeGame;
 $('game-modal').addEventListener('close', stopGame);
 $('game-modal').addEventListener('click', event => {if (event.target === $('game-modal')) {const r = $('game-modal').getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) closeGame();}});
-window.addEventListener('message', event => {
-  if (event.origin === location.origin && event.source === $('game-frame')?.contentWindow && event.data?.kind === 'game-frame-size')
-    $('game-frame').style.height = Math.max(240, Math.min(1200, event.data.height)) + 'px';
-});
 async function openGame() {
   if (!current().completed || playing || opening) return;
   const launch = ++gameLaunch; opening = true;
   $('game-modal').showModal(); $('game-status').textContent = 'Opening the game you just built…'; delete window.gameError;
   try {
-    const frame = document.createElement('iframe');
-    frame.id = 'game-frame'; frame.src = 'game_frame.html';
-    frame.title = 'OpenLara built in this browser'; frame.allow = 'autoplay; fullscreen';
-    $('game-surface').append(frame);
-    if (!frame.contentWindow.startGame) await new Promise((resolve,reject) => {
-      const timeout = setTimeout(() => reject(Error('Game frame did not load')), 15000);
-      frame.addEventListener('load', () => {clearTimeout(timeout); resolve();}, {once:true});
-    });
-    if (launch !== gameLaunch) return;
-    const game = await frame.contentWindow.startGame(phase('game').result, text => {$('log').textContent += text + '\n';});
+    const url = window.incpptionPlayerURL || document.querySelector('meta[name=player-url]').content;
+    player = new PlayerSession($('game-surface'), {url,log:text => {$('log').textContent += text + '\n';}});
+    const game = await player.start(phase('game').result);
     if (launch !== gameLaunch) return;
     window.openLaraGame = game; opening = false;
     playing = true; window.gamePlaying = true; $('game-status').textContent = 'Running locally.';

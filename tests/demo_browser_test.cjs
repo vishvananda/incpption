@@ -15,6 +15,7 @@ const server = http.createServer((req, res) => {
   const file = path.resolve(root, '.' + decodeURIComponent(req.url.split('?')[0]));
   if (!file.startsWith(root + '/')) {res.writeHead(403);res.end();return;}
   if (process.env.DEMO_TEST_ISOLATION !== '0') {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
     res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
   }
@@ -25,7 +26,7 @@ const server = http.createServer((req, res) => {
 });
 (async()=>{
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
-  const browser=await pw.chromium.launch({headless:true,executablePath:executable || undefined,args:['--no-sandbox','--enable-unsafe-swiftshader','--use-angle=swiftshader']});
+  const browser=await pw.chromium.launch({headless:true,executablePath:executable || undefined,args:['--no-sandbox','--enable-unsafe-swiftshader','--use-angle=swiftshader','--site-per-process']});
   const report={browser:browser.version(),mode,errors};
   try {
     const page=await browser.newPage({viewport:{width:1440,height:1000},acceptDownloads:true});
@@ -44,6 +45,7 @@ const server = http.createServer((req, res) => {
       page.on('console',m=>console.log('PAGE '+m.text()));
     }
     page.on('pageerror',e=>{errors.push(String(e));console.error(String(e));});
+    if(!process.env.DEMO_TEST_ORIGIN)await page.addInitScript(url=>window.incpptionPlayerURL=url,`http://localhost:${server.address().port}/game_frame.html`);
     await page.goto((process.env.DEMO_TEST_ORIGIN || `http://127.0.0.1:${server.address().port}`) + '/wasi_demo.html');
     const github=page.locator('.header-actions a');
     if(await github.getAttribute('href')!=='https://github.com/vishvananda/cppgm-extended')throw Error('Wrong GitHub destination');
@@ -167,25 +169,27 @@ const server = http.createServer((req, res) => {
       if(await page.evaluate(()=>window.lastWorkflowEvent?.kind==='error'))throw Error(await page.evaluate(()=>window.lastWorkflowEvent.error));
       if(await page.evaluate(()=>window.gameError))throw Error(await page.evaluate(()=>window.gameError));
       await page.waitForFunction(()=>window.openLaraGame?.drawCalls>150,null,{timeout:60000});
+      report.playerOrigin=new URL(await page.locator('#game-frame').getAttribute('src')).origin;
+      if(report.playerOrigin===new URL(page.url()).origin)throw Error('Game shares the build page origin');
       if(!await page.locator('#game-modal').evaluate(e=>e.open))throw Error('Workflow did not open game modal');
       if(process.env.DEMO_TEST_TRACE) await page.evaluate(()=>{
         const log=s=>console.log('MODAL '+performance.now().toFixed(1)+' '+s),modal=document.getElementById('game-modal'),button=document.getElementById('game-close');
         for(const type of ['pointerdown','mousedown','mouseup','click'])button.addEventListener(type,()=>log(type),true);
         modal.addEventListener('close',()=>log('close event'));
         const close=modal.close.bind(modal);modal.close=(...args)=>{log('dialog.close enter');const r=close(...args);log('dialog.close exit');return r;};
-        const frame=document.getElementById('game-frame'),stop=frame.contentWindow.stopGame;
-        frame.contentWindow.stopGame=(...args)=>{log('stopGame enter');const r=stop(...args);log('stopGame exit');return r;};
+        const frame=document.getElementById('game-frame'),player=window.openLaraGame,stop=player.close.bind(player);
+        player.close=(...args)=>{log('player.close enter');const r=stop(...args);log('player.close exit');return r;};
         const remove=frame.remove.bind(frame);frame.remove=(...args)=>{log('remove enter');const r=remove(...args);log('remove exit');return r;};
         const replace=frame.replaceWith.bind(frame);frame.replaceWith=(...args)=>{log('replace enter');const r=replace(...args);log('replace exit');return r;};
       });
-      await page.evaluate(()=>window.openLaraGame.module.pauseMainLoop());
+      await page.evaluate(()=>window.openLaraGame.pause());
       await page.screenshot({path:path.join(out,'site-game.png'),fullPage:true});
-      await page.evaluate(()=>{window.openLaraGame.module.resumeMainLoop();window.lastClosedGame=window.openLaraGame;});
+      await page.evaluate(async()=>{await window.openLaraGame.resume();window.lastClosedGame=window.openLaraGame;});
       await page.locator('#game-close').click();
       const closedDraws=await page.evaluate(()=>window.lastClosedGame.drawCalls);
       await page.waitForTimeout(300);
       if(await page.evaluate(()=>window.lastClosedGame.drawCalls)!==closedDraws)throw Error('Closed game continued rendering');
-      await page.waitForFunction(()=>window.lastClosedGame.audioContext.state==='closed');
+      await page.waitForFunction(()=>window.lastClosedGame.closed && !document.getElementById('game-frame'));
       await page.evaluate(()=>delete window.lastClosedGame);
       if(await page.evaluate(()=>window.gamePlaying))throw Error('Closed modal kept game running');
       report.firstGame=await page.evaluate(()=>window.lastGameBuild);

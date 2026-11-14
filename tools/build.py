@@ -111,6 +111,7 @@ def main():
         styles[path.name] = name
     for path in output.glob('*.html'):
         content = path.read_text().replace('content="PROJECT_INDEX"', 'content="' + project_index + '"')
+        content = content.replace('content="PLAYER_URL"', 'content="' + config['player_url'] + '"')
         for original, versioned in styles.items():
             content = content.replace(f'href="{original}"', f'href="{versioned}"')
         path.write_text(content)

@@ -3,5 +3,6 @@
   "domain": "incpption.com",
   "cloudflare_project": "cpp-inception",
   "cloudflare_account_id": "bbccf87cd5ef4772ded82f4ce9636427",
-  "artifact_lock": "config/artifact-lock.json"
+  "artifact_lock": "config/artifact-lock.json",
+  "player_url": "https://cpp-inception-player.pages.dev/game_frame.html"
 }

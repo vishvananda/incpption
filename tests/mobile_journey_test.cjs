@@ -5,6 +5,7 @@ fs.mkdirSync(out,{recursive:true});
 const server=http.createServer((req,res)=>{
   const file=path.resolve(root,'.'+decodeURIComponent(req.url.split('?')[0]));
   if(!file.startsWith(root+'/')){res.writeHead(403).end();return;}
+  res.setHeader('Cross-Origin-Resource-Policy','cross-origin');
   res.setHeader('Cross-Origin-Opener-Policy','same-origin');res.setHeader('Cross-Origin-Embedder-Policy','require-corp');
   const ext=path.extname(file);res.setHeader('Content-Type',({'.html':'text/html','.mjs':'text/javascript','.js':'text/javascript','.css':'text/css','.wasm':'application/wasm','.json':'application/json'})[ext]||'application/octet-stream');
   const stream=fs.createReadStream(file);stream.on('error',()=>{res.writeHead(404).end();});stream.pipe(res);
@@ -13,10 +14,11 @@ const server=http.createServer((req,res)=>{
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
   const url=`http://127.0.0.1:${server.address().port}/wasi_demo.html`;
   for(const name of ['chromium','webkit']){
-    const browser=await pw[name].launch({headless:true,...(name==='chromium'?{args:['--no-sandbox','--enable-unsafe-swiftshader','--use-angle=swiftshader']}:{})});
+    const browser=await pw[name].launch({headless:true,...(name==='chromium'?{args:['--no-sandbox','--enable-unsafe-swiftshader','--use-angle=swiftshader','--site-per-process']}:{})});
     try{
       const context=await browser.newContext({hasTouch:true,isMobile:true,viewport:{width:390,height:844}}),page=await context.newPage(),errors=[];
       page.on('pageerror',error=>errors.push(String(error)));
+      await page.addInitScript(url=>window.incpptionPlayerURL=url,`http://localhost:${server.address().port}/game_frame.html`);
       await page.goto(url);await page.waitForFunction(()=>window.lastProjectEvent?.kind==='source');
       for(const width of [320,390,430]){
         await page.setViewportSize({width,height:844});
