@@ -6,13 +6,34 @@ export const demoCopy = {
     intro:
       "Meet cppgm, a C++ compiler built for fast compilation. Fast enough to compile itself in your browser.",
     story:
-      "Start with cppgm already compiled to WebAssembly by cppgm itself. Watch it rebuild itself here and match every output byte. Then use your new compiler to build OpenLara to WebAssembly and play it in this same browser.",
+      "Start with cppgm already compiled to WebAssembly by cppgm itself. Use it to build and play OpenLara here, then watch it rebuild itself and compare the outputs byte for byte. You can use that browser-rebuilt compiler to build and play the game again.",
     locality:
       "Everything runs locally in your browser: compiling, linking, checking, and playing. The server only delivers static files. No code is sent to a server to compile or run.",
     primaryAction: "Download and start",
     secondaryAction: "See how it works",
     cancelAction: "Cancel build",
     retryAction: "Try again",
+  },
+  journey: {
+    shipped: {
+      title: "Build and play OpenLara",
+      description: "Use the supplied self-compiled cppgm to build OpenLara to WebAssembly, then play it in this browser.",
+      action: "Build OpenLara",
+      ready: "Ready to build with the supplied compiler.",
+      complete: "OpenLara built with the supplied compiler and is ready to play.",
+    },
+    inception: {
+      title: "Inception",
+      description: "Rebuild cppgm in this browser and compare every corresponding output byte. Then use the rebuilt compiler to build and play OpenLara again.",
+      action: "Rebuild cppgm",
+      gameAction: "Build OpenLara with the rebuilt compiler",
+      gameComplete: "OpenLara built with the browser-rebuilt compiler and is ready to play.",
+    },
+    inceptionSquared: {
+      title: "Inception²",
+      description: "An optional, longer round trip: cppgm builds Clang, Clang builds cppgm, and that compiler rebuilds cppgm for byte comparison. The resulting compiler would then build OpenLara to play here.",
+      availability: "Not ready yet. This path is still being qualified.",
+    },
   },
   states: {
     waiting: "Waiting",

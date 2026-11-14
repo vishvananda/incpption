@@ -1,117 +1,172 @@
-import Prism from './vendor/prism.mjs';
-import {demoCopy} from './demo_copy.mjs';
-const $ = id => document.getElementById(id), copy = demoCopy.inspector;
+import {highlight, highlightCode} from './highlight.mjs';
+import {ProjectTree} from './project_tree.mjs';
+const $ = id => document.getElementById(id);
 const example = `// Edit this example, then compile for either target.\nextern "C" int answer(int n) {\n    int total = 0;\n    for (int i = 0; i < n; ++i)\n        total += i * i;\n    return total;\n}\n`;
-let worker, files = [], active = 'example.cpp', result, url, busy = false, deadline;
-let editedExample = example;
+let projects = [], project, active, worker, result, url, busy = false, deadline, request = 0;
+let editedExample = example, currentTab = 'source';
+const builds = new Map(), generations = new Map();
+function buildState(id) {if (!builds.has(id)) builds.set(id, new Map()); return builds.get(id);}
+const tree = new ProjectTree($('source-files'), {onSelect: file => choose(file), onSummary: summary => {
+  $('file-count').textContent = summary.total ? `${summary.done}/${summary.total} ${project?.id === 'cppgm' ? 'matched' : 'built'}` : 'Editable';
+}});
+function view(tab) {
+  currentTab = tab;
+  for (const id of ['source', 'lowir', 'generated']) {
+    $(`pane-${id}`).hidden = id !== tab;
+    $(`tab-${id}`).setAttribute('aria-selected', String(id === tab));
+    $(`tab-${id}`).tabIndex = id === tab ? 0 : -1;
+  }
+}
+for (const id of ['source', 'lowir', 'generated']) {
+  $(`tab-${id}`).onclick = () => view(id);
+  $(`tab-${id}`).onkeydown = event => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const tabs = ['source', 'lowir', 'generated'];
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? 2
+      : (tabs.indexOf(id) + (event.key === 'ArrowRight' ? 1 : 2)) % 3;
+    view(tabs[next]); $(`tab-${tabs[next]}`).focus();
+  };
+}
 function clearOutput() {
   result = null; $('run-example').disabled = true; $('object-download').hidden = true;
-  $('lowir-code').textContent = ''; $('generated-code').textContent = '';
+  highlightCode($('lowir-code'), '// Compile the selected source file to see its optimized LowIR.', 'lowir');
+  highlightCode($('generated-code'), ';; Compile the selected source file to see generated code.', $('inspect-target').value === 'wasm' ? 'wasm' : 'x86');
 }
-function highlight() {
-  $('source-highlight').innerHTML = Prism.highlight($('source-code').value + '\n', Prism.languages.cpp, 'cpp');
+function paintSource() {$('source-highlight').innerHTML = highlight($('source-code').value + '\n', 'cpp');}
+function canCompile() {return active && (project.id === 'example' || project.buildSources.includes(active.path));}
+function controls() {
+  $('compile-example').disabled = busy || !canCompile();
+  $('inspect-cancel').disabled = !busy;
+  $('inspect-target').disabled = busy;
+  $('source-code').readOnly = busy || project?.id !== 'example';
+  $('compile-example').textContent = project?.id === 'example' ? 'Compile example' : 'Compile selected file';
+  $('run-example').hidden = project?.id !== 'example';
 }
-function source(value, readonly) {
-  $('source-code').value = value; $('source-code').readOnly = readonly;
-  $('source-name').textContent = active;
-  $('compile-example').disabled = readonly || busy;
-  $('inspector-note').textContent = readonly ? copy.headerNote : copy.explanation;
-  highlight();
+function fileState() {
+  const row = project && active && buildState(project.id).get(active.path);
+  $('source-state').textContent = row?.state === 'matched' ? '✓ Bytes matched' : row?.state === 'built' ? 'Built locally'
+    : row?.state === 'running' ? 'Building locally…' : row?.state === 'failed' ? 'Build stopped'
+    : project?.id === 'example' ? 'Editable example' : canCompile() ? 'C++ source file' : 'Header input';
 }
-function renderFiles() {
-  $('source-files').replaceChildren();
-  const filtered = ['example.cpp', ...files].filter(path => path.toLowerCase().includes($('file-filter').value.toLowerCase()));
-  for (const path of filtered.slice(0, 150)) {
-    const button = document.createElement('button'); button.textContent = path;
-    button.title = path; button.setAttribute('aria-pressed', String(active === path));
-    button.onclick = () => {
-      if (busy) return;
-      active = path; clearOutput(); renderFiles();
-      if (path === 'example.cpp') source(editedExample, false);
-      else {worker.postMessage({kind: 'read', path}); $('inspector-status').textContent = copy.loadingFile;}
-    };
-    $('source-files').append(button);
-  }
-  $('file-count').textContent = `${filtered.length} files${filtered.length > 150 ? ' · refine search to see more' : ''}`;
+function renderTree() {
+  if (!project) return;
+  const all = $('show-inputs').checked || $('file-filter').value.length > 0;
+  const files = all || project.id === 'example' ? project.files : project.files.filter(file => project.buildSources.includes(file.path));
+  tree.setProject({...project, files, flat: project.id === 'game' && !all}, active?.path);
+  tree.setStatus(buildState(project.id)); tree.setFilter($('file-filter').value);
 }
-function finish() {
-  busy = false; clearTimeout(deadline);
-  $('inspect-target').disabled = false; $('source-code').readOnly = active !== 'example.cpp';
-  $('compile-example').disabled = active !== 'example.cpp'; $('inspect-cancel').disabled = true;
+async function choose(file) {
+  if (busy) return;
+  const wanted = file.path, owner = project.id;
+  active = file; clearOutput(); view('source'); controls(); fileState();
+  $('source-name').textContent = file.path;
+  if (owner === 'example') {$('source-code').value = editedExample; paintSource(); return;}
+  $('inspector-status').textContent = 'Loading selected source file…';
+  try {
+    const response = await fetch(new URL(file.url, document.baseURI));
+    if (!response.ok) throw Error('Source download failed');
+    const bytes = await response.arrayBuffer();
+    const digest = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), b => b.toString(16).padStart(2, '0')).join('');
+    if (digest !== file.sha256) throw Error('Source file hash mismatch');
+    if (project.id !== owner || active.path !== wanted) return;
+    $('source-code').value = new TextDecoder().decode(bytes); paintSource();
+    $('inspector-status').textContent = 'Verified project source. Build the project, or compile this file to inspect its LowIR and generated code.';
+    window.lastProjectEvent = {kind: 'source', project: owner, path: wanted};
+  } catch (error) {$('inspector-status').textContent = String(error); window.lastProjectEvent = {kind: 'error', error: String(error)};}
 }
-function fail(message) {
-  finish(); $('inspector-status').textContent = message;
-  window.lastInspectorEvent = {kind: 'error', error: message};
+function selectProject(id) {
+  const next = projects.find(project => project.id === id);
+  if (!next || busy) return;
+  project = next; $('source-project').value = id; $('file-filter').value = '';
+  const x86 = $('inspect-target').querySelector('[value=x86]'); x86.disabled = id === 'game';
+  if (x86.disabled) $('inspect-target').value = 'wasm';
+  $('tab-generated').textContent = $('inspect-target').value === 'wasm' ? 'WebAssembly' : 'x86 assembly';
+  $('inspector-note').textContent = id === 'example'
+    ? 'Edit the example, then compile it locally. LowIR is shared by the WebAssembly and x86 targets.'
+    : 'Folders show completed files. A moving bar means a file is building; a check means its bytes matched.';
+  active = next.files.find(file => file.path === next.buildSources[0]) || next.files[0];
+  renderTree(); choose(active);
 }
+function finish() {busy = false; clearTimeout(deadline); controls();}
+function fail(message) {finish(); $('inspector-status').textContent = message; window.lastInspectorEvent = {kind: 'error', error: message};}
 function launch() {
   worker = new Worker('./inspector_worker.mjs', {type: 'module'});
   worker.onmessage = ({data}) => {
+    if (data.request !== request) return;
     window.lastInspectorEvent = {...data, object: undefined, executable: undefined};
-    if (data.kind === 'ready') {
-      files = data.files; finish(); renderFiles(); source(editedExample, false);
-      $('inspector-status').textContent = 'Ready. Choose a target and compile the example.';
-    }
-    if (data.kind === 'source' && active === data.path) {source(data.text, true); $('inspector-status').textContent = 'Frozen compiler source · read only';}
     if (data.kind === 'error') fail(data.error);
     if (data.kind === 'compiled') {
       finish(); result = data;
-      $('lowir-code').textContent = data.lowir; $('generated-code').textContent = data.generated;
-      $('generated-title').textContent = data.target === 'wasm' ? 'WebAssembly · WAT' : 'x86-64 · Intel syntax';
-      $('inspector-status').textContent = `${data.target === 'wasm' ? 'WebAssembly' : 'x86-64'} · ${data.object.length.toLocaleString()} bytes · ${data.seconds.toFixed(2)} s · object and LowIR view compiled locally at -O3${data.executionDiagnostic ? ' · Run requires a standalone exported answer function.' : ''}`;
+      highlightCode($('lowir-code'), data.lowir, 'lowir');
+      highlightCode($('generated-code'), data.generated, data.target);
+      $('tab-generated').textContent = data.target === 'wasm' ? 'WebAssembly' : 'x86 assembly';
+      $('inspector-status').textContent = `${data.target === 'wasm' ? 'WebAssembly' : 'x86-64'} · ${data.object.length.toLocaleString()} bytes · ${data.seconds.toFixed(2)} s · compiled locally at -O3`;
       if (url) URL.revokeObjectURL(url);
       url = URL.createObjectURL(new Blob([data.object], {type: 'application/octet-stream'}));
-      $('object-download').href = url; $('object-download').download = `example-${data.target}.o`; $('object-download').hidden = false;
+      $('object-download').href = url; $('object-download').download = `${active.path.split('/').at(-1)}-${data.target}.o`; $('object-download').hidden = false;
       $('run-example').disabled = !data.executable;
+      if (currentTab === 'source') view('generated');
     }
   };
   worker.onerror = event => fail(event.message);
-  worker.postMessage({kind: 'load'});
 }
-let loaded = false;
-$('explorer').addEventListener('toggle', () => {
-  if (!$('explorer').open || loaded) return;
-  loaded = true; busy = true; $('inspector-status').textContent = copy.loadingFiles; launch();
-});
-$('source-code').addEventListener('input', () => {
-  editedExample = $('source-code').value; highlight(); clearOutput();
-});
+$('source-code').addEventListener('input', () => {editedExample = $('source-code').value; paintSource(); clearOutput();});
 $('source-code').addEventListener('scroll', () => {
   $('source-highlight').parentElement.scrollTop = $('source-code').scrollTop;
   $('source-highlight').parentElement.scrollLeft = $('source-code').scrollLeft;
 });
-$('file-filter').oninput = renderFiles;
+$('file-filter').oninput = renderTree; $('show-inputs').onchange = renderTree;
+$('source-project').onchange = () => selectProject($('source-project').value);
 $('inspect-target').onchange = () => {
-  clearOutput();
+  clearOutput(); $('tab-generated').textContent = $('inspect-target').value === 'wasm' ? 'WebAssembly' : 'x86 assembly';
   $('inspector-status').textContent = 'Target changed. Compile again to update the outputs.';
 };
 $('compile-example').onclick = () => {
-  if (busy || active !== 'example.cpp') return;
-  busy = true; $('compile-example').disabled = true; $('run-example').disabled = true;
-  $('inspect-target').disabled = true; $('source-code').readOnly = true;
-  $('inspect-cancel').disabled = false; $('object-download').hidden = true;
-  $('lowir-code').textContent = ''; $('generated-code').textContent = '';
-  $('inspector-status').textContent = copy.compiling;
+  if (busy || !canCompile()) return;
+  worker ??= (launch(), worker); request++;
+  busy = true; controls(); clearOutput(); $('inspector-status').textContent = 'Loading the compiler and compiling this file locally…';
   window.lastInspectorEvent = {kind: 'compiling'};
-  deadline = setTimeout(() => {worker.terminate(); worker = null; loaded = false; fail('Compile deadline exceeded. Close and reopen the explorer to retry.');}, 90000);
-  worker.postMessage({kind: 'compile', source: $('source-code').value, target: $('inspect-target').value, run: $('inspect-target').value === 'wasm'});
+  deadline = setTimeout(() => {worker.terminate(); worker = null; fail('Compile deadline exceeded. You can try another file.');}, 180000);
+  worker.postMessage({kind: 'compile', request, project: project.id, path: active.path,
+    source: project.id === 'example' ? $('source-code').value : undefined, target: $('inspect-target').value});
 };
-$('inspect-cancel').onclick = () => {
-  worker?.terminate(); worker = null; loaded = false; fail('Cancelled. Close and reopen the explorer to start again.');
-  $('compile-example').disabled = true;
-};
+$('inspect-cancel').onclick = () => {worker?.terminate(); worker = null; request++; fail('Cancelled. Choose a file or compile again.');};
 $('run-example').onclick = async () => {
   if (!result?.executable) return;
   $('run-example').disabled = true;
-  // Run visitor code in a disposable worker so an endless loop cannot freeze
-  // the UI. The target's agreed entry is int answer(int), called with 10.
-  const code = `onmessage=async({data})=>{try{const {instance}=await WebAssembly.instantiate(data,{});postMessage(String(instance.exports.answer(10)));}catch(e){postMessage(String(e));}};`;
-  const runnerURL = URL.createObjectURL(new Blob([code], {type: 'text/javascript'}));
+  const runnerURL = URL.createObjectURL(new Blob([`onmessage=async({data})=>{try{const {instance}=await WebAssembly.instantiate(data,{});postMessage(String(instance.exports.answer(10)));}catch(e){postMessage(String(e));}};`], {type:'text/javascript'}));
   const runner = new Worker(runnerURL);
   const timeout = setTimeout(() => {runner.terminate(); URL.revokeObjectURL(runnerURL); $('inspector-status').textContent = 'Example exceeded its 2-second execution limit.'; $('run-example').disabled = false;}, 2000);
-  runner.onmessage = ({data}) => {
-    clearTimeout(timeout); runner.terminate(); URL.revokeObjectURL(runnerURL);
-    $('inspector-status').textContent = `answer(10) → ${data}`; $('run-example').disabled = false;
-    window.lastInspectorRun = data;
-  };
+  runner.onmessage = ({data}) => {clearTimeout(timeout); runner.terminate(); URL.revokeObjectURL(runnerURL); $('inspector-status').textContent = `answer(10) → ${data}`; $('run-example').disabled = false; window.lastInspectorRun = data;};
   runner.postMessage(result.executable);
 };
+window.addEventListener('project-select', ({detail}) => {
+  if (busy && project?.id !== detail.project) {worker?.terminate(); worker = null; request++; finish();}
+  selectProject(detail.project);
+});
+window.addEventListener('project-source-select', ({detail}) => {
+  selectProject(detail.project);
+  const file = project?.files.find(file => file.path === detail.path);
+  if (file) {tree.select(file.path); choose(file);}
+});
+window.addEventListener('project-build', ({detail}) => {
+  let rows = buildState(detail.project);
+  if (detail.kind === 'reset' || (detail.stage && generations.get(detail.project) !== detail.stage)) {
+    rows = new Map(); builds.set(detail.project, rows); generations.set(detail.project, detail.stage);
+  }
+  if (detail.name && ['progress', 'unit'].includes(detail.kind)) rows.set(detail.name, {
+    state: detail.kind === 'progress' ? 'running' : detail.matched ? 'matched' : 'built', seconds: detail.seconds});
+  if (['error', 'cancel'].includes(detail.kind)) for (const [name, row] of rows)
+    if (row.state === 'running') rows.set(name, {state: detail.kind === 'error' ? 'failed' : 'waiting'});
+  if (project?.id === detail.project) {tree.setStatus(rows); fileState();}
+});
+$('explorer').querySelector('.project-files').open = true;
+try {
+  const path = document.querySelector('meta[name=project-index]').content;
+  const response = await fetch(path); if (!response.ok) throw Error('Project index download failed');
+  const index = await response.json(); if (index.schema !== 1) throw Error('Unknown project index');
+  projects = [...index.projects, {id:'example',name:'Editable example',root:'',buildSources:[],files:[{path:'example.cpp'}]}];
+  selectProject(window.activeJourney === 'inception' ? 'cppgm' : 'game');
+  window.lastInspectorEvent = {kind:'ready'};
+} catch (error) {fail(String(error));}

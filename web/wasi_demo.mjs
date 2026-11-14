@@ -1,5 +1,6 @@
 import {demoCopy} from './demo_copy.mjs';
 import {BuildSession} from './build_session.mjs';
+import {showJourney} from './journey.mjs';
 const $ = id => document.getElementById(id);
 const copy = demoCopy;
 $('intro').textContent = copy.site.intro;
@@ -10,6 +11,52 @@ let worker, timer, deadline, started, names = [], currentStage = 2, selected = -
 let running = {}, rows = {2: new Map(), 3: new Map()}, buttons = [], urls = [];
 let verified = 0, peak = 0, stopped = true;
 let rebuiltCompiler, gameWorker, gameArtifact, gameDeadline;
+let gameOrigin = 'seed', playing = false;
+function projectEvent(project, kind, detail = {}) {
+  window.dispatchEvent(new CustomEvent('project-build', {detail: {project, kind, ...detail}}));
+}
+function stopPlaying() {
+  if (!playing) return;
+  const frame = $('game-frame');
+  frame.contentWindow?.stopGame?.()?.catch?.(() => {});
+  const fresh = frame.cloneNode();
+  frame.replaceWith(fresh);
+  playing = false; window.gamePlaying = false; window.openLaraGame = null;
+  $('game-screen').hidden = true; $('game-return').hidden = true;
+  $('game-play').disabled = !gameArtifact;
+  $('game-build').disabled = false; start.disabled = false;
+}
+window.addEventListener('journey-changing', ({detail}) => {
+  if (detail.name !== 'game') stopPlaying();
+  else {$('game-compiler').value = 'seed'; gameContext();}
+});
+window.addEventListener('message', event => {
+  if (event.origin === location.origin && event.source === $('game-frame').contentWindow && event.data?.kind === 'game-frame-size')
+    $('game-frame').style.height = Math.max(240, Math.min(1800, event.data.height)) + 'px';
+});
+$('game-return').onclick = () => {stopPlaying(); showJourney(gameOrigin === 'rebuilt' ? 'roundtrip' : 'inception');};
+$('quick-start').onclick = () => {showJourney('game'); $('game-build').click(); $('explorer').scrollIntoView({behavior:'smooth',block:'start'});};
+$('build-with-rebuilt').onclick = () => {showJourney('game'); $('game-compiler').value = 'rebuilt'; $('game-build').click();};
+function gameContext() {
+  const rebuilt = $('game-compiler').value === 'rebuilt';
+  $('game').querySelector('.eyebrow').textContent = rebuilt ? '02 / INCEPTION · BUILD THE GAME' : '01 / BUILD A GAME';
+  $('game-description').textContent = rebuilt
+    ? 'Use cppgm rebuilt in this browser to compile and link OpenLara, then play the game. The compiler and all of its outputs matched before this step.'
+    : 'Start with cppgm already compiled to WebAssembly by cppgm itself. It compiles and links OpenLara here, then you can play the result. This build uses prebuilt SDK and runtime libraries and supplied game assets.';
+  $('game-return').textContent = rebuilt ? 'Continue to Inception²' : 'Continue to Inception';
+  const next = $('next-inception');
+  next.textContent = rebuilt ? 'Next: explore Inception² →' : 'Next: let the compiler build itself →';
+  next.dataset.journey = rebuilt ? 'roundtrip' : 'inception';
+  for (const button of document.querySelectorAll('.journey-nav [data-journey]')) {
+    if (button.dataset.journey === (rebuilt ? 'inception' : 'game')) button.setAttribute('aria-current', 'step');
+    else button.removeAttribute('aria-current');
+  }
+}
+$('game-compiler').onchange = () => {
+  gameContext();
+  $('game-status').textContent = $('game-compiler').value === 'rebuilt'
+    ? 'Ready to build with cppgm rebuilt in this browser.' : copy.journey.shipped.ready;
+};
 const clock = seconds => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 function state(stage, status, label) {
   $(stage).className = `stage ${status}`;
@@ -36,7 +83,7 @@ $('view-2').onclick = () => view(2);
 $('view-3').onclick = () => view(3);
 function stop() {
   worker?.terminate(); worker = null; clearInterval(timer); clearTimeout(deadline);
-  start.disabled = false; cancel.disabled = true; stopped = true; $('worker-choice').disabled = false; $('deep-verify').disabled = false;
+  start.disabled = false; cancel.disabled = true; stopped = true; $('game-build').disabled = false; $('worker-choice').disabled = false; $('deep-verify').disabled = false;
 }
 function download(name, data, type) {
   const url = URL.createObjectURL(new Blob([data], {type})); urls.push(url);
@@ -44,12 +91,17 @@ function download(name, data, type) {
   $('downloads').append(link);
 }
 function fail(message) {
+  projectEvent('cppgm', 'error', {stage: currentStage});
   stop(); $('status').textContent = 'Build stopped. No compiler artifact was published.';
   $('log').textContent += `${message}\n`;
   for (const index of running[currentStage] || []) buttons[index]?.classList.add('failed');
   window.lastInceptionEvent = {kind: 'error', error: message};
 }
 start.onclick = () => {
+  stopPlaying(); showJourney('inception');
+  projectEvent('cppgm', 'reset', {stage: 2});
+  $('game-compiler').value = 'seed'; $('game-compiler').querySelector('[value=rebuilt]').disabled = true;
+  $('build-with-rebuilt').disabled = true;
   rebuiltCompiler = null; gameArtifact = null; gameWorker?.terminate(); clearTimeout(gameDeadline);
   $('game-build').disabled = true; $('game-play').disabled = true; $('game-cancel').disabled = true;
   $('game-status').textContent = copy.stages.game.waiting;
@@ -76,7 +128,7 @@ start.onclick = () => {
       names = [...data.sources, 'link compiler'];
       for (const [index, name] of names.entries()) {
         const button = document.createElement('button'); button.type = 'button'; button.className = 'unit';
-        button.title = name; button.onclick = () => inspect(index); units.append(button); buttons.push(button);
+        button.title = name; button.onclick = () => {inspect(index); if (index < names.length - 1) window.dispatchEvent(new CustomEvent('project-source-select', {detail: {project: 'cppgm', path: name}}));}; units.append(button); buttons.push(button);
       }
       state('seed', 'done', 'Verified');
       $('seed-detail').textContent = `${(data.seedBytes / 1048576).toFixed(1)} MiB compiler · ${data.sources.length} sources`;
@@ -85,10 +137,12 @@ start.onclick = () => {
       $('progress').max = names.length * data.generations; $('worker-count').textContent = `${data.workerCount} compile worker${data.workerCount === 1 ? '' : 's'} · linking follows compilation`; draw();
     }
     if (data.kind === 'progress') {
+      projectEvent('cppgm', 'progress', {name: data.name, stage: data.stage});
       (running[data.stage] ??= new Set()).add(data.index); view(data.stage); state(`stage-${data.stage}`, 'active', 'Building');
       $('status').textContent = `${data.stage === 2 ? 'Rebuilding cppgm locally in your browser' : 'Second local rebuild'}: ${data.name}`;
     }
     if (data.kind === 'unit') {
+      projectEvent('cppgm', 'unit', {name: names[data.index], stage: data.stage, matched: true, seconds: data.seconds});
       rows[data.stage].set(data.index, data); running[data.stage]?.delete(data.index); verified++;
       peak = Math.max(peak, data.memoryBytes); $('memory').textContent = `${Math.ceil(peak / 1048576)} MiB`;
       $('verified').textContent = String(verified); $('progress').value = verified; draw();
@@ -111,6 +165,7 @@ start.onclick = () => {
       download('cppgm-rebuilt.wasm', data.module, 'application/wasm'); delete data.module;
       download('inception-results.json', JSON.stringify(data, null, 2) + '\n', 'application/json');
       $('game-build').disabled = false; $('game-status').textContent = copy.stages.game.ready;
+      $('game-compiler').querySelector('[value=rebuilt]').disabled = false; $('build-with-rebuilt').disabled = false;
     }
   };
   worker.onerror = event => fail(event.message);
@@ -118,6 +173,7 @@ start.onclick = () => {
 };
 cancel.onclick = () => {
   if (stopped) return;
+  projectEvent('cppgm', 'cancel', {stage: currentStage});
   stop(); $('status').textContent = 'Cancelled. Start a fresh build to retry.';
   window.lastInceptionEvent = {kind: 'cancelled'};
 };
@@ -125,10 +181,11 @@ cancel.onclick = () => {
 function gameLog(text) {$('game-log').textContent += String(text) + '\n';}
 function gameStop() {
   gameWorker?.terminate(); gameWorker = null; clearTimeout(gameDeadline);
-  $('game-build').disabled = !rebuiltCompiler; $('game-cancel').disabled = true;
+  $('game-build').disabled = false; $('game-cancel').disabled = true;
   start.disabled = false;
 }
 function gameFail(message) {
+  projectEvent('game', 'error');
   gameStop(); $('game-status').textContent = copy.stages.game.error; gameLog(message);
   window.lastGameBuild = {kind: 'error', error: message};
 }
@@ -137,7 +194,11 @@ function gameDownload(name, bytes, type) {
   urls.push(url); link.href = url; link.download = name; link.textContent = name; $('game-downloads').append(link);
 }
 $('game-build').onclick = () => {
-  if (!rebuiltCompiler) return;
+  if ($('game-compiler').value === 'rebuilt' && !rebuiltCompiler) return;
+  stopPlaying();
+  gameOrigin = $('game-compiler').value; gameContext();
+  projectEvent('game', 'reset');
+  window.dispatchEvent(new CustomEvent('project-select', {detail: {project: 'game'}}));
   gameArtifact = null; $('game-play').disabled = true; $('game-build').disabled = true;
   $('game-cancel').disabled = false; start.disabled = true;
   $('game-downloads').replaceChildren(); $('game-log').textContent = '';
@@ -147,43 +208,57 @@ $('game-build').onclick = () => {
   gameWorker.onmessage = ({data}) => {
     window.lastGameBuild = {...data, game: undefined, runtime: undefined, assets: undefined};
     if (data.kind === 'loading') $('game-status').textContent = data.message;
-    if (data.kind === 'progress') $('game-status').textContent = `${data.index === 3 ? 'Linking' : 'Compiling'} locally in your browser: ${data.name}`;
+    if (data.kind === 'progress') {projectEvent('game', 'progress', {name: data.name}); $('game-status').textContent = `${data.index === 3 ? 'Linking' : 'Compiling'} locally in your browser: ${data.name}`;}
     if (data.kind === 'unit') {
+      projectEvent('game', 'unit', {name: data.name, seconds: data.seconds, matched: false});
       $(`game-unit-${data.index}`).className = 'done';
       gameLog(`${data.name}: matched · ${data.seconds.toFixed(3)} s · SHA-256 ${data.sha256}`);
     }
     if (data.kind === 'error') gameFail(data.error);
     if (data.kind === 'complete') {
+      data.compilerOrigin = gameOrigin; window.lastGameBuild.compilerOrigin = gameOrigin;
       gameStop(); gameArtifact = data; $('game-play').disabled = false;
-      $('game-status').textContent = `${copy.stages.game.complete} ${data.seconds.toFixed(1)} seconds; every output matched.`;
+      $('game-status').textContent = `${gameOrigin === 'rebuilt' ? copy.journey.inception.gameComplete : copy.journey.shipped.complete} ${data.seconds.toFixed(1)} seconds.`;
       gameDownload('openlara.wasm', data.game, 'application/wasm');
       gameDownload('game-results.json', JSON.stringify({...data, game: undefined, runtime: undefined, assets: undefined}, null, 2), 'application/json');
     }
   };
   gameWorker.onerror = event => gameFail(event.message);
   gameDeadline = setTimeout(() => gameFail('The game build exceeded its 10-minute deadline.'), 600000);
-  const bytes = rebuiltCompiler.slice();
-  gameWorker.postMessage({compilerBytes: bytes}, [bytes.buffer]);
+  if (gameOrigin === 'rebuilt') {
+    const bytes = rebuiltCompiler.slice(); gameWorker.postMessage({compilerBytes: bytes}, [bytes.buffer]);
+  } else gameWorker.postMessage({});
 };
 $('game-cancel').onclick = () => {
+  projectEvent('game', 'cancel');
   gameStop(); $('game-status').textContent = copy.stages.game.cancelled;
   window.lastGameBuild = {kind: 'cancelled'};
 };
 $('game-play').onclick = async () => {
   if (!gameArtifact) return;
-  $('game-play').disabled = true; $('game-build').disabled = true; start.disabled = true;
-  $('game-screen').hidden = false; $('game-status').textContent = 'Opening the game you just built…';
+  $('game-play').disabled = true; $('game-build').disabled = true;
+  $('game-screen').hidden = false; $('game-return').hidden = false;
+  $('game-status').textContent = 'Opening the game you just built…';
+  delete window.gameError;
   try {
-    const {playOpenLara} = await import('./openlara_play.mjs');
-    window.openLaraGame = await playOpenLara($('canvas'), gameArtifact, gameLog);
+    const frame = $('game-frame');
+    if (!frame.contentWindow.startGame) await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(Error('Game frame did not load')), 15000);
+      frame.addEventListener('load', () => {clearTimeout(timeout); resolve();}, {once: true});
+    });
+    playing = true;
+    window.openLaraGame = await frame.contentWindow.startGame(gameArtifact, gameLog);
     $('game-status').textContent = copy.stages.play.running; window.gamePlaying = true;
-    $('canvas').scrollIntoView({behavior: 'smooth', block: 'center'});
-  } catch (error) {gameLog(error.stack || error); window.gameError = String(error); $('game-status').textContent = 'The game could not start. See game build details.';}
+    frame.scrollIntoView({behavior: 'smooth', block: 'center'});
+  } catch (error) {
+    gameLog(error.stack || error); window.gameError = String(error);
+    $('game-status').textContent = 'The game could not start. See game build details.';
+  }
 };
 
 $('deep-verify').onchange = () => {
   const deep = $('deep-verify').checked; $('stage-3').hidden = !deep; $('view-3').hidden = !deep;
   $('how-it-works').classList.toggle('deep-mode', deep);
   $('final-check').querySelector('.number').textContent = `${deep ? '04' : '03'} / MATCH & CHECK`;
-  $('game').querySelector('.eyebrow').textContent = `${deep ? '05' : '04'} / PUT IT TO WORK`;
+
 };

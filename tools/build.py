@@ -9,6 +9,7 @@ import shutil
 import subprocess
 
 from inspector_vendor import prepare_vendor
+from project_sources import prepare_sources
 
 ROOT = Path(__file__).resolve().parents[1]
 LIMIT = 25 * 1024 * 1024
@@ -21,11 +22,12 @@ def sha(path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--artifact-dir', type=Path, help='existing qualified static payload; never modified')
+    parser.add_argument('--artifact-lock', type=Path, help='candidate artifact lock for local qualification')
     parser.add_argument('--output', type=Path, default=ROOT / 'dist')
     parser.add_argument('--force', action='store_true')
     args = parser.parse_args()
     config = json.loads((ROOT / 'site.json').read_text())
-    lock_path = ROOT / config['artifact_lock']
+    lock_path = args.artifact_lock or ROOT / config['artifact_lock']
     lock = json.loads(lock_path.read_text())
     entries = {r['path']: r for r in lock['files'] if r['path'] != '_headers'}
     payload = args.artifact_dir or ROOT / '.cache' / sha(lock_path)
@@ -82,6 +84,7 @@ def main():
             shutil.copyfile(path, target)
     # Pages gives CSS a four-hour browser cache lifetime. Give each version a
     # distinct URL so fresh HTML cannot pick up styling from an older release.
+    project_index = prepare_sources(payload, output)
     styles = {}
     for path in sorted((ROOT / 'web').glob('*.css')):
         name = f'assets/{path.stem}.{sha(path)[:16]}.css'
@@ -90,7 +93,7 @@ def main():
         shutil.copyfile(path, target)
         styles[path.name] = name
     for path in output.glob('*.html'):
-        content = path.read_text()
+        content = path.read_text().replace('content="PROJECT_INDEX"', 'content="' + project_index + '"')
         for original, versioned in styles.items():
             content = content.replace(f'href="{original}"', f'href="{versioned}"')
         path.write_text(content)

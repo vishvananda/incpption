@@ -25,8 +25,10 @@ jobs:
         with:
           python-version: '3.12'
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium webkit
       - run: npm run check
+      - run: node tests/highlight_test.mjs
+      - run: python3 tests/project_sources_test.py
       - uses: actions/cache@v4
         with:
           path: .cache
@@ -39,6 +41,7 @@ jobs:
       - run: npm run test:game
         env:
           GAME_TEST_TOUCH: '1'
+      - run: npm run test:mobile
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -46,4 +49,5 @@ jobs:
           path: |
             build/test-results
             build/game-results
+            build/mobile-journey
           retention-days: 7

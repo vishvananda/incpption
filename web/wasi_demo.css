@@ -30,3 +30,56 @@ h1.wordmark{display:grid;width:max-content;margin:0 0 28px}
 .pipeline{grid-template-columns:repeat(3,1fr)}.pipeline.deep-mode{grid-template-columns:repeat(4,1fr)}.build-options{display:flex;flex-direction:column;gap:14px;padding:18px 0;font-size:13px;color:var(--muted)}.build-options input{accent-color:var(--green)}@media(max-width:700px){.pipeline,.pipeline.deep-mode{grid-template-columns:1fr}.stage p{min-height:0}}
 
 .intro{margin:0 0 18px;color:var(--ink);font-size:clamp(20px,2.3vw,26px);line-height:1.45;max-width:740px}.story{max-width:690px;color:var(--muted);font-size:16px;line-height:1.65}
+
+/* The project is the main view. Build totals remain real completed-file counts. */
+#quick-start{background:var(--green);color:var(--bg);font-weight:650;border-color:var(--green)}
+.journey-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:34px 0 42px}
+.journey-nav button{text-align:left;padding:17px 18px;background:var(--surface);border-top:2px solid var(--line);border-radius:4px}
+.journey-nav button[aria-current=step]{border-color:var(--green)}
+.journey-nav span,.journey-nav small,.journey-nav strong{display:block}
+.journey-nav span{color:var(--green);font:11px/1.5 monospace;margin-bottom:10px}
+.journey-nav strong{font-size:16px;font-weight:550}.journey-nav small{color:var(--muted);font-size:12px;margin-top:6px}
+.journey-section,.game{border-top:1px solid var(--line);padding-top:26px;margin:32px 0}
+.journey-section>h2,.game>h2{font-size:clamp(28px,4vw,42px);margin:12px 0;line-height:1.15}
+.journey-section>p,.game>p{max-width:760px;color:var(--muted)}
+.game-origin{font-size:12px;color:var(--muted)}.game>.actions,.journey-section>.actions{margin:22px 0 12px}
+.explorer{margin:28px 0;border:0;padding-top:0}.explorer>p{font-size:12px;color:var(--muted)}
+.explorer .eyebrow{margin:0 0 6px}.explorer h2{font-size:20px;margin:0}.project-choice{font-size:12px;color:var(--muted)}
+.explore-layout{grid-template-columns:260px minmax(0,1fr);margin-top:18px}
+.project-files{border:0;border-right:1px solid var(--line);padding:12px 0;background:#131817;min-width:0}
+.project-files>summary{font-size:12px;padding:0 12px 10px;list-style:none}.project-files>summary::-webkit-details-marker{display:none}
+#file-count{display:block;font:10px/1.5 monospace;color:var(--muted);margin-top:4px}
+#file-filter{margin:0 10px 8px;width:calc(100% - 20px);padding:7px 9px}
+.tree-options{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--muted);margin:0 10px 10px}
+.tree-options input{margin:0;accent-color:var(--green)}
+#source-files{height:490px;overflow:auto;padding-bottom:8px}
+#source-files .project-row{display:flex;align-items:center;gap:5px;position:relative;padding:7px 8px 7px calc(8px + var(--depth)*13px);min-height:32px;font:11px/1.5 monospace;border:0;border-radius:0;width:100%;color:var(--muted);text-align:left;white-space:nowrap}
+#source-files .project-row:hover{background:#222b25}#source-files .project-row.selected{background:#273325;color:var(--ink)}
+.tree-arrow{width:10px;flex-shrink:0;color:var(--muted)}.tree-label{position:relative;overflow:hidden;min-width:0;flex:1;padding:1px 0}
+.tree-label>span:last-child{position:relative;z-index:1;display:block;overflow:hidden;text-overflow:ellipsis}
+.tree-bar{position:absolute;inset:0 auto 0 0;display:block;background:#beef8a25;border-radius:2px}
+.tree-state{font-size:10px;min-width:16px;text-align:right;color:var(--muted)}
+.project-row.matched .tree-state,.project-row.built .tree-state{color:var(--green)}.project-row.failed .tree-state{color:var(--error)}
+.project-row.running .tree-label{background:#e2be6f12}.project-row.running .tree-state{color:var(--active)}
+.project-row.running .tree-label:after{content:'';position:absolute;inset:0 auto 0 0;width:30%;background:#e2be6f25;animation:source-building 1.8s ease-in-out infinite}
+@keyframes source-building{0%{left:-30%}100%{left:100%}}
+.project-code{min-width:0}.code-tabs{display:flex;gap:0;background:var(--surface);border-bottom:1px solid var(--line);overflow:auto}
+.code-tabs button{border:0;border-bottom:2px solid transparent;border-radius:0;padding:11px 15px;white-space:nowrap;font-size:12px}
+.code-tabs [aria-selected=true]{border-bottom-color:var(--green);color:var(--green)}
+.code-file{display:flex;justify-content:space-between;gap:12px;padding:9px 12px;min-height:37px;border-bottom:1px solid var(--line);font:10px/1.7 monospace}
+#source-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}#source-state{flex-shrink:0;color:var(--green)}
+.project-code .code-pane{border:0}.project-code .code-pane pre,.project-code .source-editor{height:430px;font-size:12px}
+.project-code .source-editor pre,.project-code .source-editor textarea{height:100%;font:12px/1.7 monospace}
+.project-code .explore-controls{border-top:1px solid var(--line);padding:10px 12px;margin:0;gap:8px}
+.project-code .explore-controls button{font-size:12px;padding:7px 10px}.project-code .explore-controls a{font-size:11px;color:var(--green)}
+.token.variable{color:#9cc7f1}.token.label{color:#86cbd7}.token.important{color:var(--active)}
+#game-frame{display:block;width:100%;min-height:300px;height:570px;border:0;background:var(--bg)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:1000px){.explore-layout{grid-template-columns:220px minmax(0,1fr)}.project-code .code-pane pre,.project-code .source-editor{height:400px}}
+@media(max-width:700px){
+ .journey-nav{grid-template-columns:1fr;gap:8px;margin:26px 0}.journey-nav button{padding:12px 14px;display:grid;grid-template-columns:70px 1fr;column-gap:10px}.journey-nav span{grid-row:1/3;margin:0;align-self:center}.journey-nav strong{font-size:14px}.journey-nav small{margin:2px 0 0;font-size:11px}
+ .explorer .section-head{flex-direction:column;gap:12px}.explore-layout{grid-template-columns:1fr}.project-files{border-right:0;border-bottom:1px solid var(--line);padding-bottom:8px}.project-files>summary{display:flex;justify-content:space-between;align-items:center;list-style:disclosure-closed}.project-files[open]>summary{list-style:disclosure-open}#file-count{margin:0}#source-files{height:190px}
+ .project-code .code-pane pre,.project-code .source-editor{height:290px}.project-code .source-editor pre,.project-code .source-editor textarea{font-size:11px}.code-file{flex-direction:column;gap:0}.code-tabs button{padding:10px 12px}.game-origin select{display:block;margin:7px 0 0;width:100%}
+ .project-code .explore-controls{gap:8px;padding:10px}.project-code .explore-controls button{min-height:40px}.project-code .explore-controls label{width:100%}.project-code .explore-controls select{min-height:40px}
+}
+@media(prefers-reduced-motion:reduce){.project-row.running .tree-label:after{animation:none;left:35%}}

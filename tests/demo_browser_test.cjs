@@ -59,13 +59,16 @@ const server = http.createServer((req, res) => {
     await page.locator('#share-status').evaluate(e=>e.textContent='');
     await page.locator('#share-feedback').evaluate(e=>e.hidden=true);
     report.headerPassed=true;
-    if (await page.locator('#game-build').isEnabled())throw Error('Game build bypasses compiler checks');
+    if (!await page.locator('#game-build').isEnabled())throw Error('Supplied compiler cannot build the game first');
+    await page.waitForFunction(()=>window.lastProjectEvent?.kind==='source');
+    if(requests.some(r=>/^\/compiler\//.test(r.url)))throw Error('Source browsing downloaded the compiler or SDK');
+    if(!await page.locator('#source-highlight .token').count())throw Error('Default source browser is not highlighted');
     await page.screenshot({path:path.join(out,'site-desktop.png'),fullPage:true});
     await page.setViewportSize({width:390,height:844});
     if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth))throw Error('Mobile page overflows');
     await page.screenshot({path:path.join(out,'site-mobile.png'),fullPage:true});
     await page.setViewportSize({width:1440,height:1000});
-    await page.locator('#explorer>summary').click();
+    await page.locator('#source-project').selectOption('example');
     await page.waitForFunction(()=>['ready','error'].includes(window.lastInspectorEvent?.kind),null,{timeout:180000});
     async function compiled(target){
       await page.locator('#inspect-target').selectOption(target);
@@ -74,8 +77,12 @@ const server = http.createServer((req, res) => {
       const event=await page.evaluate(()=>window.lastInspectorEvent);
       if(event.kind==='error')throw Error(event.error);
       if(event.target!==target)throw Error('Stale target output');
-      if(!event.lowir.includes('answer'))throw Error('Missing real LowIR');
+      if(!event.lowir.includes('function'))throw Error('Missing real LowIR');
       if(!event.generated.includes(target==='wasm'?'i32.':'answer:'))throw Error('Missing decoded instructions');
+      await page.locator('#tab-lowir').click();
+      if(!await page.locator('#lowir-code .token').count())throw Error('LowIR syntax highlighting missing');
+      await page.locator('#tab-generated').click();
+      if(!await page.locator('#generated-code .token').count())throw Error('Generated code syntax highlighting missing');
       return event;
     }
     report.wasm=await compiled('wasm');
@@ -87,15 +94,22 @@ const server = http.createServer((req, res) => {
     const download=page.waitForEvent('download');await page.locator('#object-download').click();
     const downloadPath=path.join(out,'inspector-x86.o');await(await download).saveAs(downloadPath);
     if(fs.readFileSync(downloadPath).subarray(0,4).toString('hex')!=='7f454c46')throw Error('Download is not an ELF object');
-    await page.locator('#file-filter').fill('wasm/select_atomics.cpp');
-    await page.locator('#source-files button').click();
+    await page.locator('#source-project').selectOption('cppgm');
+    await page.locator('#file-filter').fill('sema/analyzer.h');
+    await page.locator('#source-files button[aria-selected]').click();
     await page.waitForFunction(()=>document.getElementById('source-code').readOnly);
     if(!await page.locator('#source-highlight .token').count())throw Error('Source highlighting missing');
     if(await page.locator('#compile-example').isEnabled())throw Error('Read-only project file offered as standalone compile');
-    await page.locator('#file-filter').fill('example.cpp');await page.locator('#source-files button').click();
+    await page.locator('#file-filter').fill('support/unicode/utf8.cpp');await page.locator('#source-files button[aria-selected]').click();
+    await page.waitForFunction(()=>window.lastProjectEvent?.path==='dev/src/support/unicode/utf8.cpp');
+    report.projectSource=await compiled('wasm');
+    if(report.projectSource.project!=='cppgm')throw Error('Project source compilation did not use its own build settings');
+    await page.locator('#source-project').selectOption('example');
+    await page.locator('#tab-source').click();
     await page.locator('#source-code').fill('int broken=missing_name;');
     await page.locator('#compile-example').click();
     await page.waitForFunction(()=>window.lastInspectorEvent?.kind==='error');
+    await page.locator('#tab-source').click();
     await page.locator('#source-code').fill('extern "C" int answer(int n){return n*7+3;}');
     await compiled('wasm');
     await page.evaluate(()=>delete window.lastInspectorRun);await page.locator('#run-example').click();
@@ -103,8 +117,24 @@ const server = http.createServer((req, res) => {
     if(await page.evaluate(()=>window.lastInspectorRun)!=='73')throw Error('Edited example did not change output');
     report.inspectorPassed=true;
     await page.screenshot({path:path.join(out,'site-inspector.png'),fullPage:true});
-    await page.locator('#explorer>summary').click();
     if(mode==='full'){
+      await page.locator('.journey-nav [data-journey=game]').click();
+      await page.locator('#game-build').click();
+      await page.waitForFunction(()=>['complete','error'].includes(window.lastGameBuild?.kind),null,{timeout:300000});
+      report.firstGame=await page.evaluate(()=>window.lastGameBuild);
+      if(report.firstGame.kind!=='complete'||report.firstGame.compilerOrigin!=='seed')throw Error(report.firstGame.error||'First game did not use the supplied compiler');
+      if(await page.locator('#source-files .project-row.built').count()!==3)throw Error('Game file progress did not complete');
+      await page.locator('#game-play').click();
+      await page.waitForFunction(()=>window.gamePlaying||window.gameError,null,{timeout:90000});
+      if(await page.evaluate(()=>window.gameError))throw Error(await page.evaluate(()=>window.gameError));
+      await page.waitForFunction(()=>window.openLaraGame?.drawCalls>150,null,{timeout:60000});
+      await page.evaluate(()=>window.previousGame=window.openLaraGame);
+      await page.locator('#next-inception').click();
+      if(await page.evaluate(()=>window.gamePlaying))throw Error('Game continued running after leaving its step');
+      const previousDraws=await page.evaluate(()=>window.previousGame.drawCalls);
+      await page.waitForTimeout(300);
+      if(await page.evaluate(()=>window.previousGame.drawCalls)!==previousDraws)throw Error('Closed game continued rendering');
+      report.firstGamePlayPassed=true;
       await page.locator('.proof details>summary').click();
       await page.locator('#worker-choice').selectOption(process.env.DEMO_TEST_WORKERS || '8');
       if (process.env.DEMO_TEST_SECOND_BUILD === '1') await page.locator('#deep-verify').check();
@@ -113,7 +143,7 @@ const server = http.createServer((req, res) => {
       await page.waitForFunction(()=>document.querySelectorAll('.unit.active').length>0,null,{timeout:180000});
       await page.locator('#cancel').click();
       await buildWorkersStopped();
-      if(await page.locator('#downloads a').count() || await page.locator('#game-build').isEnabled())throw Error('Cancelled build published a compiler');
+      if(await page.locator('#downloads a').count() || !await page.locator('#game-compiler option[value=rebuilt]').evaluate(option => option.disabled))throw Error('Cancelled build published a compiler');
       report.cancellationPassed=true;
       await page.evaluate(()=>{
         window.maxConcurrentUnits=0;
@@ -134,7 +164,7 @@ const server = http.createServer((req, res) => {
       const compilerPath=path.join(out,'guided-browser-cppgm.wasm');await(await compilerDownload).saveAs(compilerPath);
       const compilerHash=require('crypto').createHash('sha256').update(fs.readFileSync(compilerPath)).digest('hex');
       if(compilerHash!==report.inception.stages.at(-1).commands.at(-1).sha256)throw Error('Downloaded compiler differs');
-      await page.locator('#game-build').click();
+      await page.locator('#build-with-rebuilt').click();
       await page.waitForFunction(()=>['progress','error'].includes(window.lastGameBuild?.kind),null,{timeout:180000});
       await page.locator('#game-cancel').click();
       await buildWorkersStopped();
@@ -143,9 +173,11 @@ const server = http.createServer((req, res) => {
       await page.waitForFunction(()=>['complete','error'].includes(window.lastGameBuild?.kind),null,{timeout:300000});
       report.game=await page.evaluate(()=>window.lastGameBuild);
       await buildWorkersStopped();
-      if(report.game.kind!=='complete')throw Error(report.game.error);
+      if(report.game.kind!=='complete'||report.game.compilerOrigin!=='rebuilt')throw Error(report.game.error||'Second game did not use the rebuilt compiler');
+      report.compilerFileMatches=await page.evaluate(()=>Array.from(document.querySelectorAll('#units .unit.done')).length);
+      if(report.compilerFileMatches!==report.inception.stages.at(-1).commands.length)throw Error('Build and match display missed outputs');
       const download=page.waitForEvent('download');
-      await page.locator('#game details>summary').click();
+      await page.locator('#game-build-details>summary').click();
       await page.locator('#game-downloads a').first().click();
       const gamePath=path.join(out,'guided-browser-openlara.wasm');await(await download).saveAs(gamePath);
       const gameHash=require('crypto').createHash('sha256').update(fs.readFileSync(gamePath)).digest('hex');
@@ -154,7 +186,7 @@ const server = http.createServer((req, res) => {
       await page.waitForFunction(()=>window.gamePlaying||window.gameError,null,{timeout:90000});
       if(await page.evaluate(()=>window.gameError))throw Error(await page.evaluate(()=>window.gameError));
       await page.waitForFunction(()=>window.openLaraGame.drawCalls>1200,null,{timeout:60000});
-      await page.locator('#canvas').click();
+      await page.frameLocator('#game-frame').locator('#canvas').click();
       await page.keyboard.down('ArrowUp');await page.waitForTimeout(1600);await page.keyboard.up('ArrowUp');
       report.drawCalls=await page.evaluate(()=>window.openLaraGame.drawCalls);
       await page.screenshot({path:path.join(out,'site-game.png'),fullPage:true});

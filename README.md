@@ -5,9 +5,11 @@ This repository is private. The compiler source link in the page points to
 [cppgm-extended](https://github.com/vishvananda/cppgm-extended).
 
 The shipped compiler is cppgm compiled by native cppgm into WebAssembly.
-It rebuilds itself in the visitor's browser. Every object and the final Wasm
-module must match the frozen native outputs byte for byte. The rebuilt compiler
-then builds OpenLara to Wasm and runs the game in the same browser.
+The first journey builds and plays OpenLara immediately with that compiler.
+The second rebuilds cppgm in the visitor's browser. Every object and the final
+Wasm module must match the frozen native outputs byte for byte. The rebuilt
+compiler then builds and plays the game again. The optional third journey is
+reserved for the Clang roundtrip and remains clearly marked as in progress.
 
 All compilation, linking, comparisons, example execution, and gameplay run
 locally. The server delivers static files. Edited source and generated outputs
@@ -47,8 +49,27 @@ DEMO_TEST_SECOND_BUILD=1 npm test
 # Exercise the fallback without cross-origin isolation.
 DEMO_TEST_ISOLATION=0 DEMO_TEST_WORKERS=1 npm test
 npm run test:inspector
+npm run test:mobile
 GAME_TEST_TOUCH=1 npm run test:game
 ```
+
+## Project and generated-code views
+
+The file browser opens by default. OpenLara shows its three translation units;
+cppgm groups its sources into expandable directories. File bars follow real
+build events, directory bars count completed translation units, and checks
+appear only after byte comparisons pass. Headers are browseable inputs and do
+not count as separate compilation jobs. Cancelling clears active progress.
+
+C++ source is fetched lazily from hashed files without downloading the compiler
+or SDK. LowIR and generated Wasm or x86 views require an explicit local compile
+and use the selected project's frozen flags. These views are syntax highlighted.
+The editable example remains separate from the read-only project sources.
+
+The game runs in a separate frame so leaving its step can stop rendering and
+audio. Phone controls support holding a direction and an action together.
+The mobile check covers Chromium gameplay and Chromium/WebKit layout at 320,
+390 and 430 CSS pixels. Chromium remains the qualified compiler runtime.
 
 ## Parallel compilation
 

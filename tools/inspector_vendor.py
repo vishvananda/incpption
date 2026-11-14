@@ -30,6 +30,7 @@ wasm.__wbindgen_start();
     shutil.copyfile(modules / "wabt/LICENSE", destination / "wabt-LICENSE.txt")
     prism = "\n".join((modules / "prismjs" / name).read_text() for name in
                        ["components/prism-core.js", "components/prism-clike.js",
-                        "components/prism-c.js", "components/prism-cpp.js"])
+                        "components/prism-c.js", "components/prism-cpp.js",
+                        "components/prism-wasm.js", "components/prism-nasm.js"])
     (destination / "prism.mjs").write_text(prism + "\nexport default globalThis.Prism;\n")
     shutil.copyfile(modules / "prismjs/LICENSE", destination / "prism-LICENSE.txt")

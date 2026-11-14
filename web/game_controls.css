@@ -8,4 +8,4 @@
 .game-controls button{touch-action:none;-webkit-touch-callout:none;background:var(--surface,#191e1d);color:var(--ink,#eef3eb);border:1px solid var(--line,#303b37);border-radius:7px;font:12px/1.2 system-ui,sans-serif;padding:8px 3px;min-height:44px}
 .game-directions button{font-size:22px}
 .game-controls button[aria-pressed=true]{color:var(--bg,#101313);background:var(--green,#beef8a);border-color:var(--green,#beef8a)}
-@media(pointer:coarse),(any-pointer:coarse){.game-controls{display:flex}}
+@media(pointer:coarse),(any-pointer:coarse),(max-width:700px){.game-controls{display:flex}}

@@ -1,34 +1,19 @@
-import {File, Directory, hash, fetchBytes, equal, insert, lookup, invoke, loadCompiler, shareBytes, fileView} from './wasi_runtime.mjs';
+import {Directory, hash, equal, insert, lookup, invoke, loadCompiler, fileView} from './wasi_runtime.mjs';
 import {CompilePool} from './compile_pool.mjs';
+import {loadGamePackage} from './game_package.mjs';
 
 self.onmessage = async ({data}) => {
   const started = performance.now(), pool = new CompilePool(data.ports);
   try {
     postMessage({kind: 'loading', message: 'Checking compiler and game inputs'});
-    const {expectedManifest, root, seedBytes, module: seedModule, layers} = await loadCompiler('compiler/', {shareInputs: true});
+    const compiler = await loadCompiler('compiler/', {shareInputs: true});
+    const {expectedManifest, root, seedBytes, module: seedModule, layers} = compiler;
     let module = seedModule;
     if (data?.compilerBytes) {
       equal(seedBytes, data.compilerBytes, 'rebuilt compiler');
       module = await WebAssembly.compile(data.compilerBytes);
     }
-    const manifestBytes = await fetchBytes('game/manifest.json');
-    const expected = new TextDecoder().decode(await fetchBytes('game/manifest.sha256')).trim();
-    if (await hash(manifestBytes) !== expected) throw Error('game manifest hash mismatch');
-    const manifest = JSON.parse(new TextDecoder().decode(manifestBytes));
-    if (manifest.schema !== 1 || manifest.compiler_manifest !== expectedManifest)
-      throw Error('game package uses a different compiler manifest');
-    for (const [path, expected] of Object.entries(manifest.runner_files))
-      if (await hash(await fetchBytes('game/' + path)) !== expected) throw Error(`game runner changed: ${path}`);
-    let bundle = await fetchBytes('game/bundle.bin');
-    if (await hash(bundle) !== manifest.bundle_sha256) throw Error('game bundle hash mismatch');
-    for (const file of manifest.files) {
-      const bytes = bundle.subarray(file.offset, file.offset + file.size);
-      if (await hash(bytes) !== file.sha256) throw Error(`game input changed: ${file.path}`);
-
-    }
-    bundle = shareBytes(bundle);
-    layers.push({files: manifest.files, bundle});
-    for (const file of manifest.files) insert(root, file.path, fileView(bundle.subarray(file.offset, file.offset + file.size)));
+    const {manifest, expected} = await loadGamePackage(compiler, {shared: true});
     root.contents.set('build', new Directory([]));
     await pool.initialize(module, layers);
     const tasks = manifest.commands.slice(0, -1).map((command, index) => ({...command,
