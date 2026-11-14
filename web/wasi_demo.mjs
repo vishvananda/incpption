@@ -10,7 +10,7 @@ const definitions = {
 const paths = {game: ['game'], inception: ['match', 'game'], roundtrip: ['llvm', 'clang', 'match', 'game']};
 const workflows = Object.fromEntries(Object.keys(paths).map(name => [name, {phases: {}, completed: false}]));
 const sourceNames = {};
-let scenario, active, session, deadline, automatic = false, selected = -1, urls = [], playing = false;
+let scenario, active, session, deadline, automatic = false, selected = -1, urls = [], playing = false, opening = false, gameLaunch = 0;
 let visiblePhase, buttons = [], peak = 0;
 const clock = seconds => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 const projectEvent = (project, kind, detail = {}) => window.dispatchEvent(new CustomEvent('project-build', {detail: {project, kind, ...detail}}));
@@ -178,7 +178,8 @@ function chooseScenario(name) {
 for (const button of document.querySelectorAll('[data-journey]')) button.onclick = () => chooseScenario(button.dataset.journey);
 function closeGame() {if ($('game-modal').open) {$('game-modal').close(); stopGame();}}
 function stopGame() {
-  if (!playing && !window.openLaraGame) return;
+  if (!playing && !opening && !window.openLaraGame) return;
+  gameLaunch++; opening = false;
   $('game-frame').contentWindow?.stopGame?.()?.catch?.(() => {});
   const frame = $('game-frame'), fresh = frame.cloneNode(); frame.replaceWith(fresh);
   playing = false; window.gamePlaying = false; window.openLaraGame = null;
@@ -191,7 +192,8 @@ window.addEventListener('message', event => {
     $('game-frame').style.height = Math.max(240, Math.min(1200, event.data.height)) + 'px';
 });
 async function openGame() {
-  if (!current().completed || playing) return;
+  if (!current().completed || playing || opening) return;
+  const launch = ++gameLaunch; opening = true;
   $('game-modal').showModal(); $('game-status').textContent = 'Opening the game you just built…'; delete window.gameError;
   try {
     const frame = $('game-frame');
@@ -199,9 +201,15 @@ async function openGame() {
       const timeout = setTimeout(() => reject(Error('Game frame did not load')), 15000);
       frame.addEventListener('load', () => {clearTimeout(timeout); resolve();}, {once:true});
     });
-    window.openLaraGame = await frame.contentWindow.startGame(phase('game').result, text => {$('log').textContent += text + '\n';});
+    if (launch !== gameLaunch) return;
+    const game = await frame.contentWindow.startGame(phase('game').result, text => {$('log').textContent += text + '\n';});
+    if (launch !== gameLaunch) return;
+    window.openLaraGame = game; opening = false;
     playing = true; window.gamePlaying = true; $('game-status').textContent = 'Running locally.';
-  } catch (error) {$('game-status').textContent = String(error); window.gameError = String(error);}
+  } catch (error) {
+    if (launch !== gameLaunch) return;
+    opening = false; $('game-status').textContent = String(error); window.gameError = String(error);
+  }
 }
 window.addEventListener('project-index-ready', ({detail: {projects}}) => {
   for (const project of projects) {

@@ -9,7 +9,7 @@ window.startGame = async (build, log) => {
   return window.openLaraGame;
 };
 window.stopGame = () => {
-  window.openLaraGame?.module.pauseMainLoop();
+  window.Module?.pauseMainLoop();
   if (window.openLaraGame?.processor) window.openLaraGame.processor.onaudioprocess = null;
   window.openLaraGame?.controls.releaseAll();
   window.openLaraGame?.processor?.disconnect();

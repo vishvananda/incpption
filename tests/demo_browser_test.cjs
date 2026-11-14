@@ -198,6 +198,9 @@ const server = http.createServer((req, res) => {
         await page.waitForFunction(()=>['complete','error'].includes(window.lastGameBuild?.kind),null,{timeout:300000});
         report.game=await page.evaluate(()=>window.lastGameBuild);if(report.game.kind!=='complete')throw Error(report.game.error);
         await page.locator('#game-play').click();
+        await page.locator('#game-close').click();
+        if(await page.evaluate(()=>window.gamePlaying))throw Error('Closing during startup left the game running');
+        await page.locator('#game-play').click();
         await page.waitForFunction(()=>window.gamePlaying||window.gameError,null,{timeout:90000});
         if(await page.evaluate(()=>window.gameError))throw Error(await page.evaluate(()=>window.gameError));
         await page.locator('#game-close').click();
