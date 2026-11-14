@@ -181,13 +181,13 @@ function stopGame() {
   if (!playing && !opening && !window.openLaraGame) return;
   gameLaunch++; opening = false;
   const frame = $('game-frame');
-  const cleanup = frame?.contentWindow?.stopGame?.();
+  frame?.contentWindow?.pauseGame?.();
   if (frame) {
     frame.hidden = true; frame.removeAttribute('id');
     // Let the closed dialog paint and the input event finish before disposal.
-    Promise.resolve(cleanup).catch(() => {}).then(() => {
-      requestAnimationFrame(() => setTimeout(() => frame.remove(), 0));
-    });
+    requestAnimationFrame(() => setTimeout(() => {
+      Promise.resolve(frame.contentWindow?.stopGame?.()).catch(() => {}).then(() => frame.remove());
+    }, 0));
   }
   playing = false; window.gamePlaying = false; window.openLaraGame = null;
 }

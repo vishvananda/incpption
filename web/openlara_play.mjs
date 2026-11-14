@@ -7,7 +7,7 @@ export async function playOpenLara(canvas, build, log = console.log) {
     byte => byte.toString(16).padStart(2, '0')).join('');
   const runtimeURL = new URL(`game/runtime.${runtimeHash}.mjs`, import.meta.url).href;
   const {default: OpenLara} = await import(runtimeURL);
-  let draws = 0, processor;
+  let draws = 0, processor, graphics;
   // The runtime promise resolves before the asynchronous settings/title load.
   // Wait for its first rendered frame before selecting the playable level.
   let initialFrame;
@@ -39,6 +39,7 @@ export async function playOpenLara(canvas, build, log = console.log) {
     const create = m.GL.createContext;
     m.GL.createContext = function(...args) {
       const handle = create.apply(this, args), gl = m.GL.contexts[handle]?.GLctx;
+      if (gl) graphics = {gl, lose: gl.getExtension('WEBGL_lose_context')};
       if (gl) for (const name of ['drawElements', 'drawArrays', 'drawElementsInstanced', 'drawArraysInstanced']) {
         const method = gl[name];
         gl[name] = function(...values) { draws++; return method.apply(this, values); };
@@ -58,5 +59,5 @@ export async function playOpenLara(canvas, build, log = console.log) {
   module.ccall('game_level_load', null, ['number', 'number'], [pointer, level.bytes.length]);
   const controls = attachGameControls(canvas);
   canvas.focus();
-  return {module, audioContext, processor, controls, get drawCalls() { return draws; }};
+  return {module, audioContext, processor, controls, graphics, get drawCalls() { return draws; }};
 }

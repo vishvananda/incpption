@@ -8,16 +8,19 @@ window.startGame = async (build, log) => {
   resize();
   return window.openLaraGame;
 };
-window.stopGame = async () => {
+window.pauseGame = () => {
   window.Module?.pauseMainLoop();
   const game = window.openLaraGame;
   if (game?.processor) game.processor.onaudioprocess = null;
   game?.controls.releaseAll();
   game?.processor?.disconnect();
+};
+window.stopGame = async () => {
+  window.pauseGame();
+  const game = window.openLaraGame;
   // Release the graphics context before removing its frame. Disposing a live
   // software WebGL context can otherwise block the parent's Close click.
-  const gl = window.Module?.GL.currentContext?.GLctx;
-  const lose = gl?.getExtension('WEBGL_lose_context');
+  const {gl, lose} = game?.graphics || {};
   let released = Promise.resolve();
   if (lose && !gl.isContextLost()) {
     released = new Promise(resolve => {
