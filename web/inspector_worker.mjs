@@ -1,7 +1,8 @@
-import {loadCompiler, insert, lookup, File, encoder, invoke, hash} from './wasi_runtime.mjs';
+import {loadCompiler, insert, lookup, File, encoder, invoke, hash, fileView} from './wasi_runtime.mjs';
+import {loadLLVM} from './llvm_package.mjs';
 import {loadGamePackage} from './game_package.mjs';
 import {disassemble} from './code_view.mjs';
-let compiler, game;
+let compiler, game, llvm;
 const text = new TextDecoder();
 async function run(args) {
   const result = await invoke(compiler.module, compiler.root, args);
@@ -18,9 +19,10 @@ function compileFlags(args) {
 }
 self.onmessage = async ({data}) => {
   try {
-    compiler ??= await loadCompiler('compiler/');
+    compiler ??= await loadCompiler('compiler/', {inputProfile: 'none'});
+    await compiler.ensureInputs(['game', 'llvm'].includes(data.project) ? 'none' : data.target === 'x86' ? 'all' : 'wasm');
     if (data.kind !== 'compile') return;
-    if (!['wasm', 'x86'].includes(data.target) || !['game', 'cppgm', 'example'].includes(data.project))
+    if (!['wasm', 'x86'].includes(data.target) || !['game', 'cppgm', 'llvm', 'example'].includes(data.project))
       throw Error('Unknown source project or target');
     let path = data.path, flags;
     if (data.project === 'example') {
@@ -31,6 +33,16 @@ self.onmessage = async ({data}) => {
         ? ['--target=wasm32-wasip1', '--sysroot=sysroot', '-resource-dir=resource', '-std=c++11']
         : compiler.manifest.x86_flags;
       flags = [...flags, '-O3', '-fno-exceptions'];
+    } else if (data.project === 'llvm') {
+      if (data.target !== 'wasm') throw Error('LLVM uses its frozen WebAssembly SDK.');
+      if (!llvm) {
+        llvm = await loadLLVM(compiler);
+        for (const layer of llvm.layers) for (const file of layer.files)
+          insert(compiler.root, file.path, fileView(layer.bundle.subarray(file.offset, file.offset + file.size)));
+      }
+      const command = llvm.manifest.commands.find(command => command.source === path);
+      if (!command) throw Error('Choose an LLVM source file. Headers are inputs.');
+      flags = compileFlags(command.args);
     } else if (data.project === 'game') {
       if (data.target !== 'wasm') throw Error('OpenLara uses the supplied WebAssembly SDK.');
       game ??= await loadGamePackage(compiler);

@@ -10,6 +10,7 @@ import subprocess
 
 from inspector_vendor import prepare_vendor
 from project_sources import prepare_sources
+from artifact_transport import logical_bytes
 
 ROOT = Path(__file__).resolve().parents[1]
 LIMIT = 25 * 1024 * 1024
@@ -64,6 +65,11 @@ def main():
     seed = json.loads((payload / 'w1-complete.json').read_text())
     names = set(manifest['runner_files']) | set(manifest['shim_files'])
     names |= {'manifest.json', 'manifest.sha256', 'bundle.bin', 'w1-complete.json'}
+    transport_path = payload / 'transport.json'
+    if transport_path.is_file():
+        transport = json.loads(transport_path.read_text())
+        names.discard('bundle.bin')
+        names |= {'transport.json', *[row['path'] for row in transport['chunks']]}
     names |= {'inputs/' + r['output'] for r in seed['commands']}
     names |= {f'inputs/x86-check/checks__floating.cpp.o.O{level}.native.o' for level in [0, 2]}
     def copy(name, target):
@@ -73,9 +79,20 @@ def main():
         shutil.copyfile(payload / name, target)
     for name in sorted(names):
         copy(name, output / 'compiler' / name)
+    if not transport_path.is_file():
+        transport = dict(schema=1, bytes=len(logical_bytes(payload / 'bundle.bin')),
+            sha256=manifest['bundle_sha256'], chunks=[dict(path='bundle.bin', offset=0,
+                size=len(logical_bytes(payload / 'bundle.bin')), sha256=manifest['bundle_sha256'])])
+        (output / 'compiler/transport.json').write_text(json.dumps(transport) + '\n')
     for name in sorted(n for n in entries if n.startswith('openlara/')):
         copy(name, output / 'game' / name.removeprefix('openlara/'))
-    for name in sorted(n for n in entries if n.startswith('licenses/') or n.startswith('shim/')):
+    if not (output / 'game/transport.json').is_file():
+        game_manifest = json.loads((payload / 'openlara/manifest.json').read_text())
+        size = len(logical_bytes(payload / 'openlara/bundle.bin'))
+        transport = dict(schema=1, bytes=size, sha256=game_manifest['bundle_sha256'],
+            chunks=[dict(path='bundle.bin', offset=0, size=size, sha256=game_manifest['bundle_sha256'])])
+        (output / 'game/transport.json').write_text(json.dumps(transport) + '\n')
+    for name in sorted(n for n in entries if n.startswith(('licenses/', 'shim/', 'llvm/'))):
         copy(name, output / name)
     for path in (ROOT / 'web').rglob('*'):
         if path.is_file():
@@ -102,6 +119,18 @@ def main():
     shutil.copyfile(ROOT / 'config/_headers', output / '_headers')
     credits = (payload / 'credits.html').read_text().replace('href="manifest.json"', 'href="compiler/manifest.json"')
     credits = credits.replace('href="openlara/manifest.json"', 'href="game/manifest.json"')
+    if (output / 'llvm/manifest.json').is_file():
+        credits = credits.replace('</main>', '<h2>Optional LLVM roundtrip</h2>'
+            '<p>LLVM 22.1.2 is built here from C/C++ source, including Clang and LLD. '
+            'The browser profile supplies generated headers, SDK libraries and Emscripten glue. '
+            'Three source adaptations use the Emscripten stack API, disable process crash recovery, '
+            'and flatten the MSP430 StringSwitch chains. '
+            '<a href="llvm/manifest.json">LLVM inputs and source hashes</a> · '
+            '<a href="licenses/llvm/llvm-LICENSE.TXT">LLVM license and exceptions</a> · '
+            '<a href="licenses/llvm/clang-LICENSE.TXT">Clang license</a> · '
+            '<a href="licenses/llvm/lld-LICENSE.TXT">LLD license</a>.</p></main>')
+    for original, versioned in styles.items():
+        credits = credits.replace(f'href="{original}"', f'href="{versioned}"')
     (output / 'credits.html').write_text(credits)
     revision_result = subprocess.run(['git', 'rev-parse', '--verify', 'HEAD'], cwd=ROOT,
                                      capture_output=True, text=True)

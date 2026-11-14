@@ -9,7 +9,10 @@ export class BuildSession {
     this.children = [];
     this.ports = [];
     this.closed = false;
-    this.coordinator.onmessage = event => {if (!this.closed) this.onmessage?.(event);};
+    this.coordinator.onmessage = event => {
+      if (event.data.kind === 'release-compilers') {for (const child of this.children) child.terminate(); this.children.length = 0;}
+      if (!this.closed) this.onmessage?.(event);
+    };
     this.coordinator.onerror = event => {if (!this.closed) this.onerror?.(event);};
     for (let i = 0; i < this.count; i++) {
       const worker = new Worker('./compile_worker.mjs', {type: 'module'});

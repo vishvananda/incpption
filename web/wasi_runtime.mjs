@@ -1,5 +1,6 @@
 import {WASI, File, OpenFile, ConsoleStdout, PreopenDirectory, Directory} from './shim/index.js';
 import {fetchBytes} from './transport_bytes.mjs';
+import {bundleLayers} from './bundle_layers.mjs';
 export {fetchBytes};
 
 export const encoder = new TextEncoder();
@@ -35,7 +36,7 @@ export function invoke(module, root, args) {
     const status = wasi.start(instance);
     return {status, log, memoryBytes: instance.exports.memory.buffer.byteLength};
   }).catch(error => {
-    throw Error([...log, String(error)].join('\n'));
+    throw Error([...log, error.stack || String(error)].join('\n'));
   });
 }
 
@@ -62,7 +63,7 @@ export function shareBytes(bytes) {
   return shared;
 }
 
-export async function loadCompiler(prefix = '', {shareInputs = false} = {}) {
+export async function loadCompiler(prefix = '', {shareInputs = false, inputProfile = 'wasm'} = {}) {
     const manifestBytes = await fetchBytes(prefix + 'manifest.json');
     const expectedManifest = new TextDecoder().decode(await fetchBytes(prefix + 'manifest.sha256')).trim();
     if (await hash(manifestBytes) !== expectedManifest) throw Error('manifest hash mismatch');
@@ -72,19 +73,26 @@ export async function loadCompiler(prefix = '', {shareInputs = false} = {}) {
       if (await hash(await fetchBytes(prefix + path)) !== expected) throw Error(`shim changed: ${path}`);
     for (const [path, expected] of Object.entries(manifest.runner_files))
       if (await hash(await fetchBytes(prefix + path)) !== expected) throw Error(`runner changed: ${path}`);
-    let bundle = await fetchBytes(prefix + 'bundle.bin');
-    if (await hash(bundle) !== manifest.bundle_sha256) throw Error('input bundle hash mismatch');
-    for (const item of manifest.files) {
-      const bytes = bundle.subarray(item.offset, item.offset + item.size);
-      if (await hash(bytes) !== item.sha256) throw Error(`input hash mismatch: ${item.path}`);
-    }
-    if (shareInputs) bundle = shareBytes(bundle);
-    const layers = [{files: manifest.files, bundle}];
+    const layers = [];
     const root = mountLayers(layers);
     const seedRecord = JSON.parse(new TextDecoder().decode(await fetchBytes(prefix + 'w1-complete.json')));
     if (seedRecord.manifest !== expectedManifest) throw Error('seed used a different input manifest');
     const seedBytes = await fetchBytes(prefix + 'inputs/w1/cppgm.wasm');
     if (await hash(seedBytes) !== seedRecord.commands.at(-1).sha256) throw Error('seed hash mismatch');
     const module = await WebAssembly.compile(seedBytes);
-    return {manifest, expectedManifest, root, seedBytes, module, layers};
+    const compiler = {manifest, expectedManifest, root, seedBytes, module, layers};
+    const loaded = new Set(), cache = new Map();
+    compiler.ensureInputs = async (profile = 'wasm') => {
+      if (profile === 'none') return;
+      if (!['wasm', 'all'].includes(profile)) throw Error('Unknown compiler input profile');
+      const extra = await bundleLayers(prefix, manifest, {shared: shareInputs, cache,
+        select: file => !loaded.has(file.path) && (profile === 'all' || !file.path.startsWith('x86/'))});
+      layers.push(...extra);
+      for (const layer of extra) for (const file of layer.files) {
+        insert(root, file.path, fileView(layer.bundle.subarray(file.offset, file.offset + file.size)));
+        loaded.add(file.path);
+      }
+    };
+    await compiler.ensureInputs(inputProfile);
+    return compiler;
 }

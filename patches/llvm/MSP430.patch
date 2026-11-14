@@ -1,0 +1,29 @@
+--- a/clang/lib/Driver/ToolChains/MSP430.cpp
++++ b/clang/lib/Driver/ToolChains/MSP430.cpp
+@@ -23,20 +23,20 @@
+ using namespace llvm::opt;
+ 
+ static bool isSupportedMCU(const StringRef MCU) {
+-  return llvm::StringSwitch<bool>(MCU)
+-#define MSP430_MCU(NAME) .Case(NAME, true)
++  llvm::StringSwitch<bool> Result(MCU);
++#define MSP430_MCU(NAME) Result.Case(NAME, true);
+ #include "clang/Basic/MSP430Target.def"
+-      .Default(false);
++  return Result.Default(false);
+ }
+ 
+ static StringRef getSupportedHWMult(const Arg *MCU) {
+   if (!MCU)
+     return "none";
+ 
+-  return llvm::StringSwitch<StringRef>(MCU->getValue())
+-#define MSP430_MCU_FEAT(NAME, HWMULT) .Case(NAME, HWMULT)
++  llvm::StringSwitch<StringRef> Result(MCU->getValue());
++#define MSP430_MCU_FEAT(NAME, HWMULT) Result.Case(NAME, HWMULT);
+ #include "clang/Basic/MSP430Target.def"
+-      .Default("none");
++  return Result.Default("none");
+ }
+ 
+ static StringRef getHWMultLib(const ArgList &Args) {

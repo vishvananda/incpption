@@ -1,9 +1,9 @@
 """Publish checked, per-file source views from the frozen compiler/game bundles."""
-import gzip
 import hashlib
 import json
 from pathlib import Path, PurePosixPath
 import re
+from artifact_transport import logical_bytes
 
 
 def _digest(data):
@@ -11,9 +11,7 @@ def _digest(data):
 
 
 def _logical_bytes(path):
-    data = path.read_bytes()
-    # Match transport_bytes.mjs when a static host drops Content-Encoding.
-    return gzip.decompress(data) if data.startswith(b'\x1f\x8b') else data
+    return logical_bytes(path)
 
 
 def _source_path(value):
@@ -52,7 +50,7 @@ def _project(directory, manifest, assets, project_id, name, root, build_sources)
         raise RuntimeError('project bundle hash mismatch: ' + str(directory))
     selected = []
     seen = set()
-    extensions = {'.cpp', '.c', '.h'} if project_id == 'game' else {'.cpp', '.h'}
+    extensions = {'.cpp', '.c', '.h', '.hpp', '.inc', '.def'}
     for row in manifest['files']:
         path = _source_path(row['path'])
         if not path.is_relative_to(root) or path.suffix not in extensions:
@@ -106,5 +104,9 @@ def prepare_sources(payload: Path, output: Path) -> str:
         _project(payload / 'openlara', game, assets, 'game', 'OpenLara', 'openlara/src', game_sources),
         _project(payload, compiler, assets, 'cppgm', 'cppgm', 'dev', compiler.get('sources')),
     ]
+    if (payload / 'llvm/manifest.json').is_file():
+        llvm, _ = _manifest(payload / 'llvm')
+        projects.append(_project(payload / 'llvm', llvm, assets, 'llvm', 'LLVM', '',
+            [row['source'] for row in llvm['commands']]))
     data = (json.dumps(dict(schema=1, projects=projects), indent=2) + '\n').encode()
     return _publish(assets, 'projects.' + _digest(data) + '.json', data)

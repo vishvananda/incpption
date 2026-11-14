@@ -1,0 +1,24 @@
+--- a/llvm/lib/Support/ProgramStack.cpp
++++ b/llvm/lib/Support/ProgramStack.cpp
+@@ -9,6 +9,10 @@
+ #include "llvm/Support/ProgramStack.h"
+ #include "llvm/Config/config.h"
+ #include "llvm/Support/Compiler.h"
++
++#ifdef __EMSCRIPTEN__
++#include <emscripten/stack.h>
++#endif
+ 
+ #ifdef LLVM_ON_UNIX
+ # include <sys/resource.h> // for getrlimit
+@@ -25,7 +29,9 @@
+ using namespace llvm;
+ 
+ uintptr_t llvm::getStackPointer() {
+-#if __GNUC__ || __has_builtin(__builtin_frame_address)
++#if defined(__EMSCRIPTEN__)
++  return emscripten_stack_get_current();
++#elif __GNUC__ || __has_builtin(__builtin_frame_address)
+   return (uintptr_t)__builtin_frame_address(0);
+ #elif defined(_MSC_VER)
+   return (uintptr_t)_AddressOfReturnAddress();

@@ -18,6 +18,8 @@
     "test": "node tests/demo_browser_test.cjs dist node_modules/playwright full build/test-results",
     "test:inspector": "node tests/demo_browser_test.cjs dist node_modules/playwright inspector build/inspector-results",
     "test:game": "node tests/openlara_browser_test.cjs dist node_modules/playwright build/game-results",
-    "test:mobile": "node tests/mobile_journey_test.cjs dist build/mobile-journey"
+    "test:mobile": "node tests/mobile_journey_test.cjs dist build/mobile-journey",
+    "test:roundtrip": "node tests/demo_browser_test.cjs dist node_modules/playwright roundtrip build/roundtrip-results",
+    "test:transport": "python3 tests/transport_test.py && node tests/bundle_layers_test.mjs"
   }
 }

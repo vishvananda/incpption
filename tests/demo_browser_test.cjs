@@ -2,11 +2,12 @@
 // Real guided journey, including both code-generation targets and the game.
 const fs = require('fs'), path = require('path'), http = require('http');
 const [directory, playwright, mode = 'full', resultsDirectory = directory, executable] = process.argv.slice(2);
-if (!directory || !playwright || !['full', 'inspector'].includes(mode))
+if (!directory || !playwright || !['full', 'inspector', 'roundtrip'].includes(mode))
   throw Error('usage: demo_browser_test.cjs COMPILER_PACKAGE PLAYWRIGHT_MODULE [full|inspector]');
 const root = path.resolve(directory), out = path.resolve(resultsDirectory), pw = require(path.resolve(playwright));
 fs.mkdirSync(out, {recursive: true});
 const requests = [], errors = [];
+let progressTimer;
 const mime = {'.html':'text/html', '.mjs':'text/javascript', '.js':'text/javascript', '.css':'text/css', '.wasm':'application/wasm', '.json':'application/json', '.svg':'image/svg+xml'};
 const server = http.createServer((req, res) => {
   requests.push({method:req.method, url:req.url});
@@ -32,7 +33,7 @@ const server = http.createServer((req, res) => {
     page.on('worker', worker => {liveWorkers.add(worker); worker.on('close', () => liveWorkers.delete(worker));});
     async function buildWorkersStopped() {
       for(let i=0;i<100;i++){
-        if(![...liveWorkers].some(w=>/\/(compile_worker|wasi_worker|openlara_worker)\.mjs$/.test(w.url()))) return;
+        if(![...liveWorkers].some(w=>/\/(compile_worker|wasi_worker|openlara_worker|llvm_worker|clang_worker)\.mjs$/.test(w.url()))) return;
         await page.waitForTimeout(100);
       }
       throw Error('Build workers survived cancellation or completion');
@@ -59,7 +60,7 @@ const server = http.createServer((req, res) => {
     await page.locator('#share-status').evaluate(e=>e.textContent='');
     await page.locator('#share-feedback').evaluate(e=>e.hidden=true);
     report.headerPassed=true;
-    if (!await page.locator('#game-build').isEnabled())throw Error('Supplied compiler cannot build the game first');
+    if (!await page.locator('[data-phase=game]').isEnabled())throw Error('Supplied compiler cannot build the game first');
     await page.waitForFunction(()=>window.lastProjectEvent?.kind==='source');
     if(requests.some(r=>/^\/compiler\//.test(r.url)))throw Error('Source browsing downloaded the compiler or SDK');
     if(!await page.locator('#source-highlight .token').count())throw Error('Default source browser is not highlighted');
@@ -68,6 +69,7 @@ const server = http.createServer((req, res) => {
     if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth))throw Error('Mobile page overflows');
     await page.screenshot({path:path.join(out,'site-mobile.png'),fullPage:true});
     await page.setViewportSize({width:1440,height:1000});
+    if(mode !== 'roundtrip') {
     await page.locator('#source-project').selectOption('example');
     await page.waitForFunction(()=>['ready','error'].includes(window.lastInspectorEvent?.kind),null,{timeout:180000});
     async function compiled(target){
@@ -138,85 +140,80 @@ const server = http.createServer((req, res) => {
     if(await page.evaluate(()=>window.lastInspectorRun)!=='73')throw Error('Edited example did not change output');
     report.inspectorPassed=true;
     await page.screenshot({path:path.join(out,'site-inspector.png'),fullPage:true});
-    if(mode==='full'){
-      await page.locator('.journey-nav [data-journey=game]').click();
-      await page.locator('#game-build').click();
-      await page.waitForFunction(()=>['complete','error'].includes(window.lastGameBuild?.kind),null,{timeout:300000});
-      report.firstGame=await page.evaluate(()=>window.lastGameBuild);
-      if(report.firstGame.kind!=='complete'||report.firstGame.compilerOrigin!=='seed')throw Error(report.firstGame.error||'First game did not use the supplied compiler');
-      if(await page.locator('#source-files .project-row.built').count()!==3)throw Error('Game file progress did not complete');
-      await page.locator('#game-play').click();
-      await page.waitForFunction(()=>window.gamePlaying||window.gameError,null,{timeout:90000});
+    }
+    if(mode==='full' || mode==='roundtrip'){
+      const journey = mode === 'roundtrip' ? 'roundtrip' : 'game';
+      await page.locator(`.journey-nav [data-journey=${journey}]`).click();
+      if(mode === 'roundtrip') {
+        if(await page.locator('[data-phase=clang]').isEnabled())throw Error('Clang phase can run without LLVM');
+        if(await page.locator('[data-phase=match]').isEnabled())throw Error('Match phase can run without Clang');
+      }
+      await page.locator('#run-workflow').click();
+      progressTimer = setInterval(async () => {
+        try {
+          const status = await page.evaluate(()=>({phase:window.lastWorkflowEvent?.phase,kind:window.lastWorkflowEvent?.kind,
+            processed:document.getElementById('completed').textContent,time:document.getElementById('workflow-time').textContent}));
+          fs.appendFileSync(path.join(out,'progress.jsonl'),JSON.stringify(status)+'\n');
+          console.log(JSON.stringify(status));
+        } catch {}
+      }, 10000);
+      await page.waitForFunction(()=>window.gamePlaying||window.gameError||window.lastWorkflowEvent?.kind==='error',null,{timeout:5400000});
+      if(await page.evaluate(()=>window.lastWorkflowEvent?.kind==='error'))throw Error(await page.evaluate(()=>window.lastWorkflowEvent.error));
       if(await page.evaluate(()=>window.gameError))throw Error(await page.evaluate(()=>window.gameError));
       await page.waitForFunction(()=>window.openLaraGame?.drawCalls>150,null,{timeout:60000});
-      await page.evaluate(()=>window.previousGame=window.openLaraGame);
-      await page.locator('#next-inception').click();
-      if(await page.evaluate(()=>window.gamePlaying))throw Error('Game continued running after leaving its step');
-      const previousDraws=await page.evaluate(()=>window.previousGame.drawCalls);
-      await page.waitForTimeout(300);
-      if(await page.evaluate(()=>window.previousGame.drawCalls)!==previousDraws)throw Error('Closed game continued rendering');
-      report.firstGamePlayPassed=true;
-      await page.locator('.proof details>summary').click();
-      await page.locator('#worker-choice').selectOption(process.env.DEMO_TEST_WORKERS || '8');
-      if (process.env.DEMO_TEST_SECOND_BUILD === '1') await page.locator('#deep-verify').check();
-      await page.locator('.proof details>summary').click();
-      await page.locator('#start').click();
-      await page.waitForFunction(()=>document.querySelectorAll('.unit.active').length>0,null,{timeout:180000});
-      await page.locator('#cancel').click();
-      await buildWorkersStopped();
-      if(await page.locator('#downloads a').count() || !await page.locator('#game-compiler option[value=rebuilt]').evaluate(option => option.disabled))throw Error('Cancelled build published a compiler');
-      report.cancellationPassed=true;
-      await page.evaluate(()=>{
-        window.maxConcurrentUnits=0;
-        new MutationObserver(()=>{window.maxConcurrentUnits=Math.max(window.maxConcurrentUnits,document.querySelectorAll('.unit.active').length);}).observe(document.getElementById('units'),{subtree:true,attributes:true});
-      });
-      await page.locator('#start').click();
-      await page.waitForFunction(()=>['complete','error'].includes(window.lastInceptionEvent?.kind),null,{timeout:3600000});
-      report.inception=await page.evaluate(()=>window.lastInceptionEvent);
-      await buildWorkersStopped();
-      report.maxConcurrentUnits=await page.evaluate(()=>window.maxConcurrentUnits);
-      if(report.maxConcurrentUnits<Math.min(2,report.inception.workerCount))throw Error('Compiler workers did not overlap');
-      if(report.inception.kind!=='complete')throw Error(report.inception.error);
-      if(report.inception.workerCount!==Number(process.env.DEMO_TEST_WORKERS || 8))throw Error('Wrong worker count');
-      if(report.inception.stages.length!==(process.env.DEMO_TEST_SECOND_BUILD==='1'?2:1))throw Error('Wrong rebuild count');
-      await page.locator('.proof details>summary').click();
-      const compilerDownload=page.waitForEvent('download');
-      await page.locator('#downloads a').first().click();
-      const compilerPath=path.join(out,'guided-browser-cppgm.wasm');await(await compilerDownload).saveAs(compilerPath);
-      const compilerHash=require('crypto').createHash('sha256').update(fs.readFileSync(compilerPath)).digest('hex');
-      if(compilerHash!==report.inception.stages.at(-1).commands.at(-1).sha256)throw Error('Downloaded compiler differs');
-      await page.locator('#build-with-rebuilt').click();
-      await page.waitForFunction(()=>['progress','error'].includes(window.lastGameBuild?.kind),null,{timeout:180000});
-      await page.locator('#game-cancel').click();
-      await buildWorkersStopped();
-      if(await page.locator('#game-play').isEnabled())throw Error('Cancelled build allowed play');
-      await page.locator('#game-build').click();
-      await page.waitForFunction(()=>['complete','error'].includes(window.lastGameBuild?.kind),null,{timeout:300000});
-      report.game=await page.evaluate(()=>window.lastGameBuild);
-      await buildWorkersStopped();
-      if(report.game.kind!=='complete'||report.game.compilerOrigin!=='rebuilt')throw Error(report.game.error||'Second game did not use the rebuilt compiler');
-      report.compilerFileMatches=await page.evaluate(()=>Array.from(document.querySelectorAll('#units .unit.done')).length);
-      if(report.compilerFileMatches!==report.inception.stages.at(-1).commands.length)throw Error('Build and match display missed outputs');
-      const download=page.waitForEvent('download');
-      await page.locator('#game-build-details>summary').click();
-      await page.locator('#game-downloads a').first().click();
-      const gamePath=path.join(out,'guided-browser-openlara.wasm');await(await download).saveAs(gamePath);
-      const gameHash=require('crypto').createHash('sha256').update(fs.readFileSync(gamePath)).digest('hex');
-      if(gameHash!==report.game.commands.at(-1).sha256)throw Error('Downloaded game differs');
-      await page.locator('#game-play').click();
-      await page.waitForFunction(()=>window.gamePlaying||window.gameError,null,{timeout:90000});
-      if(await page.evaluate(()=>window.gameError))throw Error(await page.evaluate(()=>window.gameError));
-      await page.waitForFunction(()=>window.openLaraGame.drawCalls>1200,null,{timeout:60000});
-      await page.frameLocator('#game-frame').locator('#canvas').click();
-      await page.keyboard.down('ArrowUp');await page.waitForTimeout(1600);await page.keyboard.up('ArrowUp');
-      report.drawCalls=await page.evaluate(()=>window.openLaraGame.drawCalls);
+      if(!await page.locator('#game-modal').evaluate(e=>e.open))throw Error('Workflow did not open game modal');
       await page.screenshot({path:path.join(out,'site-game.png'),fullPage:true});
+      await page.locator('#game-close').click();
+      if(await page.evaluate(()=>window.gamePlaying))throw Error('Closed modal kept game running');
+      report.firstGame=await page.evaluate(()=>window.lastGameBuild);
+      await buildWorkersStopped();
+      if(mode === 'full') {
+        await page.locator('.journey-nav [data-journey=inception]').click();
+        if(await page.locator('[data-phase=game]').isEnabled())throw Error('Game can run before matching');
+        await page.locator('#worker-choice').evaluate((e,value)=>e.value=value,process.env.DEMO_TEST_WORKERS || '8');
+        await page.locator('[data-phase=match]').click();
+        await page.waitForFunction(()=>document.querySelectorAll('.unit.active').length>0,null,{timeout:180000});
+        await page.locator('#cancel').click();
+        await buildWorkersStopped();
+        if(await page.locator('#game-play').isEnabled())throw Error('Cancelled build allowed play');
+        report.cancellationPassed=true;
+        await page.evaluate(()=>{
+          window.maxConcurrentUnits=0;
+          new MutationObserver(()=>{window.maxConcurrentUnits=Math.max(window.maxConcurrentUnits,document.querySelectorAll('.unit.active').length);}).observe(document.getElementById('units'),{subtree:true,attributes:true});
+        });
+        await page.locator('[data-phase=match]').click();
+        await page.waitForFunction(()=>['complete','error'].includes(window.lastInceptionEvent?.kind),null,{timeout:3600000});
+        report.inception=await page.evaluate(()=>window.lastInceptionEvent);
+        if(report.inception.kind!=='complete')throw Error(report.inception.error);
+        await buildWorkersStopped();
+        if(await page.locator('.unit.matched').count()!==report.inception.stages[0].commands.length)throw Error('Grid did not show every matched output');
+        if(!await page.locator('[data-phase=match] .node-check').textContent().then(s=>s.includes('matches')))throw Error('Missing match check on flow');
+        const phaseTime=await page.locator('[data-phase=match] time').textContent();
+        if(phaseTime==='0:00')throw Error('Completed phase lost its time');
+        await page.locator('[data-phase=game]').click();
+        if(await page.locator('[data-phase=match] time').textContent()!==phaseTime)throw Error('Grid reset also reset the completed phase time');
+        await page.waitForFunction(()=>['complete','error'].includes(window.lastGameBuild?.kind),null,{timeout:300000});
+        report.game=await page.evaluate(()=>window.lastGameBuild);if(report.game.kind!=='complete')throw Error(report.game.error);
+        await page.locator('#game-play').click();
+        await page.waitForFunction(()=>window.gamePlaying||window.gameError,null,{timeout:90000});
+        if(await page.evaluate(()=>window.gameError))throw Error(await page.evaluate(()=>window.gameError));
+        await page.locator('#game-close').click();
+        report.maxConcurrentUnits=await page.evaluate(()=>window.maxConcurrentUnits);
+        if(report.maxConcurrentUnits<Math.min(2,report.inception.workerCount))throw Error('Compile workers did not overlap');
+      }
+      clearInterval(progressTimer);
+      report.workflowTime=await page.locator('#workflow-time').textContent();
+      report.phases=await page.locator('[data-phase]').evaluateAll(buttons=>buttons.map(b=>({phase:b.dataset.phase,
+        state:b.parentElement.className,time:b.querySelector('time').textContent,processed:b.querySelector('.node-stats span').textContent})));
+      if(mode==='roundtrip')report.inception=await page.evaluate(()=>window.lastInceptionEvent);
+      await page.screenshot({path:path.join(out,'site-workflow.png'),fullPage:true});
     }
     if(requests.some(r=>!['GET','HEAD'].includes(r.method)))throw Error('Build sent data to the server');
     report.staticRequestsOnly=true;
     if(errors.length)throw Error('Page produced JavaScript errors');
     report.passed=true;console.log(`PASS: ${mode} browser journey`);
   }finally{
+    clearInterval(progressTimer);
     report.requests=requests;
     fs.writeFileSync(path.join(out,`site-${mode}-results.json`),JSON.stringify(report,null,2)+'\n');
     await browser.close();server.close();

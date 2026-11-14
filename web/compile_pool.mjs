@@ -21,8 +21,8 @@ export class CompilePool {
       slot.port.postMessage(data);
     });
   }
-  async initialize(module, layers) {
-    await Promise.all(this.slots.map(slot => this.send(slot, {kind: 'init', module, layers})));
+  async initialize(module, layers, host = null) {
+    await Promise.all(this.slots.map(slot => this.send(slot, {kind: 'init', module, layers, host})));
   }
   async run(tasks, completed) {
     const results = new Array(tasks.length);

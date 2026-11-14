@@ -97,12 +97,12 @@ function selectProject(id) {
   const next = projects.find(project => project.id === id);
   if (!next || busy) return;
   project = next; $('source-project').value = id; $('file-filter').value = '';
-  const x86 = $('inspect-target').querySelector('[value=x86]'); x86.disabled = id === 'game';
+  const x86 = $('inspect-target').querySelector('[value=x86]'); x86.disabled = id === 'game' || id === 'llvm';
   if (x86.disabled) $('inspect-target').value = 'wasm';
   $('tab-generated').textContent = $('inspect-target').value === 'wasm' ? 'WebAssembly' : 'x86 assembly';
   $('inspector-note').textContent = id === 'example'
     ? 'Edit the example, then compile it locally. LowIR is shared by the WebAssembly and x86 targets.'
-    : 'Folders show completed files. A moving bar means a file is building; a check means its bytes matched.';
+    : 'Choose a file to see its source and generated code.';
   active = next.files.find(file => file.path === next.buildSources[0]) || next.files[0];
   renderTree(); choose(active);
 }
@@ -184,7 +184,13 @@ try {
   const path = document.querySelector('meta[name=project-index]').content;
   const response = await fetch(path); if (!response.ok) throw Error('Project index download failed');
   const index = await response.json(); if (index.schema !== 1) throw Error('Unknown project index');
+  for (const project of index.projects) {
+    if (!$('source-project').querySelector(`[value="${project.id}"]`)) {
+      const option = document.createElement('option'); option.value = project.id; option.textContent = project.name; $('source-project').append(option);
+    }
+  }
   projects = [...index.projects, {id:'example',name:'Editable example',root:'',buildSources:[],files:[{path:'example.cpp'}]}];
-  selectProject(window.activeJourney === 'inception' ? 'cppgm' : 'game');
+  window.dispatchEvent(new CustomEvent('project-index-ready', {detail: {projects: index.projects}}));
+  selectProject(window.activeJourney === 'roundtrip' ? 'llvm' : window.activeJourney === 'inception' ? 'cppgm' : 'game');
   window.lastInspectorEvent = {kind:'ready'};
 } catch (error) {fail(String(error));}

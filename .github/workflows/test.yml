@@ -5,8 +5,8 @@ on:
   pull_request:
   workflow_dispatch:
     inputs:
-      second_build:
-        description: Also verify the optional second rebuild
+      clang_roundtrip:
+        description: Build LLVM and verify the complete optional Clang roundtrip
         type: boolean
         default: false
 permissions:
@@ -28,6 +28,7 @@ jobs:
       - run: npx playwright install --with-deps chromium webkit
       - run: npm run check
       - run: node tests/highlight_test.mjs
+      - run: npm run test:transport
       - run: python3 tests/project_sources_test.py
       - uses: actions/cache@v4
         with:
@@ -37,7 +38,6 @@ jobs:
       - run: npm test
         env:
           DEMO_TEST_WORKERS: '8'
-          DEMO_TEST_SECOND_BUILD: ${{ inputs.second_build && '1' || '0' }}
       - run: npm run test:game
         env:
           GAME_TEST_TOUCH: '1'
@@ -50,4 +50,31 @@ jobs:
             build/test-results
             build/game-results
             build/mobile-journey
+          retention-days: 7
+  clang-roundtrip:
+    if: github.event_name == 'workflow_dispatch' && inputs.clang_roundtrip
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - uses: actions/cache@v4
+        with:
+          path: .cache
+          key: compiler-payload-${{ hashFiles('config/artifact-lock.json') }}
+      - run: npm run build
+      - run: npm run test:roundtrip
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: clang-roundtrip-results
+          path: build/roundtrip-results
           retention-days: 7

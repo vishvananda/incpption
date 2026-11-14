@@ -1,264 +1,218 @@
-import {demoCopy} from './demo_copy.mjs';
 import {BuildSession} from './build_session.mjs';
 import {showJourney} from './journey.mjs';
 const $ = id => document.getElementById(id);
-const copy = demoCopy;
-$('intro').textContent = copy.site.intro;
-$('story').textContent = copy.site.story;
-document.querySelector('.locality').textContent = copy.site.locality;
-const start = $('start'), cancel = $('cancel'), units = $('units');
-let worker, timer, deadline, started, names = [], currentStage = 2, selected = -1;
-let running = {}, rows = {2: new Map(), 3: new Map()}, buttons = [], urls = [];
-let verified = 0, peak = 0, stopped = true;
-let rebuiltCompiler, gameWorker, gameArtifact, gameDeadline;
-let gameOrigin = 'seed', playing = false;
-function projectEvent(project, kind, detail = {}) {
-  window.dispatchEvent(new CustomEvent('project-build', {detail: {project, kind, ...detail}}));
-}
-function stopPlaying() {
-  if (!playing) return;
-  const frame = $('game-frame');
-  frame.contentWindow?.stopGame?.()?.catch?.(() => {});
-  const fresh = frame.cloneNode();
-  frame.replaceWith(fresh);
-  playing = false; window.gamePlaying = false; window.openLaraGame = null;
-  $('game-screen').hidden = true; $('game-return').hidden = true;
-  $('game-play').disabled = !gameArtifact;
-  $('game-build').disabled = false; start.disabled = false;
-}
-window.addEventListener('journey-changing', ({detail}) => {
-  if (detail.name !== 'game') stopPlaying();
-  else {$('game-compiler').value = 'seed'; gameContext();}
-});
-window.addEventListener('message', event => {
-  if (event.origin === location.origin && event.source === $('game-frame').contentWindow && event.data?.kind === 'game-frame-size')
-    $('game-frame').style.height = Math.max(240, Math.min(1800, event.data.height)) + 'px';
-});
-$('game-return').onclick = () => {stopPlaying(); showJourney(gameOrigin === 'rebuilt' ? 'roundtrip' : 'inception');};
-$('quick-start').onclick = () => {showJourney('game'); $('game-build').click(); $('explorer').scrollIntoView({behavior:'smooth',block:'start'});};
-$('build-with-rebuilt').onclick = () => {showJourney('game'); $('game-compiler').value = 'rebuilt'; $('game-build').click();};
-function gameContext() {
-  const rebuilt = $('game-compiler').value === 'rebuilt';
-  $('game').querySelector('.eyebrow').textContent = rebuilt ? '02 / INCEPTION · BUILD THE GAME' : '01 / BUILD A GAME';
-  $('game-description').textContent = rebuilt
-    ? 'Use cppgm rebuilt in this browser to compile and link OpenLara, then play the game. The compiler and all of its outputs matched before this step.'
-    : 'Start with cppgm already compiled to WebAssembly by cppgm itself. It compiles and links OpenLara here, then you can play the result. This build uses prebuilt SDK and runtime libraries and supplied game assets.';
-  $('game-return').textContent = rebuilt ? 'Continue to Inception²' : 'Continue to Inception';
-  const next = $('next-inception');
-  next.textContent = rebuilt ? 'Next: explore Inception² →' : 'Next: let the compiler build itself →';
-  next.dataset.journey = rebuilt ? 'roundtrip' : 'inception';
-  for (const button of document.querySelectorAll('.journey-nav [data-journey]')) {
-    if (button.dataset.journey === (rebuilt ? 'inception' : 'game')) button.setAttribute('aria-current', 'step');
-    else button.removeAttribute('aria-current');
-  }
-}
-$('game-compiler').onchange = () => {
-  gameContext();
-  $('game-status').textContent = $('game-compiler').value === 'rebuilt'
-    ? 'Ready to build with cppgm rebuilt in this browser.' : copy.journey.shipped.ready;
+const definitions = {
+  llvm: {label: 'LLVM', detail: 'cppgm builds Clang + LLD', project: 'llvm', worker: 'llvm_worker.mjs'},
+  clang: {label: 'cppgm-LLVM', detail: 'Clang builds cppgm', project: 'cppgm', worker: 'clang_worker.mjs'},
+  match: {label: 'cppgm', detail: 'Rebuild & match every byte', project: 'cppgm', worker: 'wasi_worker.mjs'},
+  game: {label: 'Lara', detail: 'Compile & link OpenLara', project: 'game', worker: 'openlara_worker.mjs'},
 };
+const paths = {game: ['game'], inception: ['match', 'game'], roundtrip: ['llvm', 'clang', 'match', 'game']};
+const workflows = Object.fromEntries(Object.keys(paths).map(name => [name, {phases: {}, completed: false}]));
+const sourceNames = {};
+let scenario, active, session, deadline, automatic = false, selected = -1, urls = [], playing = false;
+let visiblePhase, buttons = [], peak = 0;
 const clock = seconds => `${Math.floor(seconds / 60)}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
-function state(stage, status, label) {
-  $(stage).className = `stage ${status}`;
-  $(`${stage}-state`).textContent = label;
-}
-function inspect(index) {
-  selected = index;
-  for (const [i, button] of buttons.entries()) button.classList.toggle('selected', i === index);
-  const row = rows[currentStage].get(index);
-  $('unit-detail').textContent = row ? `${names[index]}\n${row.seconds.toFixed(3)} s · ${row.bytes.toLocaleString()} bytes · ${Math.ceil(row.memoryBytes / 1048576)} MiB guest memory\nSHA-256 ${row.sha256}`
-    : `${names[index] ?? 'Select a source file'}\n${running[currentStage]?.has(index) ? 'Running in the browser…' : 'Waiting for this generation.'}`;
-}
-function draw() {
-  for (const [index, button] of buttons.entries()) {
-    button.className = `unit${rows[currentStage].has(index) ? ' done' : running[currentStage]?.has(index) ? ' active' : ''}${index === selected ? ' selected' : ''}`;
-    button.setAttribute('aria-label', `${names[index]}: ${rows[currentStage].has(index) ? 'verified' : running[currentStage]?.has(index) ? 'running' : 'waiting'}`);
+const projectEvent = (project, kind, detail = {}) => window.dispatchEvent(new CustomEvent('project-build', {detail: {project, kind, ...detail}}));
+const current = () => workflows[scenario];
+const phase = id => current().phases[id] ??= {state: 'waiting', seconds: 0, names: sourceNames[id] || [], rows: new Map(), running: new Set()};
+function seconds(row) {return row.state === 'active' ? (performance.now()-row.started)/1000 : row.seconds;}
+function totalTime() {return paths[scenario].reduce((sum,id) => sum + seconds(phase(id)), 0);}
+function selectProject(id) {window.dispatchEvent(new CustomEvent('project-select', {detail: {project: definitions[id].project}}));}
+function drawFlow() {
+  const list = $('flow'), fragment = document.createDocumentFragment();
+  const seed = document.createElement('li'); seed.className = 'endpoint seed';
+  seed.innerHTML = '<span class="dot" aria-hidden="true"></span><strong>cppgm seed</strong><small>Self-compiled Wasm</small>';
+  fragment.append(seed);
+  for (const [index,id] of paths[scenario].entries()) {
+    const row = phase(id), definition = definitions[id], node = document.createElement('li');
+    node.className = 'flow-node ' + row.state;
+    const button = document.createElement('button'); button.type = 'button'; button.dataset.phase = id;
+    button.disabled = Boolean(active) || (index > 0 && phase(paths[scenario][index-1]).state !== 'done');
+    button.innerHTML = `<span class="node-name">${definition.label}<span class="node-check">${row.state === 'done' ? id === 'match' ? '✓ matches' : '✓' : ''}</span></span><span class="node-description">${definition.detail}</span><span class="node-stats"><span>${row.rows.size} / ${row.names.length || '…'}</span><time>${clock(seconds(row))}</time></span>`;
+    button.setAttribute('aria-label', `${definition.label}: ${row.state === 'done' ? id === 'match' ? 'matches' : 'built' : row.state === 'active' ? 'building' : 'build phase'}`);
+    button.onclick = () => {automatic = false; runPhase(id);}; node.append(button); fragment.append(node);
   }
-  $('completed').textContent = `${rows[currentStage].size} / ${names.length}`;
-  for (const stage of [2, 3]) $(`view-${stage}`).setAttribute('aria-pressed', String(stage === currentStage));
-  if (selected >= 0) inspect(selected);
+  const end = document.createElement('li'); end.className = 'endpoint finish' + (current().completed ? ' done' : '');
+  const play = document.createElement('button'); play.id = 'game-play'; play.type = 'button'; play.disabled = !current().completed || Boolean(active);
+  play.innerHTML = '<span class="dot" aria-hidden="true">▶</span><strong>Play</strong>';
+  play.onclick = openGame; end.append(play); fragment.append(end);
+  list.replaceChildren(fragment);
+  $('run-workflow').disabled = Boolean(active);
+  $('run-workflow').textContent = current().completed ? 'Run again →' : 'Run workflow →';
+  $('cancel').disabled = !active;
+  $('worker-choice').disabled = Boolean(active);
+  for (const button of document.querySelectorAll('[data-journey]')) button.disabled = Boolean(active);
+  updateTime();
 }
-function view(stage) {currentStage = stage; draw();}
-$('view-2').onclick = () => view(2);
-$('view-3').onclick = () => view(3);
-function stop() {
-  worker?.terminate(); worker = null; clearInterval(timer); clearTimeout(deadline);
-  start.disabled = false; cancel.disabled = true; stopped = true; $('game-build').disabled = false; $('worker-choice').disabled = false; $('deep-verify').disabled = false;
+function updateTime() {
+  $('workflow-time').textContent = clock(totalTime());
+  let count = 0, total = 0;
+  for (const id of paths[scenario]) {const row = phase(id); count += row.rows.size; total += row.names.length;}
+  $('workflow-files').textContent = total ? `${count.toLocaleString()} / ${total.toLocaleString()} files & links` : '';
+  for (const button of document.querySelectorAll('[data-phase]')) button.querySelector('time').textContent = clock(seconds(phase(button.dataset.phase)));
+  if (visiblePhase) $('elapsed').textContent = clock(seconds(phase(visiblePhase)));
 }
-function download(name, data, type) {
-  const url = URL.createObjectURL(new Blob([data], {type})); urls.push(url);
-  const link = document.createElement('a'); link.href = url; link.download = name; link.textContent = name;
-  $('downloads').append(link);
+function showUnits(id) {
+  visiblePhase = id; selected = -1; const row = phase(id); buttons = [];
+  $('phase-name').textContent = definitions[id].label;
+  $('units').classList.toggle('dense', row.names.length > 1000);
+  const fragment = document.createDocumentFragment();
+  for (const [index,name] of row.names.entries()) {
+    const button = document.createElement('button'); button.className = 'unit'; button.type = 'button'; button.title = name;
+    button.onclick = () => {
+      selected = index; const result = row.rows.get(index);
+      $('unit-detail').textContent = `${name}${result ? ' · ' + result.seconds.toFixed(2) + ' s' + (id === 'match' ? ' · matched' : ' · built') : row.running.has(index) ? ' · building' : ' · waiting'}`;
+      if (name.includes('/')) window.dispatchEvent(new CustomEvent('project-source-select', {detail: {project: definitions[id].project, path: name}}));
+      paintUnits();
+    };
+    buttons.push(button); fragment.append(button);
+  }
+  $('units').replaceChildren(fragment); $('unit-detail').textContent = 'Select a square to view its source.';
+  paintUnits(); updateTime();
 }
-function fail(message) {
-  projectEvent('cppgm', 'error', {stage: currentStage});
-  stop(); $('status').textContent = 'Build stopped. No compiler artifact was published.';
-  $('log').textContent += `${message}\n`;
-  for (const index of running[currentStage] || []) buttons[index]?.classList.add('failed');
-  window.lastInceptionEvent = {kind: 'error', error: message};
+function paintUnits(index) {
+  const row = phase(visiblePhase);
+  const update = i => {
+    const result = row.rows.get(i), button = buttons[i]; if (!button) return;
+    button.className = 'unit' + (result ? visiblePhase === 'match' ? ' matched' : ' done' : row.running.has(i) ? ' active' : '') + (i === selected ? ' selected' : '');
+    button.setAttribute('aria-label', `${row.names[i]}: ${result ? visiblePhase === 'match' ? 'matched' : 'built' : row.running.has(i) ? 'building' : 'waiting'}`);
+  };
+  if (index === undefined) buttons.forEach((_,i) => update(i)); else update(index);
+  $('completed').textContent = `${row.rows.size.toLocaleString()} / ${row.names.length.toLocaleString()} files & links`;
+  $('progress').max = row.names.length || 1; $('progress').value = row.rows.size;
 }
-start.onclick = () => {
-  stopPlaying(); showJourney('inception');
-  projectEvent('cppgm', 'reset', {stage: 2});
-  $('game-compiler').value = 'seed'; $('game-compiler').querySelector('[value=rebuilt]').disabled = true;
-  $('build-with-rebuilt').disabled = true;
-  rebuiltCompiler = null; gameArtifact = null; gameWorker?.terminate(); clearTimeout(gameDeadline);
-  $('game-build').disabled = true; $('game-play').disabled = true; $('game-cancel').disabled = true;
-  $('game-status').textContent = copy.stages.game.waiting;
-  $('game-downloads').replaceChildren(); $('game-log').textContent = '';
-  for (let i = 0; i < 4; i++) $(`game-unit-${i}`).className = '';
-  for (const url of urls) URL.revokeObjectURL(url);
-  urls = []; $('downloads').replaceChildren(); $('compiler-hash').textContent = ''; $('log').textContent = '';
-  names = []; buttons = []; units.replaceChildren(); rows = {2: new Map(), 3: new Map()}; running = {};
-  verified = 0; peak = 0; selected = -1; currentStage = 2; started = performance.now(); stopped = false;
-  $('completed').textContent = '—'; $('verified').textContent = '0'; $('memory').textContent = '—'; $('elapsed').textContent = '0:00';
-  $('progress').value = 0; $('progress').max = 1; start.disabled = true; cancel.disabled = false;
-  for (const stage of [2, 3]) {state(`stage-${stage}`, '', 'Waiting'); $(`stage-${stage}-detail`).textContent = stage === 2 ? 'The self-built Wasm compiler rebuilds itself here. Every output must match.' : 'The rebuilt compiler repeats the build. Every output must match again.';}
-  state('final-check', '', 'Waiting'); state('seed', 'active', 'Verifying');
-  $('seed-detail').textContent = 'Verify the compiler and its source package.';
-  $('status').textContent = 'Verifying source files, runtime and compiler…';
-  $('worker-choice').disabled = true; $('deep-verify').disabled = true;
-  window.lastInceptionEvent = {kind: 'starting'};
-  worker = new BuildSession('./wasi_worker.mjs', {workers: Number($('worker-choice').value)});
-  timer = setInterval(() => {$('elapsed').textContent = clock((performance.now() - started) / 1000);}, 500);
-  deadline = setTimeout(() => fail('The 60-minute build deadline was exceeded.'), 3600000);
-  worker.onmessage = ({data}) => {
-    window.lastInceptionEvent = data.kind === 'complete' ? {...data, module: undefined} : data;
+function download(name, bytes, type) {
+  const url = URL.createObjectURL(new Blob([bytes], {type})); urls.push(url);
+  const a = document.createElement('a'); a.href = url; a.download = name; a.textContent = name; $('downloads').append(a);
+}
+function finishSession() {session?.terminate(); session = null; clearTimeout(deadline); active = null; drawFlow();}
+function fail(message, cancelled = false) {
+  if (!active) return;
+  const id = active, row = phase(id); row.seconds = seconds(row); row.state = cancelled ? 'cancelled' : 'failed';
+  projectEvent(definitions[id].project, cancelled ? 'cancel' : 'error');
+  for (const index of row.running) {buttons[index]?.classList.remove('active'); if (!cancelled) buttons[index]?.classList.add('failed');}
+  row.running.clear();
+  automatic = false; finishSession(); $('status').textContent = cancelled ? 'Cancelled. Select this box to try again.' : 'Build stopped. Open build details for the error.';
+  $('log').textContent += message + '\n';
+  window.lastWorkflowEvent = {kind: cancelled ? 'cancelled' : 'error', phase: id, error: message};
+  if (id === 'game') window.lastGameBuild = window.lastWorkflowEvent;
+  else window.lastInceptionEvent = window.lastWorkflowEvent;
+}
+function runPhase(id) {
+  if (active) return;
+  const index = paths[scenario].indexOf(id);
+  if (index < 0 || (index && phase(paths[scenario][index-1]).state !== 'done')) return;
+  closeGame(); current().completed = false;
+  for (const later of paths[scenario].slice(index)) current().phases[later] = {state: 'waiting', seconds: 0, names: sourceNames[later] || [], rows: new Map(), running: new Set()};
+  const row = phase(id); row.state = 'active'; row.started = performance.now(); active = id; peak = 0;
+  projectEvent(definitions[id].project, 'reset'); selectProject(id); showUnits(id); drawFlow();
+  $('status').textContent = `Loading ${definitions[id].label} inputs…`; $('memory').textContent = '';
+  window.lastWorkflowEvent = {kind: 'starting', phase: id};
+  if (id === 'match') window.lastInceptionEvent = {kind: 'starting'};
+  if (id === 'game') window.lastGameBuild = {kind: 'starting'};
+  session = new BuildSession('./' + definitions[id].worker, {workers: Number($('worker-choice').value), maximum: id === 'game' ? 3 : 8});
+  const args = {};
+  if (id === 'clang') {args.compilerBytes = phase('llvm').result.module; args.runtime = phase('llvm').result.runtime;}
+  if (id === 'match' && scenario === 'roundtrip') args.compilerBytes = phase('clang').result.module;
+  if (id === 'game' && scenario !== 'game') args.compilerBytes = phase('match').result.module;
+  session.onmessage = ({data}) => {
+    const summary = {...data, module: undefined, game: undefined, runtime: undefined, assets: undefined};
+    window.lastWorkflowEvent = {...summary, phase: id};
+    if (id === 'game') window.lastGameBuild = summary;
+    else if (id === 'match') window.lastInceptionEvent = summary;
+    if (data.kind === 'loading') $('status').textContent = data.message;
     if (data.kind === 'ready') {
-      names = [...data.sources, 'link compiler'];
-      for (const [index, name] of names.entries()) {
-        const button = document.createElement('button'); button.type = 'button'; button.className = 'unit';
-        button.title = name; button.onclick = () => {inspect(index); if (index < names.length - 1) window.dispatchEvent(new CustomEvent('project-source-select', {detail: {project: 'cppgm', path: name}}));}; units.append(button); buttons.push(button);
-      }
-      state('seed', 'done', 'Verified');
-      $('seed-detail').textContent = `${(data.seedBytes / 1048576).toFixed(1)} MiB compiler · ${data.sources.length} sources`;
-      $('revision').textContent = `Base ${data.revision.slice(0, 9)}${data.dirty ? ' + experimental changes' : ''} · frozen source ${(data.sourceSha256 || data.manifest).slice(0, 12)}`;
-      $('compiler-hash').textContent = `Seed SHA-256 ${data.seedSha256}`;
-      $('progress').max = names.length * data.generations; $('worker-count').textContent = `${data.workerCount} compile worker${data.workerCount === 1 ? '' : 's'} · linking follows compilation`; draw();
+      row.names = id === 'match' ? [...data.sources, 'Link cppgm'] : [...data.sources];
+      showUnits(id);
+      $('worker-count').textContent = `${data.workerCount} workers`;
+      if (data.revision) $('revision').textContent = `cppgm ${data.revision.slice(0, 12)}`;
+      if (data.seedSha256) $('log').textContent += `Published seed SHA-256 ${data.seedSha256}\n`;
+      drawFlow();
     }
     if (data.kind === 'progress') {
-      projectEvent('cppgm', 'progress', {name: data.name, stage: data.stage});
-      (running[data.stage] ??= new Set()).add(data.index); view(data.stage); state(`stage-${data.stage}`, 'active', 'Building');
-      $('status').textContent = `${data.stage === 2 ? 'Rebuilding cppgm locally in your browser' : 'Second local rebuild'}: ${data.name}`;
+      // OpenLara announces commands as they start rather than in a ready event.
+      if (!row.names.length && id === 'game') {row.names = ['Game engine', 'Sound decoder', 'Decompressor', 'Link OpenLara']; showUnits(id); $('worker-count').textContent = `${session.count} workers`;}
+      row.names[data.index] = data.name; row.running.add(data.index); paintUnits(data.index);
+      projectEvent(definitions[id].project, 'progress', {name: data.name});
+      $('status').textContent = data.name;
     }
     if (data.kind === 'unit') {
-      projectEvent('cppgm', 'unit', {name: names[data.index], stage: data.stage, matched: true, seconds: data.seconds});
-      rows[data.stage].set(data.index, data); running[data.stage]?.delete(data.index); verified++;
-      peak = Math.max(peak, data.memoryBytes); $('memory').textContent = `${Math.ceil(peak / 1048576)} MiB`;
-      $('verified').textContent = String(verified); $('progress').value = verified; draw();
+      row.running.delete(data.index); row.rows.set(data.index, {seconds: data.seconds, bytes: data.bytes}); paintUnits(data.index);
+      peak = Math.max(peak, data.memoryBytes || 0); $('memory').textContent = peak ? `${Math.ceil(peak/1048576)} MiB peak / worker` : '';
+      projectEvent(definitions[id].project, 'unit', {name: data.name, matched: id === 'match', seconds: data.seconds});
+      const button = document.querySelector(`[data-phase="${id}"] .node-stats span`);
+      if (button) button.textContent = `${row.rows.size} / ${row.names.length}`;
+      updateTime();
     }
-    if (data.kind === 'stage') {
-      state(`stage-${data.stage}`, 'done', 'Byte-identical');
-      $(`stage-${data.stage}-detail`).textContent = `${names.length} outputs verified · ${clock(data.seconds)}`;
-      $('log').textContent += `W${data.stage}: every object and final module match. ${data.seconds.toFixed(1)} s.\n`;
-    }
-    if (data.kind === 'checking') {
-      state('final-check', 'active', 'Checking'); $('status').textContent = `Checking ${data.name}…`;
-    }
+    if (data.kind === 'checking') $('status').textContent = `Checking ${data.name}…`;
     if (data.kind === 'error') fail(data.error);
     if (data.kind === 'complete') {
-      stop(); state('final-check', 'done', 'Passed'); $('elapsed').textContent = clock(data.seconds);
-      $('status').textContent = copy.states.completeMessage;
-      $('final-detail').textContent = 'Rebuilt compiler runs; accepted, rejected and x86 output checks passed.';
-      $('compiler-hash').textContent = `Final SHA-256 ${data.stages.at(-1).commands.at(-1).sha256}`;
-      rebuiltCompiler = data.module;
-      download('cppgm-rebuilt.wasm', data.module, 'application/wasm'); delete data.module;
-      download('inception-results.json', JSON.stringify(data, null, 2) + '\n', 'application/json');
-      $('game-build').disabled = false; $('game-status').textContent = copy.stages.game.ready;
-      $('game-compiler').querySelector('[value=rebuilt]').disabled = false; $('build-with-rebuilt').disabled = false;
+      row.seconds = seconds(row); row.state = 'done'; row.result = data;
+      $('log').textContent += `${definitions[id].label}: ${row.rows.size} outputs${id === 'match' ? ', every byte matched' : ''} · ${row.seconds.toFixed(1)} s\n`;
+      if (id === 'match') download('cppgm-rebuilt.wasm', data.module, 'application/wasm');
+      if (id === 'game') {current().completed = true; download('openlara.wasm', data.game, 'application/wasm');}
+      finishSession();
+      $('status').textContent = id === 'match' ? 'Every object and the compiler match. Ready to build the game.' : id === 'game' ? 'Built here. Ready to play.' : `${definitions[id].label} built. Ready for the next phase.`;
+      const next = paths[scenario][index+1];
+      if (automatic && next) runPhase(next);
+      else if (automatic && id === 'game') {automatic = false; openGame();}
     }
   };
-  worker.onerror = event => fail(event.message);
-  worker.postMessage({secondBuild: $('deep-verify').checked});
-};
-cancel.onclick = () => {
-  if (stopped) return;
-  projectEvent('cppgm', 'cancel', {stage: currentStage});
-  stop(); $('status').textContent = 'Cancelled. Start a fresh build to retry.';
-  window.lastInceptionEvent = {kind: 'cancelled'};
-};
-
-function gameLog(text) {$('game-log').textContent += String(text) + '\n';}
-function gameStop() {
-  gameWorker?.terminate(); gameWorker = null; clearTimeout(gameDeadline);
-  $('game-build').disabled = false; $('game-cancel').disabled = true;
-  start.disabled = false;
+  session.onerror = event => fail(event.message);
+  deadline = setTimeout(() => fail('This phase exceeded the 90-minute deadline.'), 90*60000);
+  session.postMessage(args);
 }
-function gameFail(message) {
-  projectEvent('game', 'error');
-  gameStop(); $('game-status').textContent = copy.stages.game.error; gameLog(message);
-  window.lastGameBuild = {kind: 'error', error: message};
-}
-function gameDownload(name, bytes, type) {
-  const link = document.createElement('a'), url = URL.createObjectURL(new Blob([bytes], {type}));
-  urls.push(url); link.href = url; link.download = name; link.textContent = name; $('game-downloads').append(link);
-}
-$('game-build').onclick = () => {
-  if ($('game-compiler').value === 'rebuilt' && !rebuiltCompiler) return;
-  stopPlaying();
-  gameOrigin = $('game-compiler').value; gameContext();
-  projectEvent('game', 'reset');
-  window.dispatchEvent(new CustomEvent('project-select', {detail: {project: 'game'}}));
-  gameArtifact = null; $('game-play').disabled = true; $('game-build').disabled = true;
-  $('game-cancel').disabled = false; start.disabled = true;
-  $('game-downloads').replaceChildren(); $('game-log').textContent = '';
-  for (let i = 0; i < 4; i++) $(`game-unit-${i}`).className = '';
-  window.lastGameBuild = {kind: 'starting'};
-  gameWorker = new BuildSession('./openlara_worker.mjs', {maximum: 3});
-  gameWorker.onmessage = ({data}) => {
-    window.lastGameBuild = {...data, game: undefined, runtime: undefined, assets: undefined};
-    if (data.kind === 'loading') $('game-status').textContent = data.message;
-    if (data.kind === 'progress') {projectEvent('game', 'progress', {name: data.name}); $('game-status').textContent = `${data.index === 3 ? 'Linking' : 'Compiling'} locally in your browser: ${data.name}`;}
-    if (data.kind === 'unit') {
-      projectEvent('game', 'unit', {name: data.name, seconds: data.seconds, matched: false});
-      $(`game-unit-${data.index}`).className = 'done';
-      gameLog(`${data.name}: matched · ${data.seconds.toFixed(3)} s · SHA-256 ${data.sha256}`);
-    }
-    if (data.kind === 'error') gameFail(data.error);
-    if (data.kind === 'complete') {
-      data.compilerOrigin = gameOrigin; window.lastGameBuild.compilerOrigin = gameOrigin;
-      gameStop(); gameArtifact = data; $('game-play').disabled = false;
-      $('game-status').textContent = `${gameOrigin === 'rebuilt' ? copy.journey.inception.gameComplete : copy.journey.shipped.complete} ${data.seconds.toFixed(1)} seconds.`;
-      gameDownload('openlara.wasm', data.game, 'application/wasm');
-      gameDownload('game-results.json', JSON.stringify({...data, game: undefined, runtime: undefined, assets: undefined}, null, 2), 'application/json');
-    }
-  };
-  gameWorker.onerror = event => gameFail(event.message);
-  gameDeadline = setTimeout(() => gameFail('The game build exceeded its 10-minute deadline.'), 600000);
-  if (gameOrigin === 'rebuilt') {
-    const bytes = rebuiltCompiler.slice(); gameWorker.postMessage({compilerBytes: bytes}, [bytes.buffer]);
-  } else gameWorker.postMessage({});
+$('cancel').onclick = () => fail('Build cancelled by the user.', true);
+$('run-workflow').onclick = () => {
+  automatic = true;
+  const next = paths[scenario].find(id => phase(id).state !== 'done') || paths[scenario][0]; runPhase(next);
 };
-$('game-cancel').onclick = () => {
-  projectEvent('game', 'cancel');
-  gameStop(); $('game-status').textContent = copy.stages.game.cancelled;
-  window.lastGameBuild = {kind: 'cancelled'};
-};
-$('game-play').onclick = async () => {
-  if (!gameArtifact) return;
-  $('game-play').disabled = true; $('game-build').disabled = true;
-  $('game-screen').hidden = false; $('game-return').hidden = false;
-  $('game-status').textContent = 'Opening the game you just built…';
-  delete window.gameError;
+function chooseScenario(name) {
+  if (active) return;
+  closeGame(); scenario = name; showJourney(name);
+  const id = paths[name].find(id => phase(id).state !== 'done') || paths[name].at(-1);
+  showUnits(id); drawFlow(); selectProject(id);
+  $('status').textContent = name === 'roundtrip' ? 'Optional long build. cppgm → Clang → cppgm → matching cppgm → game.' : 'Choose a box to build, or run the whole workflow.';
+}
+for (const button of document.querySelectorAll('[data-journey]')) button.onclick = () => chooseScenario(button.dataset.journey);
+function closeGame() {if ($('game-modal').open) {$('game-modal').close(); stopGame();}}
+function stopGame() {
+  if (!playing && !window.openLaraGame) return;
+  $('game-frame').contentWindow?.stopGame?.()?.catch?.(() => {});
+  const frame = $('game-frame'), fresh = frame.cloneNode(); frame.replaceWith(fresh);
+  playing = false; window.gamePlaying = false; window.openLaraGame = null;
+}
+$('game-close').onclick = closeGame;
+$('game-modal').addEventListener('close', stopGame);
+$('game-modal').addEventListener('click', event => {if (event.target === $('game-modal')) {const r = $('game-modal').getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) closeGame();}});
+window.addEventListener('message', event => {
+  if (event.origin === location.origin && event.source === $('game-frame').contentWindow && event.data?.kind === 'game-frame-size')
+    $('game-frame').style.height = Math.max(240, Math.min(1200, event.data.height)) + 'px';
+});
+async function openGame() {
+  if (!current().completed || playing) return;
+  $('game-modal').showModal(); $('game-status').textContent = 'Opening the game you just built…'; delete window.gameError;
   try {
     const frame = $('game-frame');
-    if (!frame.contentWindow.startGame) await new Promise((resolve, reject) => {
+    if (!frame.contentWindow.startGame) await new Promise((resolve,reject) => {
       const timeout = setTimeout(() => reject(Error('Game frame did not load')), 15000);
-      frame.addEventListener('load', () => {clearTimeout(timeout); resolve();}, {once: true});
+      frame.addEventListener('load', () => {clearTimeout(timeout); resolve();}, {once:true});
     });
-    playing = true;
-    window.openLaraGame = await frame.contentWindow.startGame(gameArtifact, gameLog);
-    $('game-status').textContent = copy.stages.play.running; window.gamePlaying = true;
-    frame.scrollIntoView({behavior: 'smooth', block: 'center'});
-  } catch (error) {
-    gameLog(error.stack || error); window.gameError = String(error);
-    $('game-status').textContent = 'The game could not start. See game build details.';
+    window.openLaraGame = await frame.contentWindow.startGame(phase('game').result, text => {$('log').textContent += text + '\n';});
+    playing = true; window.gamePlaying = true; $('game-status').textContent = 'Running locally.';
+  } catch (error) {$('game-status').textContent = String(error); window.gameError = String(error);}
+}
+window.addEventListener('project-index-ready', ({detail: {projects}}) => {
+  for (const project of projects) {
+    const names = project.buildSources;
+    if (project.id === 'llvm') sourceNames.llvm = [...names, 'Link LLD', 'Link Clang'];
+    if (project.id === 'cppgm') sourceNames.match = sourceNames.clang = [...names, 'Link cppgm'];
+    if (project.id === 'game') sourceNames.game = [...names, 'Link OpenLara'];
   }
-};
-
-$('deep-verify').onchange = () => {
-  const deep = $('deep-verify').checked; $('stage-3').hidden = !deep; $('view-3').hidden = !deep;
-  $('how-it-works').classList.toggle('deep-mode', deep);
-  $('final-check').querySelector('.number').textContent = `${deep ? '04' : '03'} / MATCH & CHECK`;
-
-};
+  for (const workflow of Object.values(workflows)) for (const [id,row] of Object.entries(workflow.phases))
+    if (row.state === 'waiting') row.names = sourceNames[id] || [];
+  if (!active) {showUnits(visiblePhase); drawFlow();}
+});
+setInterval(updateTime, 250);
+chooseScenario(['#inception', '#roundtrip'].includes(location.hash) ? location.hash.slice(1) : 'game');

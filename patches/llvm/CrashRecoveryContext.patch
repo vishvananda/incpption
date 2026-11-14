@@ -1,0 +1,53 @@
+--- a/llvm/lib/Support/CrashRecoveryContext.cpp
++++ b/llvm/lib/Support/CrashRecoveryContext.cpp
+@@ -74,7 +74,13 @@
+ 
+     // Jump back to the RunSafely we were called under.
+     if (ValidJumpBuffer)
++#ifdef __EMSCRIPTEN__
++      // A browser worker is terminated and replaced after a compiler crash.
++      // This profile does not attempt setjmp/longjmp-based signal recovery.
++      abort();
++#else
+       longjmp(JumpBuffer, 1);
++#endif
+ 
+     // Otherwise let the caller decide of the outcome of the crash. Currently
+     // this occurs when using SEH on Windows with MSVC or clang-cl.
+@@ -138,12 +144,17 @@
+ }
+ 
+ void CrashRecoveryContext::Enable() {
++#ifdef __EMSCRIPTEN__
++  // Wasm traps are caught by the embedding worker, not POSIX handlers.
++  return;
++#else
+   std::lock_guard<std::mutex> L(getCrashRecoveryContextMutex());
+   // FIXME: Shouldn't this be a refcount or something?
+   if (gCrashRecoveryEnabled)
+     return;
+   gCrashRecoveryEnabled = true;
+   installExceptionOrSignalHandlers();
++#endif
+ }
+ 
+ void CrashRecoveryContext::Disable() {
+@@ -411,6 +422,10 @@
+ #endif // !_WIN32
+ 
+ bool CrashRecoveryContext::RunSafely(function_ref<void()> Fn) {
++#ifdef __EMSCRIPTEN__
++  Fn();
++  return true;
++#else
+   // If crash recovery is disabled, do nothing.
+   if (gCrashRecoveryEnabled) {
+     assert(!Impl && "Crash recovery context already initialized!");
+@@ -425,6 +440,7 @@
+ 
+   Fn();
+   return true;
++#endif
+ }
+ 
+ #endif // !_MSC_VER

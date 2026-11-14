@@ -31,7 +31,14 @@ export class ProjectTree {
     this.container.setAttribute('aria-label', project.name + ' source files');
     this.render();
   }
-  setStatus(status) {this.status = status; this.render();}
+  setStatus(status) {
+    this.status = status;
+    // Compilation can finish dozens of files together. Coalesce tree updates;
+    // the grid still marks each completed file immediately.
+    if (!this.pendingRender) this.pendingRender = setTimeout(() => {
+      this.pendingRender = null; this.render();
+    }, 100);
+  }
   setFilter(value) {this.filter = value.toLowerCase(); this.render();}
   select(path) {
     this.selected = path;

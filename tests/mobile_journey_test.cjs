@@ -25,9 +25,15 @@ const server=http.createServer((req,res)=>{
         if(!await page.locator('#source-files button[aria-selected]').first().isVisible())throw Error('Source files are hidden');
         await page.screenshot({path:path.join(out,`${name}-${width}.png`),fullPage:true});
       }
+      for (const journey of ['inception','roundtrip','game']) {
+        await page.locator(`.journey-nav [data-journey=${journey}]`).click();
+        if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth))throw Error(`${name} ${journey} flow overflows`);
+        if(await page.locator('#explorer').evaluate(e=>e.parentElement.tagName)!=='MAIN')throw Error('File browser moved between phases');
+        await page.screenshot({path:path.join(out,`${name}-${journey}.png`),fullPage:true});
+      }
       if(name==='chromium'){
         await page.setViewportSize({width:390,height:844});
-        await page.locator('#game-build').click();
+        await page.locator('[data-phase=game]').click();
         await page.waitForFunction(()=>['complete','error'].includes(window.lastGameBuild?.kind),null,{timeout:300000});
         const built=await page.evaluate(()=>window.lastGameBuild);if(built.kind!=='complete')throw Error(built.error);
         await page.locator('#game-play').click();
@@ -45,7 +51,7 @@ const server=http.createServer((req,res)=>{
         await page.waitForFunction(()=>window.openLaraGame?.drawCalls>150,null,{timeout:60000});
         if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth))throw Error('Phone game overflows');
         await page.screenshot({path:path.join(out,'chromium-game.png'),fullPage:true});
-        await page.locator('.journey-nav [data-journey=inception]').click();
+        await page.locator('#game-close').click();
         if(await page.evaluate(()=>window.gamePlaying))throw Error('Leaving the game did not stop it');
       }
       if(errors.length)throw Error(errors.join('\n'));

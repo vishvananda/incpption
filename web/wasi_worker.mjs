@@ -5,7 +5,7 @@ self.onmessage = async ({data: options}) => {
   const started = performance.now(), pool = new CompilePool(options.ports);
   try {
     const {manifest, expectedManifest, root, seedBytes, module: seedModule, layers} = await loadCompiler('compiler/', {shareInputs: true});
-    let module = seedModule, finalStage = 2;
+    let module = options.compilerBytes ? await WebAssembly.compile(options.compilerBytes) : seedModule, finalStage = 2;
     const generations = options.secondBuild ? [2, 3] : [2];
     postMessage({kind: 'ready', revision: manifest.revision, dirty: manifest.dirty,
       sourceSha256: manifest.source_sha256, manifest: expectedManifest, sources: manifest.sources,

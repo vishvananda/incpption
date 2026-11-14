@@ -6,7 +6,7 @@ self.onmessage = async ({data}) => {
   const started = performance.now(), pool = new CompilePool(data.ports);
   try {
     postMessage({kind: 'loading', message: 'Checking compiler and game inputs'});
-    const compiler = await loadCompiler('compiler/', {shareInputs: true});
+    const compiler = await loadCompiler('compiler/', {shareInputs: true, inputProfile: 'none'});
     const {expectedManifest, root, seedBytes, module: seedModule, layers} = compiler;
     let module = seedModule;
     if (data?.compilerBytes) {

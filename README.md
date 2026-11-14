@@ -1,19 +1,22 @@
 # cpp inception
 
-Source and Cloudflare Pages configuration for **https://incpption.com**.
-This repository is private. The compiler source link in the page points to
-[cppgm-extended](https://github.com/vishvananda/cppgm-extended).
+Private source and Cloudflare Pages configuration for **https://incpption.com**.
+The public compiler lives in [cppgm-extended](https://github.com/vishvananda/cppgm-extended).
 
-The shipped compiler is cppgm compiled by native cppgm into WebAssembly.
-The first journey builds and plays OpenLara immediately with that compiler.
-The second rebuilds cppgm in the visitor's browser. Every object and the final
-Wasm module must match the frozen native outputs byte for byte. The rebuilt
-compiler then builds and plays the game again. The optional third journey is
-reserved for the Clang roundtrip and remains clearly marked as in progress.
+Three browser-local workflows share one progress grid and a fixed source browser:
 
-All compilation, linking, comparisons, example execution, and gameplay run
-locally. The server delivers static files. Edited source and generated outputs
-are never uploaded. Browser requests only download the site and its inputs.
+- **cpp:** self-compiled cppgm seed → OpenLara → play.
+- **inception:** seed → matching cppgm rebuild → OpenLara → play.
+- **inception²:** seed → LLVM → Clang-produced cppgm → matching cppgm rebuild → OpenLara → play.
+
+The starting compiler is the official `wasm32-wasip1` reference export from
+cppgm main. Matching checks every corresponding object and the final module
+against that published build. A match establishes reproducibility for these
+frozen inputs and settings; it does not establish general compiler correctness.
+
+Compilation, linking, comparisons, code views and gameplay run locally.
+The server supplies static inputs. Edited source and generated code are never
+uploaded. The game opens in a modal; closing it stops its rendering and audio.
 
 ## Build and test
 
@@ -22,117 +25,101 @@ Use Node 22 or newer, Python 3.10 or newer, and curl:
 ```sh
 npm ci
 npm run check
+npm run test:transport
+python3 tests/project_sources_test.py
+node tests/highlight_test.mjs
 npm run build
-npx playwright install chromium
+npx playwright install chromium webkit
 npm test
-```
-
-The build downloads about 66 MiB of immutable assets into ignored `.cache/`,
-checks every SHA-256 against `config/artifact-lock.json`, and assembles `dist/`.
-It does not build the compiler or modify the original payload. A qualified local
-copy can be used instead:
-
-```sh
-python3 tools/build.py --artifact-dir /path/to/qualified/static-payload --force
-```
-
-The browser test serves `dist/` with the required isolation headers. It checks
-each OpenLara source file's LowIR and Wasm views with the actual game flags,
-bounded previews and complete output downloads,
-mobile layout, GitHub and Share, both explorer targets, invalid-source recovery,
-eight concurrent compiler workers, cancellation and restart, actual downloaded
-compiler bytes, game compilation, game bytes, WebGL rendering, and keyboard input. The additional phone game check verifies
-that movement and jump can be held together, released, and cancelled using touch.
-Results and screenshots go to ignored `build/test-results/`.
-
-```sh
-# The second rebuild is optional in the page and in CI.
-DEMO_TEST_SECOND_BUILD=1 npm test
-# Exercise the fallback without cross-origin isolation.
-DEMO_TEST_ISOLATION=0 DEMO_TEST_WORKERS=1 npm test
-npm run test:inspector
 npm run test:mobile
 GAME_TEST_TOUCH=1 npm run test:game
 ```
 
-## Project and generated-code views
+`tools/build.py` verifies all payload files against `config/artifact-lock.json`
+and assembles `dist/`. The payload is cached in ignored `.cache/`. The complete
+payload includes the optional LLVM sources; visitors download those inputs only
+when building or inspecting LLVM. A local qualified copy can replace downloads:
 
-The file browser opens by default. OpenLara shows its three translation units;
-cppgm groups its sources into expandable directories. File bars follow real
-build events, directory bars count completed translation units, and checks
-appear only after byte comparisons pass. Headers are browseable inputs and do
-not count as separate compilation jobs. Cancelling clears active progress.
+```sh
+python3 tools/build.py --artifact-dir /path/to/static-payload --force
+```
 
-C++ source is fetched lazily from hashed files without downloading the compiler
-or SDK. LowIR and generated Wasm or x86 views require an explicit local compile
-and use the selected project's frozen flags. These views are syntax highlighted.
-The editable example remains separate from the read-only project sources.
+The normal browser test checks source/LowIR/Wasm/x86 views, complete downloads
+with bounded previews, invalid-source recovery, concurrent compilation, cancel
+and restart, byte matching, persistent phase times, and actual gameplay.
+Phone checks cover Chromium gameplay with simultaneous touch inputs and
+Chromium/WebKit layout at 320, 390 and 430 pixels. Chromium is the qualified
+compiler runtime. Results and screenshots are saved under ignored `build/`.
 
-The game runs in a separate frame so leaving its step can stop rendering and
-audio. Phone controls support holding a direction and an action together.
-The mobile check covers Chromium gameplay and Chromium/WebKit layout at 320,
-390 and 430 CSS pixels. Chromium remains the qualified compiler runtime.
+```sh
+npm run test:inspector
+# Long: compile all LLVM sources, run Clang, match cppgm, build and play OpenLara.
+npm run test:roundtrip
+# The single-worker fallback also works without cross-origin isolation.
+DEMO_TEST_ISOLATION=0 DEMO_TEST_WORKERS=1 npm test
+```
 
-## Parallel compilation
+CI runs the normal tests on pushes and pull requests. The longer Clang roundtrip
+has a separate, opt-in `clang_roundtrip` workflow-dispatch job.
 
-Auto uses up to eight workers, limited by `navigator.hardwareConcurrency`.
-Each source has a fresh WASI instance. Workers share immutable source and SDK
-bytes through SharedArrayBuffer and receive a structured-cloned compiled
-WebAssembly.Module. Output buffers transfer to the coordinator without copying;
-the coordinator checks bytes and links objects in the frozen source order.
-The final link runs once after compilation. OpenLara uses up to three workers
-because it has three translation units.
+## Build inputs and provenance
 
-The page owns all compiler workers and terminates them together on cancellation,
-failure, or completion. Without cross-origin isolation it uses one worker.
-`config/_headers` enables COOP/COEP for the deployed static site. Guest memory is
-reported per compiler instance, not as total browser memory.
+`web/` contains the current interface and orchestration. The artifact lock pins
+immutable compiler, game and LLVM input packages. The source manifests and
+published compiler bytes retain their original hashes. `site-release.json`
+records the site revision, artifact lock, compiler manifest and seed hashes.
+Never change hashes to hide a mismatch: independently qualify a new package.
 
-## Payload and site provenance
+`tools/reference_prepare.py` converts the official reference export to the site
+profile. It verifies export provenance, rebuilds the compiler independently,
+checks exact seed equality and native/WASI x86 outputs, and rebuilds OpenLara
+with the same compiler. `tools/llvm_prepare.py` packages a frozen LLVM build
+only after all native and WASI object hashes agree. It omits LLVM objects,
+archives and executables. The source overlays in `patches/llvm/` use Emscripten's
+stack API, disable process-level crash recovery inside the worker, and flatten
+two long StringSwitch call chains to stay within the browser call-stack limit.
 
-Website changes and compiler provenance have separate versions. `web/` contains
-the current interface and browser orchestration. `config/artifact-lock.json`
-pins a qualified compiler, frozen sources, SDK libraries, game sources, runtime
-glue, reference outputs, and demo assets at an immutable deployment URL.
+LLVM's node builds Clang and LLD from 2,374 C/C++ files. cppgm links LLD, then
+that newly built LLD links Clang. Clang compiles all cppgm sources; the seed
+links those objects to a WASI compiler. That compiler rebuilds cppgm with the
+canonical settings. Only this final cppgm rebuild is labelled **matches**.
+Clang uses Wasm exception handling and disables bulk-memory lowering to avoid
+LLVM 22's internal landing-pad TLS flags. The normal linker TLS checks stay on.
 
-`dist/compiler/` and `dist/game/` retain their original manifests and runner files
-unchanged. Those old runner files are provenance records; the active page uses
-the current workers at the site root. `dist/site-release.json` records the site
-Git revision, payload lock hash, compiler manifest hash, and compiler hash.
-Never edit payload hashes to silence a mismatch: qualify the replacement payload
-and update the complete lock deliberately.
+SDK libraries, Emscripten JavaScript glue, generated LLVM headers and game assets
+are supplied inputs. No prebuilt LLVM program object or executable is shipped.
+OpenLara's two `.c` files retain its upstream C++ build mode. LLVM's nine C
+translation units use cppgm's real C mode.
 
-Binary assets in the pinned payload are gzip bytes at their logical paths.
-Cloudflare Pages does not preserve a custom Content-Encoding for these files.
-`transport_bytes.mjs` checks the gzip signature and decompresses explicitly before
-checking hashes or executing Wasm. All runtime dependencies are served locally;
-the page does not need a third-party script CDN.
+`tools/artifact_transport.py` splits bundles at file boundaries into gzip chunks
+below Cloudflare Pages' 25 MiB file limit. The browser verifies each decoded
+chunk and file and shares immutable input views through SharedArrayBuffer.
+It does not concatenate the full source/SDK bundle or copy it per worker.
+Static hosting can strip Content-Encoding, so `transport_bytes.mjs` also
+recognizes and decompresses gzip bytes explicitly. All dependencies are local;
+no third-party script CDN is required.
 
-The tools for preparing the OpenLara/Emscripten profile are retained in `tools/`.
-They are maintainer tools and are not part of an ordinary site build. The current
-payload uses Emscripten 4.0.9 with a private libc++ ABI1 profile. All game program
-sources compile in the browser; SDK and runtime libraries are prebuilt. The two
-`.c` game sources compile as C++, as in the upstream Web build.
+Each source has a fresh compiler instance. Up to eight workers share the
+compiled WebAssembly.Module; output buffers transfer to the coordinator.
+Linking follows the frozen source order. Compile workers stop before the large
+LLVM link. Cancel and failure terminate all workers. Without cross-origin
+isolation, the demo uses one worker. Guest memory is reported per instance.
+
+The source browser fetches individual hashed files without loading the compiler.
+Headers are browseable inputs, not extra compile jobs. LowIR and Wasm/x86 views
+are generated on request using each project's frozen flags. LLVM and OpenLara
+use their supplied Wasm SDK profiles. The editable example supports both targets.
 
 ## Deployment
 
-Cloudflare Pages project: `cpp-inception`. Canonical domain: `incpption.com`.
-The account and project are recorded in `site.json`; Wrangler configuration is in
-`wrangler.toml`. With an authenticated Wrangler 4.127.0:
+Cloudflare Pages project: `cpp-inception`. Domain: `incpption.com`.
+Account and project are in `site.json`; isolation headers are in `config/_headers`.
+Use authenticated Wrangler 4.127.0 after validation:
 
 ```sh
-npm ci
-npm run build
-npm test
 wrangler pages deploy dist --project-name cpp-inception --branch main
 ```
 
-No Cloudflare credential belongs in this repository. CI builds and runs the full
-browser journey on pushes and pull requests; deployment uses the qualified
-commit after those checks. CI can run the optional second rebuild through
-workflow dispatch. DNS is a proxied CNAME from `incpption.com` to
-`cpp-inception.pages.dev`.
-
-See `LICENSE`, `NOTICE`, `third_party/`, and the deployed credits page for retained
-attribution and dependency licenses. Game demo assets retain their owners'
-copyrights.
+Keep credentials out of this repository. Website updates and compiler provenance
+have separate revisions. See `LICENSE`, `NOTICE`, `third_party/` and the deployed
+credits for retained attribution. Game assets retain their owners' copyrights.
