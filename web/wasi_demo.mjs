@@ -180,15 +180,16 @@ function closeGame() {if ($('game-modal').open) {$('game-modal').close(); stopGa
 function stopGame() {
   if (!playing && !opening && !window.openLaraGame) return;
   gameLaunch++; opening = false;
-  $('game-frame').contentWindow?.stopGame?.()?.catch?.(() => {});
-  const frame = $('game-frame'), fresh = frame.cloneNode(); frame.replaceWith(fresh);
+  const frame = $('game-frame');
+  frame?.contentWindow?.stopGame?.()?.catch?.(() => {});
+  frame?.remove();
   playing = false; window.gamePlaying = false; window.openLaraGame = null;
 }
 $('game-close').onclick = closeGame;
 $('game-modal').addEventListener('close', stopGame);
 $('game-modal').addEventListener('click', event => {if (event.target === $('game-modal')) {const r = $('game-modal').getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) closeGame();}});
 window.addEventListener('message', event => {
-  if (event.origin === location.origin && event.source === $('game-frame').contentWindow && event.data?.kind === 'game-frame-size')
+  if (event.origin === location.origin && event.source === $('game-frame')?.contentWindow && event.data?.kind === 'game-frame-size')
     $('game-frame').style.height = Math.max(240, Math.min(1200, event.data.height)) + 'px';
 });
 async function openGame() {
@@ -196,7 +197,10 @@ async function openGame() {
   const launch = ++gameLaunch; opening = true;
   $('game-modal').showModal(); $('game-status').textContent = 'Opening the game you just built…'; delete window.gameError;
   try {
-    const frame = $('game-frame');
+    const frame = document.createElement('iframe');
+    frame.id = 'game-frame'; frame.src = 'game_frame.html';
+    frame.title = 'OpenLara built in this browser'; frame.allow = 'autoplay; fullscreen';
+    $('game-surface').replaceChildren(frame);
     if (!frame.contentWindow.startGame) await new Promise((resolve,reject) => {
       const timeout = setTimeout(() => reject(Error('Game frame did not load')), 15000);
       frame.addEventListener('load', () => {clearTimeout(timeout); resolve();}, {once:true});

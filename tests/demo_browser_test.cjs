@@ -2,7 +2,7 @@
 // Real guided journey, including both code-generation targets and the game.
 const fs = require('fs'), path = require('path'), http = require('http');
 const [directory, playwright, mode = 'full', resultsDirectory = directory, executable] = process.argv.slice(2);
-if (!directory || !playwright || !['full', 'inspector', 'roundtrip'].includes(mode))
+if (!directory || !playwright || !['full', 'inspector', 'roundtrip', 'modal'].includes(mode))
   throw Error('usage: demo_browser_test.cjs COMPILER_PACKAGE PLAYWRIGHT_MODULE [full|inspector]');
 const root = path.resolve(directory), out = path.resolve(resultsDirectory), pw = require(path.resolve(playwright));
 fs.mkdirSync(out, {recursive: true});
@@ -39,6 +39,10 @@ const server = http.createServer((req, res) => {
       }
       throw Error('Build workers survived cancellation or completion');
     }
+    if(process.env.DEMO_TEST_TRACE){
+      await page.context().tracing.start({screenshots:true,snapshots:true,sources:true});
+      page.on('console',m=>console.log('PAGE '+m.text()));
+    }
     page.on('pageerror',e=>{errors.push(String(e));console.error(String(e));});
     await page.goto((process.env.DEMO_TEST_ORIGIN || `http://127.0.0.1:${server.address().port}`) + '/wasi_demo.html');
     const github=page.locator('.header-actions a');
@@ -70,7 +74,7 @@ const server = http.createServer((req, res) => {
     if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth))throw Error('Mobile page overflows');
     await page.screenshot({path:path.join(out,'site-mobile.png'),fullPage:true});
     await page.setViewportSize({width:1440,height:1000});
-    if(mode !== 'roundtrip') {
+    if(mode !== 'roundtrip' && mode !== 'modal') {
     await page.locator('#source-project').selectOption('example');
     await page.waitForFunction(()=>['ready','error'].includes(window.lastInspectorEvent?.kind),null,{timeout:180000});
     async function compiled(target){
@@ -142,7 +146,7 @@ const server = http.createServer((req, res) => {
     report.inspectorPassed=true;
     await page.screenshot({path:path.join(out,'site-inspector.png'),fullPage:true});
     }
-    if(mode==='full' || mode==='roundtrip'){
+    if(mode==='full' || mode==='roundtrip' || mode==='modal'){
       const journey = mode === 'roundtrip' ? 'roundtrip' : 'game';
       await page.locator(`.journey-nav [data-journey=${journey}]`).click();
       if(mode === 'roundtrip') {
@@ -159,10 +163,21 @@ const server = http.createServer((req, res) => {
         } catch {}
       }, 10000);
       await page.waitForFunction(()=>window.gamePlaying||window.gameError||window.lastWorkflowEvent?.kind==='error',null,{timeout:5400000});
+      clearInterval(progressTimer);
       if(await page.evaluate(()=>window.lastWorkflowEvent?.kind==='error'))throw Error(await page.evaluate(()=>window.lastWorkflowEvent.error));
       if(await page.evaluate(()=>window.gameError))throw Error(await page.evaluate(()=>window.gameError));
       await page.waitForFunction(()=>window.openLaraGame?.drawCalls>150,null,{timeout:60000});
       if(!await page.locator('#game-modal').evaluate(e=>e.open))throw Error('Workflow did not open game modal');
+      if(process.env.DEMO_TEST_TRACE) await page.evaluate(()=>{
+        const log=s=>console.log('MODAL '+performance.now().toFixed(1)+' '+s),modal=document.getElementById('game-modal'),button=document.getElementById('game-close');
+        for(const type of ['pointerdown','mousedown','mouseup','click'])button.addEventListener(type,()=>log(type),true);
+        modal.addEventListener('close',()=>log('close event'));
+        const close=modal.close.bind(modal);modal.close=(...args)=>{log('dialog.close enter');const r=close(...args);log('dialog.close exit');return r;};
+        const frame=document.getElementById('game-frame'),stop=frame.contentWindow.stopGame;
+        frame.contentWindow.stopGame=(...args)=>{log('stopGame enter');const r=stop(...args);log('stopGame exit');return r;};
+        const remove=frame.remove.bind(frame);frame.remove=(...args)=>{log('remove enter');const r=remove(...args);log('remove exit');return r;};
+        const replace=frame.replaceWith.bind(frame);frame.replaceWith=(...args)=>{log('replace enter');const r=replace(...args);log('replace exit');return r;};
+      });
       await page.evaluate(()=>window.openLaraGame.module.pauseMainLoop());
       await page.screenshot({path:path.join(out,'site-game.png'),fullPage:true});
       await page.evaluate(()=>window.openLaraGame.module.resumeMainLoop());
@@ -222,6 +237,7 @@ const server = http.createServer((req, res) => {
     clearInterval(progressTimer);
     report.requests=requests;
     fs.writeFileSync(path.join(out,`site-${mode}-results.json`),JSON.stringify(report,null,2)+'\n');
+    if(process.env.DEMO_TEST_TRACE)await browser.contexts()[0]?.tracing.stop({path:path.join(out,'trace.zip')});
     await browser.close();server.close();
   }
 })().catch(e=>{console.error(e);server.close();process.exitCode=1;});
