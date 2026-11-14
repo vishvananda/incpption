@@ -41,8 +41,8 @@ const server = http.createServer((req, res) => {
     await page.goto((process.env.DEMO_TEST_ORIGIN || `http://127.0.0.1:${server.address().port}`) + '/wasi_demo.html');
     const github=page.locator('.header-actions a');
     if(await github.getAttribute('href')!=='https://github.com/vishvananda/cppgm-extended')throw Error('Wrong GitHub destination');
-    const mark=await page.locator('.github-mark').evaluate(e=>({color:getComputedStyle(e).backgroundColor,mask:getComputedStyle(e).maskImage}));
-    if(mark.color!=='rgb(190, 239, 138)' || !mark.mask.includes('github.svg'))throw Error('GitHub mark does not match theme');
+    const mark=await page.locator('.github-mark').evaluate(e=>({color:getComputedStyle(e).fill,path:e.querySelector('path')?.getAttribute('d')}));
+    if(mark.color!=='rgb(190, 239, 138)' || !mark.path)throw Error('GitHub mark does not match theme');
     await page.evaluate(()=>Object.defineProperty(navigator,'share',{configurable:true,value:async data=>{window.shared=data;}}));
     await page.locator('#share').click();
     if(await page.evaluate(()=>window.shared.url)!=='https://incpption.com/')throw Error('Native share used the wrong URL');
@@ -57,6 +57,7 @@ const server = http.createServer((req, res) => {
     if(!await page.locator('#share-link').isVisible() || await page.locator('#share-link').inputValue()!=='https://incpption.com/')throw Error('Manual share fallback failed');
     await page.locator('#share-link').evaluate(e=>e.hidden=true);
     await page.locator('#share-status').evaluate(e=>e.textContent='');
+    await page.locator('#share-feedback').evaluate(e=>e.hidden=true);
     report.headerPassed=true;
     if (await page.locator('#game-build').isEnabled())throw Error('Game build bypasses compiler checks');
     await page.screenshot({path:path.join(out,'site-desktop.png'),fullPage:true});

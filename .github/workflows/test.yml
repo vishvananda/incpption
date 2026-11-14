@@ -36,9 +36,14 @@ jobs:
         env:
           DEMO_TEST_WORKERS: '8'
           DEMO_TEST_SECOND_BUILD: ${{ inputs.second_build && '1' || '0' }}
+      - run: npm run test:game
+        env:
+          GAME_TEST_TOUCH: '1'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: browser-results
-          path: build/test-results
+          path: |
+            build/test-results
+            build/game-results
           retention-days: 7

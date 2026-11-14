@@ -37,7 +37,8 @@ python3 tools/build.py --artifact-dir /path/to/qualified/static-payload --force
 The browser test serves `dist/` with the required isolation headers. It checks
 mobile layout, GitHub and Share, both explorer targets, invalid-source recovery,
 eight concurrent compiler workers, cancellation and restart, actual downloaded
-compiler bytes, game compilation, game bytes, WebGL rendering, and keyboard input.
+compiler bytes, game compilation, game bytes, WebGL rendering, and keyboard input. The additional phone game check verifies
+that movement and jump can be held together, released, and cancelled using touch.
 Results and screenshots go to ignored `build/test-results/`.
 
 ```sh
@@ -46,7 +47,7 @@ DEMO_TEST_SECOND_BUILD=1 npm test
 # Exercise the fallback without cross-origin isolation.
 DEMO_TEST_ISOLATION=0 DEMO_TEST_WORKERS=1 npm test
 npm run test:inspector
-npm run test:game
+GAME_TEST_TOUCH=1 npm run test:game
 ```
 
 ## Parallel compilation

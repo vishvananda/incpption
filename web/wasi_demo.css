@@ -4,8 +4,29 @@ nav{display:flex;gap:24px}nav a{text-decoration:none;color:var(--muted)}.hero{ma
 
 .wordmark{display:inline-grid;grid-template-columns:repeat(9,1ch);font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace;font-size:clamp(44px,8vw,104px);font-weight:600;letter-spacing:0;line-height:1.04;row-gap:.08em}.wordmark-cpp{grid-column:3/span 3;grid-row:1;color:var(--green)}.wordmark-name{grid-column:1/-1;grid-row:2;white-space:nowrap}.wordmark-cep{display:inline-block}.brand.wordmark{font-size:19px}.brand.wordmark .wordmark-cpp{color:var(--green);font-weight:600}.brand.wordmark .wordmark-name{color:var(--ink);font-weight:600}
 
-header{gap:24px;flex-wrap:wrap}header nav{margin-left:auto}.header-actions{display:flex;align-items:center;gap:10px}.header-actions a,.header-actions button{display:inline-flex;align-items:center;gap:8px;color:var(--green);font-size:13px;text-decoration:none;border:0;padding:6px}.github-mark{width:20px;height:20px;background:currentColor;mask:url("assets/github.svg") center/contain no-repeat}.share-feedback{width:min(1160px,calc(100% - 64px));margin:8px auto 0;text-align:right;min-height:20px;color:var(--green);font-size:12px}.share-feedback input{font-size:12px;width:230px;display:inline-block}.share-feedback input[hidden]{display:none}@media(max-width:700px){header{gap:12px}.header-actions{margin-left:auto}header nav{order:3;flex-basis:100%;justify-content:space-between;margin:0}.github-label{display:none}.share-feedback{width:calc(100% - 32px)}}
+header{display:grid;grid-template-columns:auto 1fr auto;gap:24px;padding:20px 0;align-items:center}
+header nav{justify-content:flex-end;gap:6px;margin:0}
+header nav a{display:inline-flex;align-items:center;min-height:40px;padding:8px 12px;font-size:13px;border-radius:5px}
+header nav a:hover{background:var(--surface);color:var(--ink)}
+.header-actions{display:flex;align-items:center;gap:8px}
+.header-actions a,.header-actions button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:40px;color:var(--green);font:13px/1.4 system-ui,sans-serif;text-decoration:none;border:1px solid var(--line);border-radius:5px;padding:8px 11px;white-space:nowrap}
+.header-actions a:hover,.header-actions button:hover{border-color:var(--green);background:var(--surface)}
+.github-mark{display:block;width:20px;height:20px;flex-shrink:0;fill:currentColor}
+.share-feedback{width:min(1160px,calc(100% - 64px));margin:8px auto 0;text-align:right;color:var(--green);font-size:12px}
+.share-feedback input{font-size:12px;width:230px;display:inline-block}
+main{padding-top:32px}
+h1.wordmark{display:grid;width:max-content;margin:0 0 28px}
+@media(max-width:700px){
+  header{grid-template-columns:1fr auto;gap:8px;padding:14px 0 8px}
+  .brand.wordmark{font-size:17px}
+  header nav{grid-column:1/-1;grid-row:2;justify-content:flex-start;gap:4px}
+  header nav a{font-size:13px;min-height:40px;padding:8px 12px}
+  .header-actions a,.header-actions button{min-height:44px;padding:8px 10px;font-size:12px}
+  .share-feedback{width:calc(100% - 32px)}
+  main{padding-top:24px}
+  h1.wordmark{margin-bottom:24px}
+}
 
 .pipeline{grid-template-columns:repeat(3,1fr)}.pipeline.deep-mode{grid-template-columns:repeat(4,1fr)}.build-options{display:flex;flex-direction:column;gap:14px;padding:18px 0;font-size:13px;color:var(--muted)}.build-options input{accent-color:var(--green)}@media(max-width:700px){.pipeline,.pipeline.deep-mode{grid-template-columns:1fr}.stage p{min-height:0}}
 
-.intro{color:var(--ink);font-size:clamp(20px,2.3vw,26px);line-height:1.45;max-width:740px}.story{max-width:690px;color:var(--muted);font-size:16px;line-height:1.65}
+.intro{margin:0 0 18px;color:var(--ink);font-size:clamp(20px,2.3vw,26px);line-height:1.45;max-width:740px}.story{max-width:690px;color:var(--muted);font-size:16px;line-height:1.65}

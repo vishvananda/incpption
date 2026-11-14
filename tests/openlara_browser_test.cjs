@@ -24,7 +24,8 @@ const server = http.createServer((req, res) => {
   const out = resultsDirectory ? path.resolve(resultsDirectory) : path.join(root, 'openlara');
   fs.mkdirSync(out, {recursive: true});
   try {
-    const page = await browser.newPage({viewport: {width: 1120, height: 900}, acceptDownloads: true});
+    const touch = process.env.GAME_TEST_TOUCH === '1';
+    const page = await browser.newPage({viewport: touch ? {width:390,height:844} : {width:1120,height:900}, hasTouch:touch, isMobile:touch, acceptDownloads:true});
     page.on('pageerror', error => {report.errors.push(String(error)); console.error(String(error));});
     page.on('console', entry => report.console.push({type: entry.type(), text: entry.text()}));
     await page.goto((process.env.DEMO_TEST_ORIGIN || `http://127.0.0.1:${server.address().port}`) + '/openlara.html');
@@ -50,6 +51,33 @@ const server = http.createServer((req, res) => {
     const error = await page.evaluate(() => window.gameError);
     if (error) throw Error(error);
     await page.waitForFunction(() => window.openLaraGame?.drawCalls > 150, null, {timeout: 60000});
+    if(touch){
+      await page.locator('.game-controls').scrollIntoViewIfNeeded();
+      if(!await page.locator('.game-controls').isVisible())throw Error('Touch controls missing');
+      await page.evaluate(()=>{
+        window.touchKeys=[];
+        for(const kind of ['keydown','keyup'])window.addEventListener(kind,e=>window.touchKeys.push({kind,key:e.key,keyCode:e.keyCode,handled:e.defaultPrevented}));
+      });
+      const cdp=await page.context().newCDPSession(page);
+      const point=async(name,id)=>{const b=await page.locator(`[data-control=${name}]`).boundingBox();return {x:b.x+b.width/2,y:b.y+b.height/2,id};};
+      const up=await point('up',1),jump=await point('jump',2);
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[up]});
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[up,jump]});
+      await page.waitForTimeout(1200);
+      if(await page.locator('.game-controls [aria-pressed=true]').count()!==2)throw Error('Multi-touch controls were not held together');
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+      if(await page.locator('.game-controls [aria-pressed=true]').count())throw Error('Touch release left controls held');
+      const left=await point('left',3);
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[left]});
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});
+      if(await page.locator('.game-controls [aria-pressed=true]').count())throw Error('Touch cancellation left controls held');
+      report.touchKeys=await page.evaluate(()=>window.touchKeys);
+      for(const key of [38,18,37])for(const kind of ['keydown','keyup']){
+        if(!report.touchKeys.some(e=>e.keyCode===key&&e.kind===kind&&e.handled))throw Error('Game keyboard callback did not handle touch input');
+      }
+      report.touchPassed=true;
+      if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth))throw Error('Touch game page overflows');
+    }
     await page.locator('#canvas').click();
     await page.keyboard.down('ArrowUp');
     await page.waitForTimeout(1200);

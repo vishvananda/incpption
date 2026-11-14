@@ -2,9 +2,10 @@
 <html lang="en">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Build and play OpenLara — cppgm</title>
+<title>Build and play OpenLara | cppgm</title>
+<link rel="stylesheet" href="game_controls.css">
 <style>
-:root{color-scheme:dark}body{background:#141815;color:#edf1e8;font:16px/1.6 system-ui;margin:40px auto;max-width:1000px;padding:0 24px}h1{font-size:clamp(36px,6vw,64px);letter-spacing:-.05em;line-height:1.1}p{max-width:700px;color:#b5c2b4}button{font:inherit;border:1px solid #53634f;border-radius:5px;padding:12px 22px;background:#bcdf9a;color:#14200f;cursor:pointer}button:disabled{opacity:.4;cursor:default}#cancel{background:transparent;color:inherit}canvas{display:block;width:854px;height:480px;max-width:100%;margin:24px 0;background:#0d100d}pre{font:12px/1.6 monospace;white-space:pre-wrap;overflow-wrap:anywhere}a{color:#bcdf9a}.steps{display:flex;gap:20px;flex-wrap:wrap;margin:24px 0}.steps span{border-top:2px solid #53634f;padding-top:8px}.steps .done{border-color:#bcdf9a;color:#bcdf9a}
+:root{color-scheme:dark}body{background:#141815;color:#edf1e8;font:16px/1.6 system-ui;margin:40px auto;max-width:1000px;padding:0 24px}h1{font-size:clamp(36px,6vw,64px);letter-spacing:-.05em;line-height:1.1}p{max-width:700px;color:#b5c2b4}button{font:inherit;border:1px solid #53634f;border-radius:5px;padding:12px 22px;background:#bcdf9a;color:#14200f;cursor:pointer}button:disabled{opacity:.4;cursor:default}#cancel{background:transparent;color:inherit}canvas{display:block;width:100%;height:auto;aspect-ratio:854/480;margin:24px 0;background:#0d100d}pre{font:12px/1.6 monospace;white-space:pre-wrap;overflow-wrap:anywhere}a{color:#bcdf9a}.steps{display:flex;gap:20px;flex-wrap:wrap;margin:24px 0}.steps span{border-top:2px solid #53634f;padding-top:8px}.steps .done{border-color:#bcdf9a;color:#bcdf9a}
 </style>
 <main>
 <p>cppgm / browser build prototype</p>
@@ -49,7 +50,7 @@ $('start').onclick = () => {
 $('cancel').onclick=()=>{stop();$('status').textContent='Cancelled. Start a fresh build to retry.';window.lastGameBuild={kind:'cancelled'};};
 $('play').onclick=async()=>{
   $('play').disabled=true;$('start').disabled=true;$('status').textContent='Opening the game you just built…';
-  try {window.openLaraGame=await playOpenLara($('canvas'),artifact,log);$('status').textContent='Playing OpenLara. Click the game for keyboard input.';window.gamePlaying=true;}
+  try {window.openLaraGame=await playOpenLara($('canvas'),artifact,log);$('status').textContent='Playing OpenLara. Use the touch controls below, or click the game for keyboard input.';window.gamePlaying=true;}
   catch(error){log(error.stack||error);window.gameError=String(error);$('status').textContent='The game could not start. See build details.';}
 };
 </script>

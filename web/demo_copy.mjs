@@ -4,7 +4,7 @@ export const demoCopy = {
     name: "cpp inception",
     title: "cpp inception",
     intro:
-      "Meet cppgm, a C++ compiler built for fast compilation—fast enough to compile itself in your browser.",
+      "Meet cppgm, a C++ compiler built for fast compilation. Fast enough to compile itself in your browser.",
     story:
       "Start with cppgm already compiled to WebAssembly by cppgm itself. Watch it rebuild itself here and match every output byte. Then use your new compiler to build OpenLara to WebAssembly and play it in this same browser.",
     locality:

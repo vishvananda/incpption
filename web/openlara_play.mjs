@@ -1,3 +1,4 @@
+import {attachGameControls} from './game_controls.mjs';
 // Start the actual browser-built module with its frozen runtime and assets.
 export async function playOpenLara(canvas, build, log = console.log) {
   const audioContext = new AudioContext();
@@ -55,6 +56,7 @@ export async function playOpenLara(canvas, build, log = console.log) {
   const pointer = module._malloc(level.bytes.length);
   new Uint8Array(module.getMemory().buffer).set(level.bytes, pointer);
   module.ccall('game_level_load', null, ['number', 'number'], [pointer, level.bytes.length]);
+  const controls = attachGameControls(canvas);
   canvas.focus();
-  return {module, audioContext, processor, get drawCalls() { return draws; }};
+  return {module, audioContext, processor, controls, get drawCalls() { return draws; }};
 }
