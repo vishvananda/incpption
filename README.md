@@ -117,6 +117,26 @@ Headers are browseable inputs, not extra compile jobs. LowIR and Wasm/x86 views
 are generated on request using each project's frozen flags. LLVM and OpenLara
 use their supplied Wasm SDK profiles. The editable example supports both targets.
 
+## Compiler portability experiments
+
+`tools/prepare_emscripten.py` prepares a private Emscripten 4.0.9 profile with
+libc++ ABI version 1. It records header patches and rebuilt runtime archive
+hashes. The public visibility-event member is protected from musl's internal
+`hidden` macro when compiling SDK sources.
+
+`tools/probe_project.py` compiles a frozen Emscripten compilation database with
+the native cppgm executable, targeting Wasm. It chooses C or C++ per source,
+keeps each compilation-database entry distinct, and records commands, errors,
+times and object hashes. Its summary measures compilation only. It does not
+qualify linking, runtime behavior or browser build speed. Keep experiment data
+outside this repository; these experiments do not change the published demo.
+
+```sh
+python3 tools/probe_project.py --database /path/to/compile_commands.json \
+  --profile /path/to/private-sdk --compiler /path/to/cppgm++ \
+  --output /path/to/new-observations --jobs 8
+```
+
 ## Deployment
 
 Cloudflare Pages project: `cpp-inception`. Domain: `incpption.com`.

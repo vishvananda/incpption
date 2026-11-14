@@ -59,6 +59,17 @@ def main():
                            '"This variant does not allow specifying the target canvas. Use ' + replacement + '"'))
     for name in ['system/include/emscripten/emscripten.h', 'cache/sysroot/include/emscripten/emscripten.h']:
         patch(name, deprecated)
+    # Musl's internal visibility macro collides with this public member. Keep
+    # its public layout intact while building libc with internal headers first.
+    event = ('typedef struct EmscriptenVisibilityChangeEvent {\n'
+             '  bool hidden;\n  int visibilityState;\n'
+             '} EmscriptenVisibilityChangeEvent;')
+    guarded_event = ('#ifdef hidden\n#define CPPGM_RESTORE_MUSL_HIDDEN 1\n#undef hidden\n#endif\n'
+                     + event + '\n#ifdef CPPGM_RESTORE_MUSL_HIDDEN\n'
+                     '#define hidden __attribute__((__visibility__("hidden")))\n'
+                     '#undef CPPGM_RESTORE_MUSL_HIDDEN\n#endif')
+    for name in ['system/include/emscripten/html5.h', 'cache/sysroot/include/emscripten/html5.h']:
+        patch(name, [(event, guarded_event)])
     # Cached ABI2 archives cannot accompany the ABI1 headers. Other variants
     # can subsequently be rebuilt by emcc from the patched private sources.
     library_root = private / 'cache/sysroot/lib/wasm32-emscripten'
@@ -83,7 +94,7 @@ def main():
              '-std=gnu++17', '-fno-exceptions', '-O3', '-D__EMSCRIPTEN__=1',
              '-D__EMSCRIPTEN_major__=4', '-D__EMSCRIPTEN_minor__=0', '-D__EMSCRIPTEN_tiny__=9',
              '-D__GNUC__=4', '-D__GNUC_MINOR__=2', '-D__GNUC_PATCHLEVEL__=1', '-D__GNUG__=4',
-             '-D__GXX_ABI_VERSION=1002', '-D_GNU_SOURCE=1']
+             '-D__GXX_ABI_VERSION=1002', '-D_GNU_SOURCE=1', '-D__unix__=1', '-D__unix=1', '-Dunix=1']
     manifest = dict(schema=1, emscripten_version=version, abi=1, exceptions=False, threads=False,
                     patches=patches, compiler_flags=flags, compatibility_sha256=sha(compatibility),
                     runtime_seconds=time.monotonic() - started, command=command,
