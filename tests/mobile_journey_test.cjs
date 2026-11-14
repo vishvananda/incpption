@@ -17,6 +17,7 @@ const server=http.createServer((req,res)=>{
     const browser=await pw[name].launch({headless:true,...(name==='chromium'?{args:['--no-sandbox','--enable-unsafe-swiftshader','--use-angle=swiftshader','--site-per-process']}:{})});
     try{
       const context=await browser.newContext({hasTouch:true,isMobile:true,viewport:{width:390,height:844}}),page=await context.newPage(),errors=[];
+      page.setDefaultTimeout(120000);
       page.on('pageerror',error=>errors.push(String(error)));
       await page.addInitScript(url=>window.incpptionPlayerURL=url,`http://localhost:${server.address().port}/game_frame.html`);
       await page.goto(url);await page.waitForFunction(()=>window.lastProjectEvent?.kind==='source');

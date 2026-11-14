@@ -31,6 +31,8 @@ const server = http.createServer((req, res) => {
   try {
     const page=await browser.newPage({viewport:{width:1440,height:1000},acceptDownloads:true});
     if (process.env.DEMO_TEST_CPU_RATE) {const cdp=await page.context().newCDPSession(page); await cdp.send('Emulation.setCPUThrottlingRate',{rate:Number(process.env.DEMO_TEST_CPU_RATE)});}
+    // Real software WebGL can delay compositor frames on small CI runners.
+    page.setDefaultTimeout(120000);
     const liveWorkers = new Set();
     page.on('worker', worker => {liveWorkers.add(worker); worker.on('close', () => liveWorkers.delete(worker));});
     async function buildWorkersStopped() {
