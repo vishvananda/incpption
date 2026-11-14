@@ -83,3 +83,5 @@ h1.wordmark{display:grid;width:max-content;margin:0 0 28px}
  .project-code .explore-controls{gap:8px;padding:10px}.project-code .explore-controls button{min-height:40px}.project-code .explore-controls label{width:100%}.project-code .explore-controls select{min-height:40px}
 }
 @media(prefers-reduced-motion:reduce){.project-row.running .tree-label:after{animation:none;left:35%}}
+.project-code .code-pane>p{margin:0;padding:8px 12px;border-bottom:1px solid var(--line)}
+.project-code .code-pane>p a{color:var(--green)}

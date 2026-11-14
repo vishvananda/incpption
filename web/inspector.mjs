@@ -5,6 +5,20 @@ const example = `// Edit this example, then compile for either target.\nextern "
 let projects = [], project, active, worker, result, url, busy = false, deadline, request = 0;
 let editedExample = example, currentTab = 'source';
 const builds = new Map(), generations = new Map();
+const textUrls = new Map();
+function outputView(id, code, language) {
+  const end = Math.min(code.length, 120000);
+  const cut = code.length > end ? Math.max(code.lastIndexOf('\n', end), 0) || end : end;
+  const truncated = cut < code.length;
+  highlightCode($(id + '-code'), code.slice(0, cut), language);
+  $(id + '-preview').textContent = truncated ? 'Showing the beginning. Download the complete output to see every line.' : '';
+  const link = $(id + '-download');
+  if (textUrls.has(id)) URL.revokeObjectURL(textUrls.get(id));
+  const url = URL.createObjectURL(new Blob([code], {type: 'text/plain;charset=utf-8'}));
+  textUrls.set(id, url);
+  link.href = url; link.hidden = false;
+  link.download = `${active.path.split('/').at(-1)}.${id === 'lowir' ? 'lowir' : language === 'wasm' ? 'wat' : 'asm'}`;
+}
 function buildState(id) {if (!builds.has(id)) builds.set(id, new Map()); return builds.get(id);}
 const tree = new ProjectTree($('source-files'), {onSelect: file => choose(file), onSummary: summary => {
   $('file-count').textContent = summary.total ? `${summary.done}/${summary.total} ${project?.id === 'cppgm' ? 'matched' : 'built'}` : 'Editable';
@@ -30,6 +44,10 @@ for (const id of ['source', 'lowir', 'generated']) {
 }
 function clearOutput() {
   result = null; $('run-example').disabled = true; $('object-download').hidden = true;
+  for (const id of ['lowir', 'generated']) {
+    if (textUrls.has(id)) URL.revokeObjectURL(textUrls.get(id));
+    textUrls.delete(id); $(id + '-download').hidden = true; $(id + '-preview').textContent = '';
+  }
   highlightCode($('lowir-code'), '// Compile the selected source file to see its optimized LowIR.', 'lowir');
   highlightCode($('generated-code'), ';; Compile the selected source file to see generated code.', $('inspect-target').value === 'wasm' ? 'wasm' : 'x86');
 }
@@ -98,8 +116,8 @@ function launch() {
     if (data.kind === 'error') fail(data.error);
     if (data.kind === 'compiled') {
       finish(); result = data;
-      highlightCode($('lowir-code'), data.lowir, 'lowir');
-      highlightCode($('generated-code'), data.generated, data.target);
+      outputView('lowir', data.lowir, 'lowir');
+      outputView('generated', data.generated, data.target);
       $('tab-generated').textContent = data.target === 'wasm' ? 'WebAssembly' : 'x86 assembly';
       $('inspector-status').textContent = `${data.target === 'wasm' ? 'WebAssembly' : 'x86-64'} · ${data.object.length.toLocaleString()} bytes · ${data.seconds.toFixed(2)} s · compiled locally at -O3`;
       if (url) URL.revokeObjectURL(url);

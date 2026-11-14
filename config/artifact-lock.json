@@ -1,11 +1,11 @@
 {
   "schema": 1,
-  "url": "https://76f3b861.cpp-inception.pages.dev",
+  "url": "https://97896d87.cpp-inception.pages.dev",
   "files": [
     {
       "path": "bundle.bin",
-      "bytes": 24741441,
-      "sha256": "6749ecc1af03b455e7724a877cfa5e30ff8187c1052dd46352edfbc3008ce2bf"
+      "bytes": 24797521,
+      "sha256": "0dfb8d59b31ad1729fb58613526f8444bc1a6f9db3fbf3f4c4caf76bb7a7c17f"
     },
     {
       "path": "credits.html",
@@ -14,13 +14,13 @@
     },
     {
       "path": "inputs/w1/cppgm.wasm",
-      "bytes": 5428186,
-      "sha256": "52551f9f8d347cab90019b99b7e5d130d3e2d61377c18771bfa56f392f0e3edb"
+      "bytes": 5432700,
+      "sha256": "f9040117efd25deddafac22e4c22ef58af3ae11a33dc3976056c82466d9a26b4"
     },
     {
       "path": "inputs/w1/dev__cppgm++.cpp.o",
-      "bytes": 94072,
-      "sha256": "fe262979b30994e8003aa69e3c829b8b2fd398362d4afd5c573418dd72147cfc"
+      "bytes": 94802,
+      "sha256": "fb2f9b249e3fdc8c657fef19993c58039e0bc72f15a5b3fac1f97c8f13f229fb"
     },
     {
       "path": "inputs/w1/dev__src__abi__itanium__abi_encoder.cpp.o",
@@ -89,18 +89,18 @@
     },
     {
       "path": "inputs/w1/dev__src__driver__host_environment.cpp.o",
-      "bytes": 15905,
-      "sha256": "fcd56a519aad2dafae435bb12a25e9becab2c30f9fc9105005ae7afd86202bc8"
+      "bytes": 16174,
+      "sha256": "e32717bfb182eb2e0fcd25488ec9188459fc4951d6ffd5bf61b4c776abdf2098"
     },
     {
       "path": "inputs/w1/dev__src__driver__toolchain.cpp.o",
-      "bytes": 90630,
-      "sha256": "410c9daf53d81317b705e84a8fc839ec3708e296a52169147b4323475d7541c1"
+      "bytes": 92078,
+      "sha256": "c2ee84c7da54be383e60f1d3de0cd199af45c2d2fbf29cc5cdd1fdb5a666769d"
     },
     {
       "path": "inputs/w1/dev__src__driver__wasm_environment.cpp.o",
-      "bytes": 6263,
-      "sha256": "67c7ad634e75ea7a7b4ba32b471f740cd2f79c18bae0b4b1a17fb4530ea6dfb8"
+      "bytes": 6283,
+      "sha256": "7f206d1125d2dbc49a9969a949b7e4601a1b1d059e228ea414d0474528330b49"
     },
     {
       "path": "inputs/w1/dev__src__driver__wasm_link_options.cpp.o",
@@ -114,8 +114,8 @@
     },
     {
       "path": "inputs/w1/dev__src__lex__identifier_table.cpp.o",
-      "bytes": 4225,
-      "sha256": "f578e654b51be927b6cae30556ed9e9c196686f4ad4357ccbeae760b3ef77ebb"
+      "bytes": 4328,
+      "sha256": "687dd86af7e0138e1086a98889dbca6b48b6bfdc29cadf7620b4373b5f2d44f5"
     },
     {
       "path": "inputs/w1/dev__src__lex__interchange_float.cpp.o",
@@ -149,8 +149,8 @@
     },
     {
       "path": "inputs/w1/dev__src__lex__token_kind.cpp.o",
-      "bytes": 6673,
-      "sha256": "b18b10909b4d93e671d15c4c2b52281366e79596c069d042f2082d0748479592"
+      "bytes": 7131,
+      "sha256": "68f06e9c87e130849049bef80860e1dcde37326fe01914ac140a3b518b5d1566"
     },
     {
       "path": "inputs/w1/dev__src__lex__ud_suffix.cpp.o",
@@ -159,8 +159,8 @@
     },
     {
       "path": "inputs/w1/dev__src__lower__aggregate_lowering.cpp.o",
-      "bytes": 52551,
-      "sha256": "f7ad13a0e24af0267394ad5127f16fc219973af005b32c9f791532ba6a4de5fd"
+      "bytes": 52550,
+      "sha256": "13585ca7d286803d0d740e361979513ea4b02bd1a60bb0580d1590394bb8ec44"
     },
     {
       "path": "inputs/w1/dev__src__lower__aggregate_shape.cpp.o",
@@ -205,7 +205,7 @@
     {
       "path": "inputs/w1/dev__src__lower__cleanup_lowering.cpp.o",
       "bytes": 60855,
-      "sha256": "ffc64ffedfec455eab97c6064fe11207c4ba49576769b9a9e6d29d4f5cce42f9"
+      "sha256": "968c0cec814514423229f9340fb39df44aea4973ff1e93b0cc04419fb5aff6a4"
     },
     {
       "path": "inputs/w1/dev__src__lower__complex_lowering.cpp.o",
@@ -214,8 +214,8 @@
     },
     {
       "path": "inputs/w1/dev__src__lower__condition_lowering.cpp.o",
-      "bytes": 14293,
-      "sha256": "372c5323af9bdd578118568672fdbe94f70f563e866c7eda1e93ff36df36f6b6"
+      "bytes": 14350,
+      "sha256": "4268a3811746c9bb76cb484d50cd8e180a944cb63724b7f525ee95e607632066"
     },
     {
       "path": "inputs/w1/dev__src__lower__constant_lowering.cpp.o",
@@ -224,8 +224,8 @@
     },
     {
       "path": "inputs/w1/dev__src__lower__conversion_lowering.cpp.o",
-      "bytes": 11289,
-      "sha256": "5c03b5b7e7eb2175ef0cda29c783cb0219fbcac06386e21798eb91c09b9a0b7b"
+      "bytes": 11525,
+      "sha256": "aa2660b50cebfba2e21321d22b537d8cea2cd02afa50069d8247d87aa5d2053e"
     },
     {
       "path": "inputs/w1/dev__src__lower__copy_lowering.cpp.o",
@@ -279,8 +279,8 @@
     },
     {
       "path": "inputs/w1/dev__src__lower__expression_lowering.cpp.o",
-      "bytes": 72026,
-      "sha256": "32010be065f42106c4b5c2a120ad41438f2aa2157decd4687a386e9109c406bd"
+      "bytes": 72807,
+      "sha256": "b6fb81e8d36d2b6f89ff301e474995caf2160642c4e8f4079de122ff2be444dd"
     },
     {
       "path": "inputs/w1/dev__src__lower__function_bindings.cpp.o",
@@ -315,7 +315,7 @@
     {
       "path": "inputs/w1/dev__src__lower__lexical_cleanup_lowering.cpp.o",
       "bytes": 16600,
-      "sha256": "463a69480f9d16d8664f734d219bf3f8fdbfbc1ec27d9b3b2ac93bd96f6a966e"
+      "sha256": "5409c408e5be429bbf9c681cd5a4221fd14a79f08f26ed72df96a045bfadce4c"
     },
     {
       "path": "inputs/w1/dev__src__lower__local_mangling.cpp.o",
@@ -364,8 +364,8 @@
     },
     {
       "path": "inputs/w1/dev__src__lower__program_lowering.cpp.o",
-      "bytes": 73535,
-      "sha256": "a1d6f8bbec7995e45f39ee6f82eb7e1fa19b8a832e1ed009bdb818d5b6b406d2"
+      "bytes": 73699,
+      "sha256": "c9acf712c327fe3580f64c0f16307ad3de4bce5e8f021a8faf1b69a1b5320715"
     },
     {
       "path": "inputs/w1/dev__src__lower__rtti_lowering.cpp.o",
@@ -399,8 +399,8 @@
     },
     {
       "path": "inputs/w1/dev__src__lower__statement_lowering.cpp.o",
-      "bytes": 46676,
-      "sha256": "d3be1eb3de08fe5e87e5b1a87a8d3bc2538fd6429324ffe878e70fb39c7f229d"
+      "bytes": 46677,
+      "sha256": "ea991b3b6df5ca0d78f380de35e08e8cc65f5ba2bb983b100800dc554ea34bb9"
     },
     {
       "path": "inputs/w1/dev__src__lower__symbol_lowering.cpp.o",
@@ -1304,13 +1304,13 @@
     },
     {
       "path": "inputs/w1/dev__src__preprocess__lexer__pp_lexer.cpp.o",
-      "bytes": 13297,
-      "sha256": "13d4269fc22bf0f0c8355f751e3f9989fb3c22c4ff73480a3a524bc7f527940c"
+      "bytes": 13342,
+      "sha256": "45c50d5e252fe3262db8456ebbb9e14695d8e83c18f1c58876dcd45d600cb2b8"
     },
     {
       "path": "inputs/w1/dev__src__preprocess__lexer__pp_lexer_literals.cpp.o",
       "bytes": 10926,
-      "sha256": "f28ef8f7bff4f4b024b4f5c970af3a3e6eb93ba1d5ba72a6dc345dc3829f1a8b"
+      "sha256": "973432566e7b2a215050ec83d13a3e7a43043e0dff1e227cedf62fcba5d85e42"
     },
     {
       "path": "inputs/w1/dev__src__preprocess__lexer__pp_lexer_punctuators.cpp.o",
@@ -1319,8 +1319,8 @@
     },
     {
       "path": "inputs/w1/dev__src__preprocess__macro__feature_probes.cpp.o",
-      "bytes": 6316,
-      "sha256": "6798c6189ce8861654d9aa4576360efd9a109f44a66ee0a4bfd4d4a379c66740"
+      "bytes": 6348,
+      "sha256": "1e70536f068edb8d15eae5faa883b26e29c149d7f2785bf34703f35a50c10371"
     },
     {
       "path": "inputs/w1/dev__src__preprocess__macro__hide_sets.cpp.o",
@@ -1334,18 +1334,18 @@
     },
     {
       "path": "inputs/w1/dev__src__preprocess__macro__macro_expander.cpp.o",
-      "bytes": 24195,
-      "sha256": "fb64dbf7065ecf311c7f58381ee27780d1aba113c2aa652482f3c33733b65252"
+      "bytes": 24218,
+      "sha256": "c6a632e56bf8da53db379aa3493c2882acadad7dc4bab25ab3c96d1495eb344e"
     },
     {
       "path": "inputs/w1/dev__src__preprocess__preprocessor.cpp.o",
-      "bytes": 35730,
-      "sha256": "8504eaeb68b11d0cb67388effbe832ac030927810f5e5b6f4bbd130983f5bf80"
+      "bytes": 36337,
+      "sha256": "50e91597901f78bba24adabe4a8a23548a234aa69a50498dcfac92ff45e4488b"
     },
     {
       "path": "inputs/w1/dev__src__preprocess__preprocessor_directives.cpp.o",
-      "bytes": 23503,
-      "sha256": "f3e4cc197c6f583cd0b90cfbaaf982eb50cc5d3f88004d05867fa017ea300c9a"
+      "bytes": 23500,
+      "sha256": "24e9c0c62728b5ee23863fc29643e14b7340a02955e8b4e7413e891b22ffd244"
     },
     {
       "path": "inputs/w1/dev__src__preprocess__preprocessor_names.cpp.o",
@@ -1364,8 +1364,8 @@
     },
     {
       "path": "inputs/w1/dev__src__preprocess__source__source_stack.cpp.o",
-      "bytes": 6880,
-      "sha256": "8568d2094d65d6522d66efa9a5291fd85a39d7259fcae1dd7ca2b1189562d77a"
+      "bytes": 6912,
+      "sha256": "e372dc6367f1f34ed08d1ad9a0d78cbdf4950578ed4b3e1c8a451445b83bb4c4"
     },
     {
       "path": "inputs/w1/dev__src__preprocess__source__translation_reader.cpp.o",
@@ -1379,8 +1379,8 @@
     },
     {
       "path": "inputs/w1/dev__src__sema__analyzer.cpp.o",
-      "bytes": 53517,
-      "sha256": "5d7b3bc8765a48c044c67baf8f8a5b0b45d4bdf40185d4d9ea886532ea9fdbc8"
+      "bytes": 53564,
+      "sha256": "e40786157c6dcf452d8ae38b1bf25fc227de6f6935084bf0c5bfe6bf9f16e77a"
     },
     {
       "path": "inputs/w1/dev__src__sema__analyzer_access.cpp.o",
@@ -1399,13 +1399,13 @@
     },
     {
       "path": "inputs/w1/dev__src__sema__analyzer_bindings.cpp.o",
-      "bytes": 14289,
-      "sha256": "ca9fa27cfb6c1bc82fc41823758bbd47d61cca7486173646417ac6115b28afbb"
+      "bytes": 14288,
+      "sha256": "adf5a62dedec428523aa2dd43c0b92d86b3f62699bb6d16a832660d682a03cb1"
     },
     {
       "path": "inputs/w1/dev__src__sema__analyzer_bodies.cpp.o",
-      "bytes": 37657,
-      "sha256": "549907da9f0eb8ce806301e3cbbd3be16b70a1211e74825a7526296d5f82c740"
+      "bytes": 37655,
+      "sha256": "2fe2a8ac5eb173010159ff7b80fccc276bb1bbeb45826582b292295d5ce1caa4"
     },
     {
       "path": "inputs/w1/dev__src__sema__analyzer_builtins.cpp.o",
@@ -1434,8 +1434,8 @@
     },
     {
       "path": "inputs/w1/dev__src__sema__analyzer_conversions.cpp.o",
-      "bytes": 30560,
-      "sha256": "61f0205c0570dfe77eb22bc3ddb834e07209d9be08121a60a14157ae990f397f"
+      "bytes": 30561,
+      "sha256": "141eba661981e9d0bff1df5e268725e3cbdb1f35e695f0ac93745799338a4889"
     },
     {
       "path": "inputs/w1/dev__src__sema__analyzer_copy.cpp.o",
@@ -1444,8 +1444,8 @@
     },
     {
       "path": "inputs/w1/dev__src__sema__analyzer_declarations.cpp.o",
-      "bytes": 67077,
-      "sha256": "17e76bfb5615dabdce1ee9705ea7d8fb73f610c4bcd440ac84e1d48ce23be768"
+      "bytes": 67239,
+      "sha256": "8191536510720b7047151b8e04336b76df7b29170dd11dad7d754373c971b002"
     },
     {
       "path": "inputs/w1/dev__src__sema__analyzer_exception_sets.cpp.o",
@@ -1459,8 +1459,8 @@
     },
     {
       "path": "inputs/w1/dev__src__sema__analyzer_expressions.cpp.o",
-      "bytes": 49160,
-      "sha256": "74d74bd154209f3a515af843c9067c58ccb8592066afdf7c9febbfab091582a4"
+      "bytes": 49473,
+      "sha256": "5d74c57544a9f8cd2a2959d87f1a2ff144d21864c6f13a15a4c4ed48fbdc24db"
     },
     {
       "path": "inputs/w1/dev__src__sema__analyzer_handlers.cpp.o",
@@ -1469,8 +1469,8 @@
     },
     {
       "path": "inputs/w1/dev__src__sema__analyzer_initialization.cpp.o",
-      "bytes": 28810,
-      "sha256": "66c685afb92cf7be06251efed9f5e26625448ca730881ef988f613ccae12d938"
+      "bytes": 28826,
+      "sha256": "aae2558569e8a3348e5a66cda170778b1c8edbddb04af66df97b6090e9ec25d1"
     },
     {
       "path": "inputs/w1/dev__src__sema__analyzer_initializer_lists.cpp.o",
@@ -1479,13 +1479,13 @@
     },
     {
       "path": "inputs/w1/dev__src__sema__analyzer_lambdas.cpp.o",
-      "bytes": 29233,
-      "sha256": "4a2fda3246b1ec3d781896954c7fa7e46cd4cdecccd130b71aa35a445864337a"
+      "bytes": 29230,
+      "sha256": "f643b3092565e4070cd9aa865de09104896985b7a45b92c864489b589b7e2ad3"
     },
     {
       "path": "inputs/w1/dev__src__sema__analyzer_literals.cpp.o",
-      "bytes": 10810,
-      "sha256": "a378ce711b5b4a3945ba48824145b1aab72df2e52838fcbb45acb2c596b8ebc6"
+      "bytes": 10851,
+      "sha256": "b38e9def902dac9eb07882990ca73c8b3cf8f3430009e0a6c3d4bc5d6e9324b9"
     },
     {
       "path": "inputs/w1/dev__src__sema__analyzer_member_pointers.cpp.o",
@@ -1514,8 +1514,8 @@
     },
     {
       "path": "inputs/w1/dev__src__sema__analyzer_types.cpp.o",
-      "bytes": 29644,
-      "sha256": "0fc6285eabb61a05c69820552a0a76de28e9b551985d062f7de164c6193bfa45"
+      "bytes": 29770,
+      "sha256": "5347e150cd060a0a2594a26d728b8c417b6fe48fdbdd328a35cbb2ae3e6d22b1"
     },
     {
       "path": "inputs/w1/dev__src__sema__analyzer_virtual.cpp.o",
@@ -1534,8 +1534,8 @@
     },
     {
       "path": "inputs/w1/dev__src__sema__class_templates.cpp.o",
-      "bytes": 82501,
-      "sha256": "c5230bfa6928ee1a3c80399e5607d4294e26eea90cb8906a71575fa72b7e35a8"
+      "bytes": 82502,
+      "sha256": "09af848fbb2f4a022aeaf76a0b760d4337ac819da539efdb262d8eac4c858787"
     },
     {
       "path": "inputs/w1/dev__src__sema__constant_array_storage.cpp.o",
@@ -1565,12 +1565,12 @@
     {
       "path": "inputs/w1/dev__src__sema__constant_evaluator.cpp.o",
       "bytes": 25164,
-      "sha256": "61f5fab322459262b9f92df3604320078c9cc53f0ad8b6277fe61e8ce6f8bbac"
+      "sha256": "ca9fc80f9e5500386bb4f0331f11cac431b78ac2a6b70afa58626140ac3bdde2"
     },
     {
       "path": "inputs/w1/dev__src__sema__constant_expressions.cpp.o",
-      "bytes": 48114,
-      "sha256": "1fb801d33cf72ed9d7138c25580ad6b2759a8c3a5eb2164ecf655de65beb9c10"
+      "bytes": 48113,
+      "sha256": "2878b19fd37ce8fdcb500195d4f10e438ca14d48f8950cb9a7b68ffb43526e1e"
     },
     {
       "path": "inputs/w1/dev__src__sema__constant_floating.cpp.o",
@@ -1589,13 +1589,13 @@
     },
     {
       "path": "inputs/w1/dev__src__sema__constant_statements.cpp.o",
-      "bytes": 29176,
-      "sha256": "bd2555c69421033015aadce7f6552bff145bd227601d83a7b711bf73aad789f8"
+      "bytes": 29177,
+      "sha256": "7b0c88a83d608c71460d4938198315f2594e8a89c2e008b4a890e47aed930ea7"
     },
     {
       "path": "inputs/w1/dev__src__sema__conversions.cpp.o",
-      "bytes": 10039,
-      "sha256": "2860a13a0906f59fb0e8e8602ec7ce45a836976d97b4ae06eacca97ecbb93069"
+      "bytes": 10200,
+      "sha256": "9f389e41756a1b4e9e438aa95be65cda04df7b85e87f9cddd29a8ddc25fb88b8"
     },
     {
       "path": "inputs/w1/dev__src__sema__declared_deduction_guides.cpp.o",
@@ -1634,8 +1634,8 @@
     },
     {
       "path": "inputs/w1/dev__src__sema__lambda_initializers.cpp.o",
-      "bytes": 2458,
-      "sha256": "294011042c7509d0fe22c9e329bee016121b653bc04e3503d252d0b6e75526c5"
+      "bytes": 2457,
+      "sha256": "17e4765735b43c1fddf8e57a517755e2195c78d53f008b0f3244fd60ee28df22"
     },
     {
       "path": "inputs/w1/dev__src__sema__layout.cpp.o",
@@ -1759,8 +1759,8 @@
     },
     {
       "path": "inputs/w1/dev__src__syntax__name_scopes.cpp.o",
-      "bytes": 21856,
-      "sha256": "23337a0528b77cb9abb712495a124fea3740a5e0223e71396b1f56fd7ae47aac"
+      "bytes": 21871,
+      "sha256": "a367bbd6331d1a31d04572c589f9bd6ecf3c2a9039a2f073a9550e61e79c2eee"
     },
     {
       "path": "inputs/w1/dev__src__syntax__parse_token_stream.cpp.o",
@@ -1769,48 +1769,48 @@
     },
     {
       "path": "inputs/w1/dev__src__syntax__parser.cpp.o",
-      "bytes": 18259,
-      "sha256": "d460c6b1af967221db7b08804a5d97505b60a31be3a9ae3a6910ad6d445e0fca"
+      "bytes": 18264,
+      "sha256": "3f54bbbb1ed622f37e764155da2c30b469f13d67b879d990fad872e614977aa4"
     },
     {
       "path": "inputs/w1/dev__src__syntax__parser_declarations.cpp.o",
-      "bytes": 44244,
-      "sha256": "080e2a991e5cdc3f50bc0cebeb7bc2f652a6fc891a7324b267b803b16eaad4bf"
+      "bytes": 44397,
+      "sha256": "b994fd633fa1e1e615e2baab98299fc0eb32a588ebdd85ea24a2111ae24653f4"
     },
     {
       "path": "inputs/w1/dev__src__syntax__parser_declarators.cpp.o",
-      "bytes": 36170,
-      "sha256": "164a4dd2c65a4472392d105326901f6822e948d0850660dbbcb3417a2fd0ed61"
+      "bytes": 35227,
+      "sha256": "308a46a6200c82fc1f36b447f43ae95e41db2663f38a37431121407f2faba168"
     },
     {
       "path": "inputs/w1/dev__src__syntax__parser_expressions.cpp.o",
-      "bytes": 51982,
-      "sha256": "f7c37bc7b0d36ddc7c337900240c23b09737f90304f8b2aaf7012b77acbb969b"
+      "bytes": 52080,
+      "sha256": "2eb8456c4d63e9b0f1f2d06e23465fc61dbc282017c7731c588347d1d78b04ad"
     },
     {
       "path": "inputs/w1/dev__src__syntax__parser_names.cpp.o",
-      "bytes": 29504,
-      "sha256": "222bb743c9c137a72f4d2db428b8883e71ecb1522e93cd3d34a8119318d8d7f3"
+      "bytes": 29509,
+      "sha256": "c1f0f7f92b3d193f23139d47116815cf9d563a31a4243c56f489f95e8175d7fb"
     },
     {
       "path": "inputs/w1/dev__src__syntax__parser_specifiers.cpp.o",
-      "bytes": 40021,
-      "sha256": "eaa2ddc3bd9774950ce87868e4618ce1e17b3572688d460fe9e5ac2f46f23ff1"
+      "bytes": 39241,
+      "sha256": "41c94f6812e8a22ed5a1212abe24c05b1cf5e4638fd19457700eb750024a8b08"
     },
     {
       "path": "inputs/w1/dev__src__syntax__parser_state.cpp.o",
-      "bytes": 22438,
-      "sha256": "807b15cc3de7b081fabe623fc6476db23081848d4864b876983cda6217417926"
+      "bytes": 22454,
+      "sha256": "88390918d0b845edc57b3530079db5386e657aaa21535793fea093056a14b1ff"
     },
     {
       "path": "inputs/w1/dev__src__syntax__parser_statements.cpp.o",
-      "bytes": 41706,
-      "sha256": "09f264f1f07d56f9851b7c61aabfad0644cab8a28b77f86b1bb9ea0212bb3619"
+      "bytes": 41721,
+      "sha256": "dc958a802f1f162da8f5fa05ab6fbe3b1df4a6a01a832171b3ff11a39c54f935"
     },
     {
       "path": "inputs/w1/dev__src__syntax__syntax_unit.cpp.o",
-      "bytes": 5949,
-      "sha256": "4772ebd05ba8e4238f14e7f61f6fb9580cc376de8249db59d39567b0000faf2d"
+      "bytes": 5965,
+      "sha256": "89b3099ccc5cd2ac30bb5fd456d8477a8b9a64b6e901ea6fe761a840655cba1f"
     },
     {
       "path": "inputs/w1/dev__src__target__target.cpp.o",
@@ -2259,13 +2259,13 @@
     },
     {
       "path": "manifest.json",
-      "bytes": 2011103,
-      "sha256": "8f729f8621d2495b83cd2801543e81a025acb384368a435a29bbe28bfaac8ab6"
+      "bytes": 2029906,
+      "sha256": "eaee9f75dead37ce6afd620e5376cf92f4f201be96172af8074a37e9ed7e006e"
     },
     {
       "path": "manifest.sha256",
       "bytes": 65,
-      "sha256": "043e575554c577d5f23ea5c36bf3cf51dd4c3979bef60dc882c8773328b89b4c"
+      "sha256": "9b3033f218ac032894019e6e2fd3d923d9cb5e1ebbcd4279021d1fedfdd855b9"
     },
     {
       "path": "openlara/bundle.bin",
@@ -2295,12 +2295,12 @@
     {
       "path": "openlara/manifest.json",
       "bytes": 463679,
-      "sha256": "3e71436659741036fb1581884b036de87ab018ee6aa0d9c90fb2050b6ec664bf"
+      "sha256": "26359dc16fb90025f95f2034decb3b1698eb1c3f555f4e0e45de457da0b5114c"
     },
     {
       "path": "openlara/manifest.sha256",
       "bytes": 65,
-      "sha256": "9cd06295a609d9053f36b4ca4b05432d63faee1c55e2f80c8e9f1a62321b65b5"
+      "sha256": "385e934742ec22cd7954f0199629b4efc9b57a27016c052a21694c77d4e7d98c"
     },
     {
       "path": "openlara/runtime.1361dc5bad12b25ceba2d0a82b6f82928321ab172c1039bf00170a53a26dcbd6.mjs",
@@ -2374,8 +2374,8 @@
     },
     {
       "path": "w1-complete.json",
-      "bytes": 374819,
-      "sha256": "668d33eb4cd3f40bbee2dcf804ce823280be9f1c4899822461d1b9728802f20b"
+      "bytes": 374056,
+      "sha256": "8e9845c6d8214f48f8e5ebec74a379108316906529732a758b7cd832a57742a3"
     },
     {
       "path": "wasi_browser.html",
@@ -2389,8 +2389,8 @@
     },
     {
       "path": "wasi_inception.py",
-      "bytes": 17729,
-      "sha256": "3114d2775a581fdae5ddfd77b0bb01c258935cd61c7dae181636f90aa07186ef"
+      "bytes": 18371,
+      "sha256": "5a32a430a09fdbdd734fa0f93c17023260ad524a8c77ba2a03955118771d6fab"
     },
     {
       "path": "wasi_runtime.mjs",

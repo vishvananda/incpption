@@ -94,6 +94,27 @@ const server = http.createServer((req, res) => {
     const download=page.waitForEvent('download');await page.locator('#object-download').click();
     const downloadPath=path.join(out,'inspector-x86.o');await(await download).saveAs(downloadPath);
     if(fs.readFileSync(downloadPath).subarray(0,4).toString('hex')!=='7f454c46')throw Error('Download is not an ELF object');
+    await page.locator('#source-project').selectOption('game');
+    report.gameProjectSources=[];
+    for(const source of ['openlara/src/platform/web/main.cpp','openlara/src/libs/stb_vorbis/stb_vorbis.c','openlara/src/libs/tinf/tinflate.c']){
+      await page.locator('#file-filter').fill(source);
+      await page.locator('#source-files button[aria-selected]').click();
+      await page.waitForFunction(source=>window.lastProjectEvent?.path===source,source);
+      const event=await compiled('wasm');
+      if(event.project!=='game')throw Error('Game source compilation did not use its own build settings');
+      report.gameProjectSources.push({path:source,lowirLength:event.lowir.length,generatedLength:event.generated.length});
+      if(source.endsWith('/main.cpp')){
+        for(const [id,contents] of [['lowir',event.lowir],['generated',event.generated]]){
+          await page.locator('#tab-'+id).click();
+          if((await page.locator('#'+id+'-code').textContent()).length>120000)throw Error('Large output preview is unbounded');
+          if(contents.length>120000&&!await page.locator('#'+id+'-preview').textContent())throw Error('Truncated output has no explanation');
+          const pending=page.waitForEvent('download');await page.locator('#'+id+'-download').click();
+          const target=path.join(out,'openlara-main.'+id);await(await pending).saveAs(target);
+          if(fs.readFileSync(target,'utf8')!==contents)throw Error('Complete output download differs from compiler output');
+        }
+        report.largeOutputDownloadsPassed=true;
+      }
+    }
     await page.locator('#source-project').selectOption('cppgm');
     await page.locator('#file-filter').fill('sema/analyzer.h');
     await page.locator('#source-files button[aria-selected]').click();

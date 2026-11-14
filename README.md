@@ -37,6 +37,8 @@ python3 tools/build.py --artifact-dir /path/to/qualified/static-payload --force
 ```
 
 The browser test serves `dist/` with the required isolation headers. It checks
+each OpenLara source file's LowIR and Wasm views with the actual game flags,
+bounded previews and complete output downloads,
 mobile layout, GitHub and Share, both explorer targets, invalid-source recovery,
 eight concurrent compiler workers, cancellation and restart, actual downloaded
 compiler bytes, game compilation, game bytes, WebGL rendering, and keyboard input. The additional phone game check verifies

@@ -34,6 +34,8 @@ export function invoke(module, root, args) {
   return WebAssembly.instantiate(module, {wasi_snapshot_preview1: wasi.wasiImport}).then(instance => {
     const status = wasi.start(instance);
     return {status, log, memoryBytes: instance.exports.memory.buffer.byteLength};
+  }).catch(error => {
+    throw Error([...log, String(error)].join('\n'));
   });
 }
 

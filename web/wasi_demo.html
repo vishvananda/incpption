@@ -57,8 +57,8 @@
         <div class="code-tabs" role="tablist" aria-label="Code view"><button id="tab-source" role="tab" aria-selected="true" aria-controls="pane-source">C++ source</button><button id="tab-lowir" role="tab" aria-selected="false" aria-controls="pane-lowir">LowIR</button><button id="tab-generated" role="tab" aria-selected="false" aria-controls="pane-generated">WebAssembly</button></div>
         <div class="code-file"><span id="source-name"></span><span id="source-state">Source input</span></div>
         <div id="pane-source" class="code-pane" role="tabpanel" aria-labelledby="tab-source"><div class="source-editor"><pre aria-hidden="true"><code id="source-highlight"></code></pre><textarea id="source-code" spellcheck="false" aria-label="C++ source code"></textarea></div></div>
-        <div id="pane-lowir" class="code-pane" role="tabpanel" aria-labelledby="tab-lowir" hidden><pre><code id="lowir-code"></code></pre></div>
-        <div id="pane-generated" class="code-pane" role="tabpanel" aria-labelledby="tab-generated" hidden><pre><code id="generated-code"></code></pre></div>
+        <div id="pane-lowir" class="code-pane" role="tabpanel" aria-labelledby="tab-lowir" hidden><p class="small"><span id="lowir-preview"></span> <a id="lowir-download" hidden>Download complete LowIR</a></p><pre><code id="lowir-code"></code></pre></div>
+        <div id="pane-generated" class="code-pane" role="tabpanel" aria-labelledby="tab-generated" hidden><p class="small"><span id="generated-preview"></span> <a id="generated-download" hidden>Download complete assembly</a></p><pre><code id="generated-code"></code></pre></div>
         <div class="explore-controls"><label>Target <select id="inspect-target"><option value="wasm">WebAssembly</option><option value="x86">x86-64</option></select></label><button id="compile-example" disabled>Compile selected file</button><button id="inspect-cancel" disabled>Cancel</button><button id="run-example" disabled>Run answer(10)</button><a id="object-download" hidden>Download object</a></div>
       </div>
     </div>
