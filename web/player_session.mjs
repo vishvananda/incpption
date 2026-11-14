@@ -14,7 +14,7 @@ export class PlayerSession {
       if (data.kind === 'log') this.log(data.message);
       if (data.kind === 'draws') this.draws = data.count;
       if (data.kind === 'size') this.frame.style.height = Math.max(240, Math.min(1200, data.height)) + 'px';
-      if (data.kind === 'playing') {this.draws = data.count; this.startResolve?.(this);}
+      if (data.kind === 'playing') {this.draws = data.count; this.frame.focus(); this.startResolve?.(this);}
       if (data.kind === 'error') this.startReject?.(Error(data.error));
       if (data.kind === 'ack') {this.requests.get(data.request)?.(); this.requests.delete(data.request);}
     };

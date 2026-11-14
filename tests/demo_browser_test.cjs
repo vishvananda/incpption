@@ -170,6 +170,7 @@ const server = http.createServer((req, res) => {
       clearInterval(progressTimer);
       if(await page.evaluate(()=>window.lastWorkflowEvent?.kind==='error'))throw Error(await page.evaluate(()=>window.lastWorkflowEvent.error));
       if(await page.evaluate(()=>window.gameError))throw Error(await page.evaluate(()=>window.gameError));
+      await page.frameLocator('#game-frame').locator('#canvas').click();
       await page.waitForFunction(()=>window.openLaraGame?.drawCalls>150,null,{timeout:60000});
       report.playerOrigin=new URL(await page.locator('#game-frame').getAttribute('src')).origin;
       if(report.playerOrigin===new URL(page.url()).origin)throw Error('Game shares the build page origin');
