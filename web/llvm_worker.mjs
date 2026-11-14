@@ -31,6 +31,7 @@ self.onmessage = async ({data}) => {
     }
     let before = performance.now(), index = manifest.commands.length;
     postMessage({kind: 'progress', index, name: names[index]});
+    insert(root, 'bin/lld.wasm', fileView(new Uint8Array(), false));
     const linked = await invoke(compiler.module, root, manifest.lld.args);
     if (linked.status) throw Error(linked.log.join('\n') || 'LLD link failed');
     const lld = lookup(root, 'bin/lld.wasm').data;

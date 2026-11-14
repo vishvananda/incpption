@@ -30,6 +30,7 @@ jobs:
       - run: node tests/highlight_test.mjs
       - run: npm run test:transport
       - run: python3 tests/project_sources_test.py
+      - run: python3 tests/llvm_profile_test.py
       - uses: actions/cache@v4
         with:
           path: .cache

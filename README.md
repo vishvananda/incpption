@@ -27,6 +27,7 @@ npm ci
 npm run check
 npm run test:transport
 python3 tests/project_sources_test.py
+python3 tests/llvm_profile_test.py
 node tests/highlight_test.mjs
 npm run build
 npx playwright install chromium webkit
@@ -77,7 +78,10 @@ with the same compiler. `tools/llvm_prepare.py` packages a frozen LLVM build
 only after all native and WASI object hashes agree. It omits LLVM objects,
 archives and executables. The source overlays in `patches/llvm/` use Emscripten's
 stack API, disable process-level crash recovery inside the worker, and flatten
-two long StringSwitch call chains to stay within the browser call-stack limit.
+two long StringSwitch call chains. `tools/llvm_source_profile.py` splits
+consecutive generated ARM case labels with empty statements. These source
+shapes stay within the browser call-stack limit and retain the same behavior;
+the ARM object remains byte-identical.
 
 LLVM's node builds Clang and LLD from 2,374 C/C++ files. cppgm links LLD, then
 that newly built LLD links Clang. Clang compiles all cppgm sources; the seed
