@@ -1,4 +1,5 @@
 import {attachGameControls} from './game_controls.mjs';
+import {runtimeExports} from './game_exports.mjs';
 // Start the actual browser-built module with its frozen runtime and assets.
 export async function playOpenLara(canvas, build, log = console.log) {
   const audioContext = new AudioContext();
@@ -31,7 +32,15 @@ export async function playOpenLara(canvas, build, log = console.log) {
     };
     processor.connect(audioContext.destination);
   };
-  const module = await OpenLara({wasmBinary: build.game, canvas, print, printErr: log, preRun: [m => {
+  let wasmReject;
+  const wasmFailed = new Promise((_,reject) => {wasmReject=reject;});
+  const module = await Promise.race([wasmFailed, OpenLara({wasmBinary: build.game, canvas, print, printErr: log,
+    instantiateWasm(imports, receive) {
+      WebAssembly.instantiate(build.game, imports).then(({instance, module}) => {
+        receive({exports: runtimeExports(instance.exports)}, module);
+      }).catch(wasmReject);
+      return {};
+    }, preRun: [m => {
     window.Module = m;
     m.FS.mkdirTree('/level/1');
     m.FS.mkdirTree('/audio/1');
@@ -45,7 +54,7 @@ export async function playOpenLara(canvas, build, log = console.log) {
       }
       return handle;
     };
-  }]});
+  }]})]);
   let timeout;
   try {
     await Promise.race([firstFrame, new Promise((_, reject) => {

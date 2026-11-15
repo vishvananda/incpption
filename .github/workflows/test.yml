@@ -28,13 +28,16 @@ jobs:
       - run: npx playwright install --with-deps chromium webkit
       - run: npm run check
       - run: node tests/highlight_test.mjs
+      - run: npm run test:workflow
       - run: npm run test:transport
+      - run: python3 tests/seed_transport_test.py
+      - run: python3 tests/reference_names_test.py
       - run: python3 tests/project_sources_test.py
       - run: python3 tests/llvm_profile_test.py
       - uses: actions/cache@v4
         with:
           path: .cache
-          key: compiler-payload-${{ hashFiles('config/artifact-lock.json') }}
+          key: compiler-payload-${{ hashFiles('config/*lock.json') }}
       - run: npm run build
       - run: npm test
         env:
@@ -42,6 +45,7 @@ jobs:
       - run: npm run test:game
         env:
           GAME_TEST_TOUCH: '1'
+      - run: npm run test:comparison
       - run: npm run test:mobile
       - uses: actions/upload-artifact@v4
         if: always()
@@ -50,6 +54,7 @@ jobs:
           path: |
             build/test-results
             build/game-results
+            build/comparison-results
             build/mobile-journey
           retention-days: 7
   clang-roundtrip:
@@ -70,7 +75,7 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: .cache
-          key: compiler-payload-${{ hashFiles('config/artifact-lock.json') }}
+          key: compiler-payload-${{ hashFiles('config/*lock.json') }}
       - run: npm run build
       - run: npm run test:roundtrip
       - uses: actions/upload-artifact@v4

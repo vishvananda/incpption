@@ -12,3 +12,12 @@
 
 /game_controls.css
   Cache-Control: public, max-age=0, must-revalidate
+
+/
+  Cache-Control: public, max-age=0, must-revalidate
+
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+/*.mjs
+  Cache-Control: public, max-age=0, must-revalidate

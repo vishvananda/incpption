@@ -50,7 +50,7 @@ const server = http.createServer((req, res) => {
     if(!process.env.DEMO_TEST_ORIGIN)await page.addInitScript(url=>window.incpptionPlayerURL=url,`http://localhost:${server.address().port}/game_frame.html`);
     await page.goto((process.env.DEMO_TEST_ORIGIN || `http://127.0.0.1:${server.address().port}`) + '/wasi_demo.html');
     const github=page.locator('.header-actions a');
-    if(await github.getAttribute('href')!=='https://github.com/vishvananda/cppgm-extended')throw Error('Wrong GitHub destination');
+    if(await github.getAttribute('href')!=='https://github.com/vishvananda/incpption')throw Error('Wrong GitHub destination');
     const mark=await page.locator('.github-mark').evaluate(e=>({color:getComputedStyle(e).fill,path:e.querySelector('path')?.getAttribute('d')}));
     if(mark.color!=='rgb(190, 239, 138)' || !mark.path)throw Error('GitHub mark does not match theme');
     await page.evaluate(()=>Object.defineProperty(navigator,'share',{configurable:true,value:async data=>{window.shared=data;}}));
@@ -69,6 +69,7 @@ const server = http.createServer((req, res) => {
     await page.locator('#share-status').evaluate(e=>e.textContent='');
     await page.locator('#share-feedback').evaluate(e=>e.hidden=true);
     report.headerPassed=true;
+    await page.waitForFunction(()=>!document.getElementById('run-workflow').disabled);
     if (!await page.locator('[data-phase=game]').isEnabled())throw Error('Supplied compiler cannot build the game first');
     await page.waitForFunction(()=>window.lastProjectEvent?.kind==='source');
     if(requests.some(r=>/^\/compiler\//.test(r.url)))throw Error('Source browsing downloaded the compiler or SDK');

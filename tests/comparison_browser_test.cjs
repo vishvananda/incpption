@@ -1,0 +1,85 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http'),{chromium}=require('playwright');
+const root=path.resolve(process.argv[2]||'dist'),out=path.resolve(process.argv[3]||'build/comparison-results');
+fs.mkdirSync(out,{recursive:true});
+const methods=[],requests=[],server=http.createServer((req,res)=>{
+  methods.push(req.method);requests.push(req.url);const file=path.resolve(root,'.'+decodeURIComponent(req.url.split('?')[0]));
+  if(!file.startsWith(root+'/')){res.writeHead(403).end();return;}
+  res.setHeader('Cross-Origin-Resource-Policy','cross-origin');res.setHeader('Cross-Origin-Opener-Policy','same-origin');res.setHeader('Cross-Origin-Embedder-Policy','require-corp');
+  res.setHeader('Content-Type',({'.mjs':'text/javascript','.js':'text/javascript','.html':'text/html','.css':'text/css','.json':'application/json','.wasm':'application/wasm'})[path.extname(file)]||'application/octet-stream');
+  const stream=fs.createReadStream(file);stream.on('error',()=>res.writeHead(404).end());stream.pipe(res);
+});
+(async()=>{
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  const browser=await chromium.launch({headless:true,args:['--no-sandbox','--enable-unsafe-swiftshader','--use-angle=swiftshader','--site-per-process']});
+  try{
+    const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[],workers=new Set();
+    page.setDefaultTimeout(120000);page.on('pageerror',e=>errors.push(String(e)));
+    page.on('worker',w=>{workers.add(w);w.on('close',()=>workers.delete(w));});
+    await page.addInitScript(url=>window.incpptionPlayerURL=url,`http://localhost:${server.address().port}/game_frame.html`);
+    await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);
+    await page.waitForFunction(()=>window.lastProjectEvent?.kind==='source'&&!document.getElementById('run-workflow').disabled);
+    assert.equal(await page.title(),'cppgm inception');
+    assert.equal(await page.locator('.header-actions a').getAttribute('href'),'https://github.com/vishvananda/incpption');
+    assert.equal(await page.locator('[data-flow-size=game]').textContent(),(()=>{const p=JSON.parse(fs.readFileSync(path.join(root,'download-plan.json')));return([...new Set([...p.stages.game,...p.stages['game-clang']])].reduce((n,f)=>n+p.files[f],0)/1048576).toFixed(1)+' MiB';})());
+    for(const width of [320,390,768,1440]){
+      await page.setViewportSize({width,height:1000});
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`overflow at ${width}`);
+      await page.screenshot({path:path.join(out,`layout-${width}.png`),fullPage:true});
+    }
+    await page.setViewportSize({width:1440,height:1000});
+    const logo=page.locator('.logo-title .wordmark');
+    await logo.click();assert.equal(await logo.evaluate(e=>e.getAnimations({subtree:true}).length),3);
+    await page.waitForTimeout(2100);
+    await page.emulateMedia({reducedMotion:'reduce'});await logo.click();assert.equal(await logo.evaluate(e=>e.getAnimations({subtree:true}).length),0);
+    await page.emulateMedia({reducedMotion:'no-preference'});
+    for(const target of ['doom','godot','lara']){
+      await page.locator('#build-target').selectOption(target);
+      assert.equal(await page.locator('[data-phase=game] .node-name').textContent(),target==='doom'?'Doom 3':target==='godot'?'Godot':'Lara');
+      if(target!=='lara'){assert.equal(await page.locator('#run-workflow').isEnabled(),false);assert.match(await page.locator('#target-note').textContent(),/package/);}
+    }
+    await page.locator('[data-phase=game]').click();
+    assert.equal(await page.locator('#cancel').isEnabled(),true);
+    assert.equal(await page.locator('#flow-rows .flow-node.active').count(),2);
+    await page.waitForFunction(()=>window.lastGameBuild?.kind==='error'||window.lastWorkflowEvent?.kind==='error'||window.lastGameBuild?.kind==='complete'&&window.lastClangGameBuild?.kind==='complete',null,{timeout:600000});
+    const report=await page.evaluate(()=>({cppgm:window.lastGameBuild,clang:window.lastClangGameBuild,error:window.lastWorkflowEvent?.kind==='error'?window.lastWorkflowEvent.error:null}));
+    assert.equal(report.error,null);assert.equal(report.cppgm.kind,'complete');assert.equal(report.clang.kind,'complete');
+    assert.equal(report.cppgm.workerCount,report.clang.workerCount);
+    assert.equal(await page.locator('#units .done').count(),4);assert.equal(await page.locator('#units-clang .done').count(),4);
+    for(const id of ['game','game-clang']){
+      const before=await page.locator(`[data-phase="${id}"] time`).textContent();
+      await page.locator(`[data-phase="${id}"]`).click();await page.waitForTimeout(300);
+      assert.equal(await page.locator(`[data-phase="${id}"] time`).textContent(),before);
+      assert.equal(await page.locator('#cancel').isEnabled(),false,'reviewing a result started a build');
+    }
+    await page.locator('.journey-nav [data-journey=inception]').click();await page.locator('.journey-nav [data-journey=game]').click();
+    assert.equal(await page.locator('#units .done').count(),4,'changing workflows lost results');
+    await page.locator('#build-target').selectOption('godot');await page.locator('#build-target').selectOption('lara');
+    assert.equal(await page.locator('#units .done').count(),4,'changing targets lost results');
+    for(const url of new Set(requests.filter(url=>/\/(game\/chunks\/|compiler\/inputs\/w1\/cppgm\.wasm)/.test(url))))assert.equal(requests.filter(value=>value===url).length,1,'comparison downloaded a shared input twice: '+url);
+    for(const compiler of ['cppgm','clang']) {
+      const bytes=await page.locator(`#downloads a[download="lara-${compiler}.wasm"]`).evaluate(async a=>Array.from(new Uint8Array(await(await fetch(a.href)).arrayBuffer())));
+      fs.writeFileSync(path.join(out,compiler+'.wasm'),Buffer.from(bytes));
+      const names=WebAssembly.Module.exports(new WebAssembly.Module(Buffer.from(bytes))).map(e=>e.name);
+      assert(names.includes('main')||names.includes('__main_argc_argv'),'the linked game has no exported entry point');
+    }
+    for(const id of ['game-play','game-play-clang']){
+
+      await page.locator('#'+id).click();
+      await page.waitForFunction(()=>window.gamePlaying||window.gameError,null,{timeout:120000});
+      assert.equal(await page.evaluate(()=>window.gameError),undefined);
+      await page.waitForFunction(()=>window.openLaraGame?.drawCalls>100,null,{timeout:90000});
+      await page.locator('#game-close').click();assert.equal(await page.evaluate(()=>window.gamePlaying),false);
+    }
+    await page.screenshot({path:path.join(out,'comparison-built.png'),fullPage:true});
+    await page.locator('#rerun-phase').click();assert.equal(await page.locator('#cancel').isEnabled(),true);
+    await page.locator('#cancel').click();
+    await page.waitForFunction(()=>document.getElementById('cancel').disabled);
+    for(let n=0;workers.size&&n<100;n++)await page.waitForTimeout(100);
+    assert.equal(workers.size,0,'build workers survived cancellation');
+    const time=await page.locator('#elapsed-clang').textContent();await page.waitForTimeout(1100);assert.equal(await page.locator('#elapsed-clang').textContent(),time,'cancelled timer kept running');
+    assert.equal(await page.locator('#game-play').isEnabled(),false,'rerun kept stale playable output');
+    assert.deepEqual(errors,[]);assert(methods.every(m=>['GET','HEAD'].includes(m)));
+    fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({...report,passed:true},null,2));
+    console.log(`PASS: simultaneous cppgm/Clang builds, both playable outputs, result retention, explicit rerun, download estimates and responsive logo`);
+  }finally{await browser.close();}
+})().catch(e=>{console.error(e);process.exitCode=1;}).finally(()=>server.close());

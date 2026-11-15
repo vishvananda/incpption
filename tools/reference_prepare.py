@@ -18,6 +18,14 @@ def save(path, data):
     path.write_text(json.dumps(data, indent=2) + '\n')
 
 
+def export_seed(source, provenance):
+    # Published exports retain their original names and provenance keys.
+    name = next((name for name in ['cppgm.wasm', 'cppgm++.wasm'] if (source / 'bin' / name).is_file()), None)
+    if not name or digest(source / 'bin' / name) != provenance['binaries'].get(name):
+        raise RuntimeError('release compiler checksum differs')
+    return source / 'bin' / name
+
+
 def prepare(args):
     source = args.export.resolve()
     output = args.output.resolve()
@@ -29,9 +37,7 @@ def prepare(args):
     if digest(source / 'bundle.bin') != manifest['bundle_sha256']:
         raise RuntimeError('release filesystem checksum differs')
     provenance = json.loads((source / 'wasm-reference-provenance.json').read_text())
-    seed = source / 'bin/cppgm++.wasm'
-    if digest(seed) != provenance['binaries']['cppgm++.wasm']:
-        raise RuntimeError('release compiler checksum differs')
+    seed = export_seed(source, provenance)
     subprocess.run(['python3', str(source / 'unpack_wasi_inputs.py'), str(source), str(inputs)], check=True)
     for name in ['manifest.json', 'manifest.sha256', 'bundle.bin', 'wasm-reference-provenance.json']:
         shutil.copyfile(source / name, output / name)

@@ -11,6 +11,7 @@ import subprocess
 from inspector_vendor import prepare_vendor
 from project_sources import prepare_sources
 from artifact_transport import logical_bytes
+from download_plan import prepare_download_plan
 
 ROOT = Path(__file__).resolve().parents[1]
 LIMIT = 25 * 1024 * 1024
@@ -24,6 +25,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--artifact-dir', type=Path, help='existing qualified static payload; never modified')
     parser.add_argument('--artifact-lock', type=Path, help='candidate artifact lock for local qualification')
+    parser.add_argument('--seed-dir', type=Path, help='verified Clang seed package for local qualification')
     parser.add_argument('--output', type=Path, default=ROOT / 'dist')
     parser.add_argument('--force', action='store_true')
     args = parser.parse_args()
@@ -94,6 +96,24 @@ def main():
         (output / 'game/transport.json').write_text(json.dumps(transport) + '\n')
     for name in sorted(n for n in entries if n.startswith(('licenses/', 'shim/', 'llvm/'))):
         copy(name, output / name)
+    seed_lock = json.loads((ROOT / 'config/clang-seed-lock.json').read_text()) if (ROOT / 'config/clang-seed-lock.json').is_file() else None
+    seed_dir = args.seed_dir or ROOT / '.cache/clang-seed'
+    if seed_lock and not args.seed_dir:
+        for row in seed_lock['files']:
+            target = seed_dir / row['path']
+            if not target.is_file() or sha(target) != row['sha256']:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                subprocess.run(['curl', '-fsSL', '--retry', '3', '--max-time', '120', seed_lock['url'] + '/' + row['path'], '-o', str(target)], check=True)
+            if sha(target) != row['sha256']: raise RuntimeError('Clang seed hash mismatch')
+    if not seed_dir.is_dir(): raise RuntimeError('Clang seed package missing; see README')
+    shutil.copytree(seed_dir, output / 'clang-seed')
+    seed_manifest = json.loads((output / 'clang-seed/manifest.json').read_text())
+    llvm_manifest = json.loads((output / 'llvm/manifest.json').read_text())
+    if seed_manifest['llvm_manifest_sha256'] != sha(output / 'llvm/manifest.json') or any(
+            seed_manifest['tools'][name]['sha256'] != llvm_manifest[name]['sha256'] for name in ['clang', 'lld']):
+        raise RuntimeError('Clang seed is from a different LLVM build')
+    (output / 'clang-seed/manifest.sha256').write_text(sha(output / 'clang-seed/manifest.json') + '\n')
+    prepare_download_plan(output)
     for path in (ROOT / 'web').rglob('*'):
         if path.is_file():
             target = output / path.relative_to(ROOT / 'web')
@@ -130,6 +150,11 @@ def main():
             '<a href="licenses/llvm/llvm-LICENSE.TXT">LLVM license and exceptions</a> · '
             '<a href="licenses/llvm/clang-LICENSE.TXT">Clang license</a> · '
             '<a href="licenses/llvm/lld-LICENSE.TXT">LLD license</a>.</p></main>')
+    (output / 'licenses/site').mkdir(parents=True, exist_ok=True)
+    for name in ['LICENSE', 'NOTICE']:
+        shutil.copyfile(ROOT / name, output / 'licenses/site' / name)
+    shutil.copyfile(ROOT / 'third_party/octicons-LICENSE', output / 'licenses/site/octicons-LICENSE')
+    credits = credits.replace('</main>', '<h2>Site source</h2><p><a href="https://github.com/vishvananda/incpption">cppgm inception</a> is Apache-2.0. <a href="licenses/site/NOTICE">Notices</a>. GitHub mark: <a href="licenses/site/octicons-LICENSE">Octicons MIT license</a>.</p></main>')
     for original, versioned in styles.items():
         credits = credits.replace(f'href="{original}"', f'href="{versioned}"')
     (output / 'credits.html').write_text(credits)

@@ -5,13 +5,11 @@ async function hash(bytes) {
   return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), n => n.toString(16).padStart(2, '0')).join('');
 }
 function share(bytes, enabled) {
-  if (!enabled || !globalThis.crossOriginIsolated || typeof SharedArrayBuffer === 'undefined') return bytes;
+  if (!enabled || !globalThis.crossOriginIsolated || typeof SharedArrayBuffer === 'undefined' || bytes.buffer instanceof SharedArrayBuffer) return bytes;
   const result = new Uint8Array(new SharedArrayBuffer(bytes.length)); result.set(bytes); return result;
 }
 export async function bundleLayers(prefix, manifest, {shared = false, select = () => true, cache = new Map()} = {}) {
-  const response = await fetch(prefix + 'transport.json', {cache: 'no-store'});
-  if (!response.ok) throw Error('Input transport download failed');
-  const transport = await response.json();
+  const transport = JSON.parse(new TextDecoder().decode(await fetchBytes(prefix + 'transport.json')));
   if (transport.schema !== 1 || transport.sha256 !== manifest.bundle_sha256 || !Array.isArray(transport.chunks))
     throw Error('Input transport does not match the frozen manifest');
   let position = 0;

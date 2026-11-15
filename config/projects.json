@@ -1,0 +1,24 @@
+{
+  "lara": {
+    "label": "Lara",
+    "name": "OpenLara",
+    "available": true,
+    "project": "game",
+    "package": "game/",
+    "kind": "game"
+  },
+  "doom": {
+    "label": "Doom 3",
+    "name": "Doom 3",
+    "available": false,
+    "kind": "game",
+    "reason": "Needs the newer compiler package and browser build checks."
+  },
+  "godot": {
+    "label": "Godot",
+    "name": "Godot editor",
+    "available": false,
+    "kind": "editor",
+    "reason": "Needs the newer compiler package and browser build checks."
+  }
+}

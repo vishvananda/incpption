@@ -1,7 +1,7 @@
 {
   "name": "incpption",
   "private": true,
-  "description": "cpp inception browser-local compiler demo",
+  "description": "Watch cppgm and Clang compile locally in a browser.",
   "dependencies": {
     "@bjorn3/browser_wasi_shim": "0.4.2",
     "iced-x86": "1.22.0",
@@ -20,6 +20,9 @@
     "test:game": "node tests/openlara_browser_test.cjs dist node_modules/playwright build/game-results",
     "test:mobile": "node tests/mobile_journey_test.cjs dist build/mobile-journey",
     "test:roundtrip": "node tests/demo_browser_test.cjs dist node_modules/playwright roundtrip build/roundtrip-results",
-    "test:transport": "python3 tests/transport_test.py && node tests/bundle_layers_test.mjs"
-  }
+    "test:transport": "python3 tests/transport_test.py && node tests/bundle_layers_test.mjs",
+    "test:comparison": "node tests/comparison_browser_test.cjs dist build/comparison-results",
+    "test:workflow": "node tests/workflow_state_test.mjs && node tests/input_broker_test.mjs"
+  },
+  "license": "Apache-2.0"
 }

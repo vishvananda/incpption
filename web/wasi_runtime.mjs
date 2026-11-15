@@ -5,7 +5,10 @@ export {fetchBytes};
 
 export const encoder = new TextEncoder();
 const hex = bytes => Array.from(bytes, n => n.toString(16).padStart(2, '0')).join('');
-export const hash = async bytes => hex(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)));
+export const hash = async bytes => {
+  if(typeof SharedArrayBuffer !== 'undefined' && bytes.buffer instanceof SharedArrayBuffer)bytes=new Uint8Array(bytes);
+  return hex(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)));
+};
 export function equal(a, b, name) {
   const end = Math.min(a.length, b.length);
   let offset = 0;
@@ -29,7 +32,7 @@ export function lookup(root, path) {
 }
 export function invoke(module, root, args) {
   const log = [];
-  const wasi = new WASI(['cppgm++', ...args], [], [new OpenFile(new File([])),
+  const wasi = new WASI(['cppgm', ...args], [], [new OpenFile(new File([])),
     ConsoleStdout.lineBuffered(s => log.push(s)), ConsoleStdout.lineBuffered(s => log.push(s)),
     new PreopenDirectory('.', root.contents)], {debug: false});
   return WebAssembly.instantiate(module, {wasi_snapshot_preview1: wasi.wasiImport}).then(instance => {

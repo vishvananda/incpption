@@ -1,0 +1,126 @@
+{
+  "schema": 1,
+  "url": "https://98801810.cpp-inception.pages.dev",
+  "files": [
+    {
+      "path": "LICENSE",
+      "size": 15141,
+      "sha256": "8d85c1057d742e597985c7d4e6320b015a9139385cff4cbae06ffc0ebe89afee"
+    },
+    {
+      "path": "NOTICE",
+      "size": 211,
+      "sha256": "3b5d9c857500040781dbbc69dde1b0a9193947a84db4a8bf2b08f9e7e8875b1b"
+    },
+    {
+      "path": "clang.00.bin",
+      "size": 6871913,
+      "sha256": "38505f53eb531a4184192b36ab1d16fd13b8260073f347ffb693b974ec043611"
+    },
+    {
+      "path": "clang.01.bin",
+      "size": 6620941,
+      "sha256": "c674040754375f9fb9af3ab8cba7a40e6654bbb4e689498f3c0767ea35faffc1"
+    },
+    {
+      "path": "clang.02.bin",
+      "size": 6458879,
+      "sha256": "3749ec9de8bbe3288133abdd757c1304317bbb604fb83f2668975d2d06e6edc9"
+    },
+    {
+      "path": "clang.03.bin",
+      "size": 6390839,
+      "sha256": "8d342f1cd82e5e2dc0200f2180dd4fae0c9f48a5a3e7b91382af27a9d74a14a4"
+    },
+    {
+      "path": "clang.04.bin",
+      "size": 6456175,
+      "sha256": "98eaf0d9c4cbd757f7050709b9909e64f1bb6ed162a67ab8850c9f141dd81634"
+    },
+    {
+      "path": "clang.05.bin",
+      "size": 6422961,
+      "sha256": "765fbd1dd1ca3d0d7d80fd09461c8d928dd8ad579639cc5fb87fae51b5437a26"
+    },
+    {
+      "path": "clang.06.bin",
+      "size": 5025330,
+      "sha256": "e6a2c30b830cd30c1052d1c90166e41f0996e6fe99c2a39af6f0fb2ba3b393f3"
+    },
+    {
+      "path": "clang.07.bin",
+      "size": 5582346,
+      "sha256": "4de9f24a9c2605a368d00fd3eb8359dcdd21909ffdc0df96f2db4aa398528bc6"
+    },
+    {
+      "path": "clang.08.bin",
+      "size": 3553158,
+      "sha256": "870bd75b718f45a5ae472e087a0345d7616671ac739c33ccc5eeabe23f06b18b"
+    },
+    {
+      "path": "clang.09.bin",
+      "size": 1517282,
+      "sha256": "e11f630e37e358e28777734d708413e2fea0d3b45b93a4327d6e0b598fc089d2"
+    },
+    {
+      "path": "clang.10.bin",
+      "size": 474344,
+      "sha256": "f6d1a6bf58442d3827730e8f58bb4f811c9d69dbc66c207f60e6ceab03bed44d"
+    },
+    {
+      "path": "clang.41c11b25156960f2.mjs",
+      "size": 177539,
+      "sha256": "41c11b25156960f2bac6cead754ef947b32baef46361d64e7ded6db71dad23ee"
+    },
+    {
+      "path": "licenses/emscripten-AUTHORS.txt",
+      "size": 28933,
+      "sha256": "56f7df65203d4858dac19cafe3a84a8c49abaff56b67d32d2d463d5fef6e440b"
+    },
+    {
+      "path": "licenses/emscripten-LICENSE.txt",
+      "size": 5093,
+      "sha256": "620a78084fc7ca97c0b5dea9abf891f3ffcadfdbf305276f099c9c4e12fc1d86"
+    },
+    {
+      "path": "licenses/emscripten-system-lib-libc-musl-COPYRIGHT.txt",
+      "size": 6204,
+      "sha256": "f9bc4423732350eb0b3f7ed7e91d530298476f8fec0c6c427a1c04ade22655af"
+    },
+    {
+      "path": "lld.00.bin",
+      "size": 6346080,
+      "sha256": "f2b3e7932b51c906deb029a8f51f7dc8e85811229e5968ac14be935bdb6f014a"
+    },
+    {
+      "path": "lld.01.bin",
+      "size": 6926731,
+      "sha256": "a2d2cc10ee4ce245cbfe36671ef5fad52e596a5126160aecde624f5150c44687"
+    },
+    {
+      "path": "lld.02.bin",
+      "size": 6871951,
+      "sha256": "56e7e4e4137a0c8ae07cb9729d861bf2ff514216793bee3af3873035fb8fde1b"
+    },
+    {
+      "path": "lld.03.bin",
+      "size": 6856765,
+      "sha256": "7a9c2337874c1822f5e583693306db1f81360b50092becc530a5e782fb3ccdc3"
+    },
+    {
+      "path": "lld.04.bin",
+      "size": 5283110,
+      "sha256": "b32f5c31dd8fffa81239ba7a6162e59877e0fcbec29329ec8222128f49c98231"
+    },
+    {
+      "path": "lld.0c710644c726cecd.mjs",
+      "size": 173325,
+      "sha256": "0c710644c726cecd34cf1906fa2d0bf7c25a1250be2f89ad904f837ed075367c"
+    },
+    {
+      "path": "manifest.json",
+      "size": 4072,
+      "sha256": "459122824c057b08104d61c0fc9074db535025647536532f8651176bfcb0341b"
+    }
+  ]
+}

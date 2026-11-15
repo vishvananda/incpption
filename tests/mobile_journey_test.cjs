@@ -37,7 +37,7 @@ const server=http.createServer((req,res)=>{
       if(name==='chromium'){
         await page.setViewportSize({width:390,height:844});
         await page.locator('[data-phase=game]').click();
-        await page.waitForFunction(()=>['complete','error'].includes(window.lastGameBuild?.kind),null,{timeout:300000});
+        await page.waitForFunction(()=>window.lastWorkflowEvent?.kind==='error'||window.lastGameBuild?.kind==='complete'&&window.lastClangGameBuild?.kind==='complete',null,{timeout:300000});
         const built=await page.evaluate(()=>window.lastGameBuild);if(built.kind!=='complete')throw Error(built.error);
         await page.locator('#game-play').click();
         await page.waitForFunction(()=>window.gamePlaying||window.gameError,null,{timeout:90000});
