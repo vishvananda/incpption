@@ -71,7 +71,7 @@ const server = http.createServer((req, res) => {
     await page.locator('#share-feedback').evaluate(e=>e.hidden=true);
     report.headerPassed=true;
     await page.waitForFunction(()=>!document.getElementById('run-workflow').disabled);
-    if(await page.locator('#build-target').inputValue()!=='doom')throw Error('Doom is not the default');
+    if(await page.locator('#build-target').inputValue()!=='lara')throw Error('OpenLara is not the default');
     await page.locator('#build-target').selectOption('lara');
     if (!await page.locator('[data-phase=game]').isEnabled())throw Error('Supplied compiler cannot build the game first');
     await page.waitForFunction(()=>window.lastProjectEvent?.kind==='source');

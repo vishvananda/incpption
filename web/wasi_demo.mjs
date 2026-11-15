@@ -8,12 +8,12 @@ const definitions = {
   llvm: {label:'clang', detail:'cppgm builds clang + LLD', project:'llvm', worker:'llvm_worker.mjs'},
   clang: {label:'cppgm-clang', detail:'clang builds cppgm', project:'cppgm', worker:'clang_worker.mjs'},
   match: {label:'cppgm', detail:'Rebuild & match every byte', project:'cppgm', worker:'wasi_worker.mjs'},
-  game: {label:'Doom 3', detail:'Compile & link Doom 3', project:'game', worker:'project_worker.mjs'},
-  'game-clang': {label:'Doom 3', detail:'Compile & link Doom 3', project:'game', worker:'project_worker.mjs'},
+  game: {label:'Lara', detail:'Compile & link OpenLara', project:'game', worker:'project_worker.mjs'},
+  'game-clang': {label:'Lara', detail:'Compile & link OpenLara', project:'game', worker:'project_worker.mjs'},
 };
 const state = new WorkflowState(), jobs = new Map(), sourceNames = {}, grids = new Map(), downloads = new Map();
 const requestedProject=new URLSearchParams(location.search).get('project');
-let scenario, target = ['doom','lara','godot'].includes(requestedProject)?requestedProject:'doom', visiblePhase, automatic = false, player, playing = false, opening = false, gameLaunch = 0;
+let scenario, target = ['doom','lara','godot'].includes(requestedProject)?requestedProject:'lara', visiblePhase, automatic = false, player, playing = false, opening = false, gameLaunch = 0;
 let selectedGame = 'game', plan, comparisonInputs, preloadTarget;
 const gameData=new Map();
 const clock = seconds => `${Math.floor(seconds/60)}:${String(Math.floor(seconds%60)).padStart(2,'0')}`;
@@ -52,10 +52,15 @@ function canRun(id) {
 function downloadFiles(ids) {return new Set(ids.flatMap(id => (isGame(id)?plan?.targets[target]?.stages?.[id]:plan?.stages[id]) || []));}
 function downloadSize(ids) {return [...downloadFiles(ids)].reduce((total,name) => total + (plan?.files[name] || 0), 0);}
 const fileSize=files=>(files||[]).reduce((total,name)=>total+(plan?.files[name]||0),0);
+const gameDataSize=()=>fileSize(plan?.targets[target]?.playFiles?.filter(path=>path.includes('/assets/')));
 function updateBadges() {
   for (const badge of document.querySelectorAll('[data-flow-size]')) {
     const bytes = [...new Set([...downloadFiles(paths[badge.dataset.flowSize]),...(plan?.targets[target]?.playFiles||[])])].reduce((n,path)=>n+(plan?.files[path]||0),0);
     badge.textContent = plan && !plan.targets[target]?.available ? badge.dataset.flowSize === 'game' ? 'Package pending' : '≥ '+size(bytes)+' + project' : bytes ? size(bytes) : '';
+    if(bytes&&plan?.targets[target]?.available){
+      const total=document.createElement('span');total.className='download-total';total.textContent=size(bytes)+' total';badge.replaceChildren(total);
+      if(gameDataSize()){const data=document.createElement('span');data.className='download-data';data.textContent='incl. '+size(gameDataSize())+' game data';badge.append(data);}
+    }
     badge.title = 'Cold download, shared files counted once. Cached files may need no transfer.';
   }
 }
@@ -113,8 +118,8 @@ function drawComparison(){
 }
 function drawGameData(){
   const element=$('game-data-download'),row=gameData.get(target);
-  element.hidden=!row;
-  if(!row)return;
+  element.hidden=!row&&!gameDataSize();
+  if(!row){element.querySelector('span').textContent=`Game data ↓ ${size(gameDataSize())} · included in totals · downloads during compilation`;element.querySelector('progress').hidden=true;return;}
   element.querySelector('span').textContent=row.error?'Game data will download when you open the game.':row.done?`Game data ready · ${size(row.total)} cached`:`Game data ↓ ${size(row.loaded)} / ${size(row.total)} · ${row.paused?'paused':'downloading in background'}`;
   const progress=element.querySelector('progress');progress.hidden=!!row.error;progress.max=row.total||1;progress.value=row.loaded;
 }
@@ -376,7 +381,7 @@ window.addEventListener('project-index-ready',({detail:{projects}})=>{
   if(!busy())showPhase(visiblePhase);
 });
 function updateRoutes(){
-  const project=plan?.targets[target]?.label||'Doom 3';
+  const project=plan?.targets[target]?.label||'Lara';
   const routes={game:[['cppgm',project],['clang',project]],inception:[['cppgm','cppgm ✓',project]],roundtrip:[['cppgm','clang','cppgm','cppgm ✓',project]]};
   for(const caption of document.querySelectorAll('[data-route]')){
     const fragment=document.createDocumentFragment();

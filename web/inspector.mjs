@@ -193,6 +193,6 @@ try {
   }
   projects = [...index.projects, {id:'example',name:'Editable example',root:'',buildSources:[],files:[{path:'example.cpp'}]}];
   window.dispatchEvent(new CustomEvent('project-index-ready', {detail: {projects: index.projects}}));
-  selectProject(window.activeJourney === 'roundtrip' ? 'llvm' : window.activeJourney === 'inception' ? 'cppgm' : window.activeBuildTarget||'doom');
+  selectProject(window.activeJourney === 'roundtrip' ? 'llvm' : window.activeJourney === 'inception' ? 'cppgm' : window.activeBuildTarget||'lara');
   window.lastInspectorEvent = {kind:'ready'};
 } catch (error) {fail(String(error));}

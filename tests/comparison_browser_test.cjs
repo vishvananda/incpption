@@ -25,7 +25,7 @@ const methods=[],requests=[],server=http.createServer((req,res)=>{
     assert.equal(await page.locator('#flow .node-download').textContent(),await page.locator('#flow-clang .node-download').textContent(),'project inputs must be identical');
     assert.notEqual(await page.locator('#flow .setup-download').textContent(),await page.locator('#flow-clang .setup-download').textContent(),'compiler setup belongs at the seed');
     assert.equal(await page.locator('.header-actions a').getAttribute('href'),'https://github.com/vishvananda/incpption');
-    assert.equal(await page.locator('[data-flow-size=game]').textContent(),(()=>{const p=JSON.parse(fs.readFileSync(path.join(root,'download-plan.json')));return([...new Set([...p.targets.doom.stages.game,...p.targets.doom.stages['game-clang'],...p.targets.doom.playFiles])].reduce((n,f)=>n+p.files[f],0)/1048576).toFixed(1)+' MiB';})());
+    assert.equal(await page.locator('[data-flow-size=game] .download-total').textContent(),(()=>{const p=JSON.parse(fs.readFileSync(path.join(root,'download-plan.json')));return([...new Set([...p.targets.lara.stages.game,...p.targets.lara.stages['game-clang'],...p.targets.lara.playFiles])].reduce((n,f)=>n+p.files[f],0)/1048576).toFixed(1)+' MiB total';})());
     for(const width of [320,390,768,1440]){
       await page.setViewportSize({width,height:1000});
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`overflow at ${width}`);
@@ -41,6 +41,10 @@ const methods=[],requests=[],server=http.createServer((req,res)=>{
       await page.locator('#build-target').selectOption(target);
       assert.equal(await page.locator('[data-phase=game] .node-name').textContent(),target==='doom'?'Doom 3':target==='godot'?'Godot':'Lara');
       assert.equal(await page.locator('#run-workflow').isEnabled(),true);
+      if(target==='doom'){
+        assert.match(await page.locator('[data-flow-size=game] .download-data').textContent(),/458\.3 MiB game data/);
+        assert.match(await page.locator('#game-data-download').textContent(),/458\.3 MiB/);
+      }
       if(target==='godot')assert.match(await page.locator('#target-note').textContent(),/Long build/);
     }
     const m=JSON.parse(fs.readFileSync(path.join(root,'projects/lara/manifest.json'))),units=m.commands.length+m.archives.length+1;

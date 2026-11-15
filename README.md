@@ -17,7 +17,9 @@ Choose a project and a workflow:
 | inception | cppgm builds itself. Every object and the final compiler must match the published bytes. That rebuilt compiler then builds the project. |
 | inception² | cppgm builds clang, clang builds cppgm, and that compiler rebuilds a matching cppgm. The matching compiler then builds the project. This is a long build. |
 
-Doom 3 is the default project. OpenLara and the Godot editor are also available.
+OpenLara is the default project because its download is smaller. Doom 3 and
+the Godot editor are also available. Workflow badges include game data in
+their totals and show its size separately.
 Each build compiles its C, C++ and assembly sources, including the supporting
 SDK libraries. The grid shows every source, archive and final link. Selecting
 another project keeps completed compiler stages and changes the final stage.

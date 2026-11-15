@@ -21,7 +21,7 @@ const requests=[],server=http.createServer((req,res)=>{
   try{
    await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);
    await page.waitForFunction(()=>window.lastProjectEvent?.kind==='source'&&!document.getElementById('run-workflow').disabled);
-   assert.equal(await page.locator('#build-target').inputValue(),'doom');
+   assert.equal(await page.locator('#build-target').inputValue(),'lara');
    await page.locator('#build-target').selectOption(target);
    const manifest=JSON.parse(fs.readFileSync(path.join(root,'projects',target,'manifest.json'))),units=manifest.commands.length+manifest.archives.length+1;
    await page.locator('[data-phase=game]').click();
