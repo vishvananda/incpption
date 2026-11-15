@@ -70,3 +70,57 @@ header,main{width:calc(100% - 32px)}header{grid-template-columns:1fr auto;gap:8p
 @media(max-width:700px){.download-data{font-size:8px;max-width:120px}.journey-nav .download-badge{max-width:140px}}
 .header-brand{display:flex;align-items:center;flex-wrap:wrap;gap:4px 14px;min-width:0}.compiler-version{color:var(--muted);font:11px/1.4 monospace;text-decoration:none;border:1px solid var(--line);border-radius:4px;padding:3px 6px;white-space:nowrap}.compiler-version:hover{color:var(--green);border-color:var(--green)}
 @media(max-width:700px){.header-brand{gap:8px}.compiler-version{font-size:9px;padding:3px 4px}}
+
+/* Workflows are tabs over one shared results panel. */
+.target-toolbar label{display:flex;align-items:center;flex-wrap:wrap;gap:9px;color:var(--ink);font-size:13px;font-weight:600}
+.target-toolbar select{padding:10px 12px;background:var(--surface);border-color:#64725f;font-weight:400;min-height:44px}
+.journey-nav{gap:0;margin-bottom:0;border-bottom:1px solid var(--line);align-items:stretch}
+.journey-nav button{position:relative;border:1px solid transparent;border-bottom:0;border-radius:8px 8px 0 0;min-height:0;padding:14px 16px;background:transparent;opacity:.65}
+.journey-nav button[aria-selected=true]{border-color:var(--line);background:var(--surface);opacity:1}
+.journey-nav button[aria-selected=true]:after{content:'';position:absolute;height:3px;background:var(--green);left:16px;right:16px;bottom:0;border-radius:3px 3px 0 0}
+.journey-nav .journey-title{margin:0 0 6px}.journey-nav .route-caption{min-height:0;margin-bottom:4px}.journey-nav .download-badge{margin-top:auto;padding-top:6px}
+#workflow-panel{padding-top:18px}#build-grids{display:grid;gap:12px;scroll-margin-top:16px}
+#flow-rows.comparison,#build-grids.comparison{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:24px}
+#flow-rows.comparison .flow{display:flex;flex-direction:column;align-items:stretch;gap:24px;margin:0}
+#flow-rows.comparison .endpoint{flex:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:0;text-align:center}
+#flow-rows.comparison .endpoint small{margin:0}
+#flow-rows.comparison .endpoint .dot{margin:0}
+#flow-rows.comparison .flow-node>button{display:block;min-height:112px;padding:12px}
+#flow-rows.comparison .node-name{justify-content:center;font-size:18px;gap:6px}
+#flow-rows.comparison .node-description{font-size:11px;margin-top:5px}
+#flow-rows.comparison .node-stats{display:flex;flex-direction:row;justify-content:space-between;align-items:center;margin-top:9px}
+#flow-rows.comparison .node-download{text-align:left;margin-top:6px}
+#flow-rows.comparison .flow-action{display:flex;gap:5px;align-items:center;justify-content:center;left:0;right:0;top:-18px;width:auto;transform:none;font-size:8px}
+#flow-rows.comparison .flow-action:after{content:'↓';font-size:12px}
+#flow-rows.comparison .finish button{display:flex;flex-direction:row;gap:7px;align-items:center;justify-content:center}
+#flow-rows.comparison .finish .dot{width:26px;height:26px;line-height:26px;text-align:center}
+#clang-results{margin-top:0}#comparison-result{grid-column:1/-1;max-width:100%;margin-bottom:4px}
+.phase-heading{flex-wrap:wrap;gap:8px}.phase-heading>div{flex-wrap:wrap}
+.build-facts{padding-left:18px;font-size:11px;color:var(--muted);line-height:1.7}.diagnostics pre{white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:700px){
+ .target-toolbar label{width:100%;font-size:14px;gap:8px}.target-toolbar select{width:100%;font-size:13px}
+ .journey-nav{grid-template-columns:repeat(3,minmax(0,1fr));gap:0}
+ .journey-nav button{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:11px 7px 14px;min-height:0}
+ .journey-nav .journey-title{display:block;margin:0}.journey-nav .journey-title strong{font-size:13px}.journey-nav .journey-title>span{display:block;font-size:9px;margin-top:4px;min-height:27px}
+ .journey-nav .route-caption{display:none!important}.journey-nav .download-badge{margin-top:auto;max-width:100%;padding-top:6px;font-size:8px}.journey-nav .download-data{font-size:7px;line-height:1.4}.journey-nav .long-build{font-size:8px;margin-top:2px}
+ #flow-rows.comparison,#build-grids.comparison{column-gap:12px}
+ #flow-rows.comparison .node-name{font-size:14px;flex-wrap:wrap}
+ #flow-rows.comparison .flow-node>button{padding:10px 8px;min-height:118px}
+ #flow-rows.comparison .node-description{font-size:9px}
+ #flow-rows.comparison .node-stats{font-size:9px;gap:4px;margin-top:9px}#flow-rows.comparison .node-stats time{font-size:11px}
+ #flow-rows.comparison .node-download{font-size:8px}#flow-rows.comparison .endpoint.seed small{font-size:9px}#flow-rows.comparison .endpoint.seed strong{font-size:11px}
+ #flow-rows.comparison .finish strong{font-size:11px}#flow-rows.comparison .finish small{font-size:8px!important}
+ .phase-heading{display:block;min-height:44px}.phase-heading>div{display:flex;justify-content:space-between;margin-bottom:5px}#worker-count{display:none}
+ #completed,#completed-clang,#elapsed,#elapsed-clang{font-size:10px}.phase-grid .units{min-height:0}
+ .building .workflow-toolbar{position:sticky;top:0;z-index:5;background:var(--bg);padding:9px 0;border-bottom:1px solid var(--line);margin-top:-9px}
+ .building #build-grids{scroll-margin-top:86px}
+}
+@media(max-width:380px){
+ .workflow-toolbar{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+ .workflow-toolbar>div:first-child{display:flex;flex-wrap:nowrap;gap:8px}
+ .metric-label{font-size:10px;white-space:nowrap}#workflow-time{font-size:22px}
+ #workflow-files{width:auto;margin-left:auto;font-size:9px;white-space:nowrap}
+ .workflow-actions{width:100%}.workflow-actions #run-workflow{flex:1}
+ .journey-nav .journey-title strong{font-size:12px}
+ .building #build-grids{scroll-margin-top:112px}
+}

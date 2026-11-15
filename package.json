@@ -21,9 +21,9 @@
     "test:mobile": "node tests/mobile_journey_test.cjs dist build/mobile-journey",
     "test:roundtrip": "node tests/demo_browser_test.cjs dist node_modules/playwright roundtrip build/roundtrip-results",
     "test:transport": "python3 tests/transport_test.py && node tests/bundle_layers_test.mjs",
-    "test:safari": "node tests/safari_browser_test.cjs dist build/safari-results",
+    "test:safari": "node tests/safari_browser_test.cjs dist",
     "test:comparison": "node tests/comparison_browser_test.cjs dist build/comparison-results",
-    "test:workflow": "node tests/workflow_state_test.mjs && node tests/input_broker_test.mjs && node tests/file_buffers_test.mjs && node tests/asset_cache_test.mjs",
+    "test:workflow": "node tests/build_policy_test.mjs && node tests/workflow_state_test.mjs && node tests/input_broker_test.mjs && node tests/file_buffers_test.mjs && node tests/asset_cache_test.mjs",
     "test:projects": "node tests/projects_browser_test.cjs dist all build/project-results",
     "test:players": "node tests/project_players_test.cjs dist godot build/project-results"
   },

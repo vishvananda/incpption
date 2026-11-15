@@ -1,6 +1,6 @@
 // Exercise the compiler in WebKit with the stale headers observed on production.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http'),{webkit}=require('playwright');
-const root=path.resolve(process.argv[2]||'dist'),out=path.resolve(process.argv[3]||'build/safari-results'),origin=process.env.SAFARI_TEST_ORIGIN;
+const root=path.resolve(process.argv[2]||'dist'),out=path.resolve(process.argv[3]||(process.env.SAFARI_TEST_MOBILE?'build/safari-mobile-results':'build/safari-results')),origin=process.env.SAFARI_TEST_ORIGIN,mobile=!!process.env.SAFARI_TEST_MOBILE;
 fs.mkdirSync(out,{recursive:true});
 const headerRules=fs.readFileSync(path.join(root,'_headers'),'utf8').trim().split(/\n\s*\n/).map(block=>{
  const [pattern,...lines]=block.split('\n');
@@ -22,7 +22,7 @@ const requests=[],server=http.createServer((req,res)=>{
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  const browser=await webkit.launch({headless:true});
  try{
-  const page=await browser.newPage({viewport:{width:1440,height:1000}}),errors=[];page.setDefaultTimeout(180000);
+  const page=await browser.newPage(mobile?{viewport:{width:390,height:844},hasTouch:true,isMobile:true,userAgent:require('playwright').devices['iPhone 13'].userAgent}:{viewport:{width:1440,height:1000}}),errors=[];page.setDefaultTimeout(180000);
   page.on('pageerror',e=>{errors.push(String(e));console.error('PAGE',String(e));});
   page.on('console',m=>{if(m.type()==='error')console.error('CONSOLE',m.text().slice(0,1000));});
   await page.addInitScript(()=>{const resume=AudioContext.prototype.resume;AudioContext.prototype.resume=function(...args){window.testAudioContext=this;if(navigator.userActivation?.isActive)window.testAudioGesture=true;return resume.apply(this,args);};});
@@ -30,7 +30,20 @@ const requests=[],server=http.createServer((req,res)=>{
   await page.goto((origin||`http://127.0.0.1:${server.address().port}`)+'/index.html');
   await page.waitForFunction(()=>!document.getElementById('run-workflow').disabled&&window.lastProjectEvent?.kind==='source');
   assert.equal(await page.evaluate(()=>crossOriginIsolated),true,'page is not isolated with the deployed header rules');
-  await page.locator('#worker-choice').selectOption(process.env.SAFARI_TEST_WORKERS||'8',{force:true});
+  const diagnostic=await page.evaluate(async()=>{
+    // An invalid module tests the actual worker's Safari error reporting.
+    const worker=new Worker('./compile_worker.mjs',{type:'module'}),channel=new MessageChannel();
+    const receive=()=>new Promise(resolve=>channel.port2.onmessage=({data})=>resolve(data));
+    try{
+      worker.postMessage({port:channel.port1},[channel.port1]);
+      let result=receive();channel.port2.postMessage({kind:'init',layers:[],module:await WebAssembly.compile(new Uint8Array([0,97,115,109,1,0,0,0]))});await result;
+      result=receive();channel.port2.postMessage({kind:'compile',args:[],source:'ashrti3.c',output:'build/obj/test.o'});
+      return await result;
+    }finally{channel.port2.close();worker.terminate();}
+  });
+  assert.equal(diagnostic.kind,'error');assert.match(diagnostic.error,/ashrti3\.c:/);
+  assert.match(diagnostic.error,/(TypeError|Error): .+/,'Safari lost the exception message');
+  await page.locator('#worker-choice').selectOption(process.env.SAFARI_TEST_WORKERS||(mobile?'4':'8'),{force:true});
   await page.locator('#build-target').selectOption('lara');
   await page.locator('[data-phase=game]').click();
   const timer=setInterval(async()=>{try{console.log(JSON.stringify(await page.evaluate(()=>({status:document.getElementById('status').textContent,cppgm:document.getElementById('completed').textContent,clang:document.getElementById('completed-clang').textContent}))));}catch{}},15000);
@@ -38,6 +51,11 @@ const requests=[],server=http.createServer((req,res)=>{
   const report=await page.evaluate(()=>{const summary=({player,...data}={})=>data;return {cppgm:summary(window.lastGameBuild),clang:summary(window.lastClangGameBuild),status:document.getElementById('status').textContent,error:window.lastWorkflowEvent?.error,ua:navigator.userAgent};});
   console.log(JSON.stringify(report));assert.equal(report.cppgm.kind,'complete',report.error);assert.equal(report.clang.kind,'complete',report.error);
   assert.equal(await page.locator('#comparison-result').isVisible(),true);
+  if(mobile)for(const row of [report.cppgm,report.clang]){
+    assert.equal(row.deferredLinker,true,'linker shares the compiler realm');
+    assert(row.retiredWorkers>=290,'compile heaps survived between files');
+    assert.equal(row.workerCount,Number(process.env.SAFARI_TEST_WORKERS||4)/2);
+  }
   for(const button of ['game-play','game-play-clang']){
    await page.locator('#'+button).click();
    await page.waitForFunction(()=>window.gamePlaying||window.gameError,null,{timeout:180000});
@@ -58,6 +76,7 @@ const requests=[],server=http.createServer((req,res)=>{
   await page.waitForFunction(()=>window.lastInceptionEvent?.kind==='complete'||window.lastWorkflowEvent?.kind==='error',null,{timeout:900000});
   report.inception=await page.evaluate(()=>window.lastInceptionEvent);
   assert.equal(report.inception.kind,'complete',report.inception.error);
+  if(mobile){assert.equal(report.inception.workerCount,Number(process.env.SAFARI_TEST_WORKERS||4));assert(report.inception.retiredWorkers>=469,'self-build retained compiler heaps');}
   await page.locator('[data-phase=game]').click();
   await page.waitForFunction(()=>window.lastGameBuild?.kind==='complete'||window.lastWorkflowEvent?.kind==='error',null,{timeout:300000});
   assert.equal(await page.evaluate(()=>window.lastGameBuild.kind),'complete');

@@ -17,7 +17,7 @@ const server=http.createServer((req,res)=>{
   for(const name of ['chromium','webkit']){
     const browser=await pw[name].launch({headless:true,...(name==='chromium'?{args:['--no-sandbox','--enable-unsafe-swiftshader','--use-angle=swiftshader','--site-per-process']}:{})});
     try{
-      const context=await browser.newContext({hasTouch:true,isMobile:true,viewport:{width:390,height:844}}),page=await context.newPage(),errors=[];
+      const context=await browser.newContext({hasTouch:true,isMobile:true,viewport:{width:390,height:844},userAgent:pw.devices['iPhone 13'].userAgent}),page=await context.newPage(),errors=[];
       page.setDefaultTimeout(120000);
       page.on('pageerror',error=>errors.push(String(error)));
       await page.addInitScript(url=>window.incpptionPlayerURL=url,`http://localhost:${server.address().port}/game_frame.html`);
@@ -40,8 +40,10 @@ const server=http.createServer((req,res)=>{
         await page.locator('#build-target').selectOption('lara');
         await page.setViewportSize({width:390,height:844});
         await page.locator('[data-phase=game]').click();
-        await page.waitForFunction(()=>window.lastWorkflowEvent?.kind==='error'||window.lastGameBuild?.kind==='complete'&&window.lastClangGameBuild?.kind==='complete',null,{timeout:300000});
+        await page.waitForFunction(()=>Math.abs(document.getElementById('build-grids').getBoundingClientRect().top-86)<8);
+        await page.waitForFunction(()=>window.lastWorkflowEvent?.kind==='error'||window.lastGameBuild?.kind==='complete'&&window.lastClangGameBuild?.kind==='complete',null,{timeout:600000});
         const built=await page.evaluate(()=>window.lastGameBuild);if(built.kind!=='complete')throw Error(built.error);
+        if(built.workerCount!==2||!built.deferredLinker||built.retiredWorkers<290)throw Error('Phone did not bound worker memory');
         await page.locator('#game-play').click();
         await page.waitForFunction(()=>window.gamePlaying||window.gameError,null,{timeout:90000});
         if(await page.evaluate(()=>window.gameError))throw Error(await page.evaluate(()=>window.gameError));

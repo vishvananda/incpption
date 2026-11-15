@@ -38,6 +38,11 @@ on the player origin for Play and later runs. If browser storage is unavailable,
 Play downloads the data directly.
 This is a comparison on your device, not a general compiler benchmark.
 
+Phones default to four compile workers, split equally between comparison lanes.
+They release each compiler worker after a file and load the linker in a fresh
+worker after compilation. Choose two workers in Build details for a smaller
+memory budget. Desktops use up to eight workers.
+
 Source browsing loads small source shards. The compiler and SDK load only when
 you compile. The code viewer shows source, LowIR, WebAssembly or x86 assembly.
 Generated headers, JavaScript runtime glue and game assets are supplied inputs.
@@ -58,6 +63,7 @@ npm test
 npm run test:comparison
 npm run test:mobile
 npm run test:safari
+SAFARI_TEST_MOBILE=1 SAFARI_TEST_WORKERS=4 npm run test:safari
 ```
 
 The build fetches hash-pinned static packages from the URLs in `config/`.

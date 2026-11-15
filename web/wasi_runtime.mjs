@@ -2,6 +2,7 @@ import {growingFileClass} from './file_buffers.mjs';
 import {WASI, File, OpenFile, ConsoleStdout, PreopenDirectory, Directory} from './shim/index.js';
 import {fetchBytes} from './transport_bytes.mjs';
 import {bundleLayers} from './bundle_layers.mjs';
+import {errorText} from './error_text.mjs';
 export {fetchBytes};
 
 export const encoder = new TextEncoder();
@@ -50,7 +51,7 @@ export function invoke(module, root, args, sourceDateEpoch) {
     const status = wasi.start(instance);
     return {status, log, memoryBytes: instance.exports.memory.buffer.byteLength};
   }).catch(error => {
-    throw Error([...log, error.stack || String(error)].join('\n'));
+    throw Error([...log, errorText(error)].join('\n'));
   });
 }
 
@@ -77,7 +78,7 @@ export function shareBytes(bytes) {
   return shared;
 }
 
-export async function loadCompiler(prefix = '', {shareInputs = false, inputProfile = 'wasm'} = {}) {
+export async function loadCompiler(prefix = '', {shareInputs = false, inputProfile = 'wasm', compileModule = true} = {}) {
     const manifestBytes = await fetchBytes(prefix + 'manifest.json');
     const expectedManifest = new TextDecoder().decode(await fetchBytes(prefix + 'manifest.sha256')).trim();
     if (await hash(manifestBytes) !== expectedManifest) throw Error('manifest hash mismatch');
@@ -93,7 +94,7 @@ export async function loadCompiler(prefix = '', {shareInputs = false, inputProfi
     if (seedRecord.manifest !== expectedManifest) throw Error('seed used a different input manifest');
     const seedBytes = await fetchBytes(prefix + 'inputs/w1/cppgm.wasm');
     if (await hash(seedBytes) !== seedRecord.commands.at(-1).sha256) throw Error('seed hash mismatch');
-    const module = await WebAssembly.compile(seedBytes);
+    const module = compileModule ? await WebAssembly.compile(seedBytes) : null;
     const compiler = {manifest, expectedManifest, root, seedBytes, module, layers};
     const loaded = new Set(), cache = new Map();
     compiler.ensureInputs = async (profile = 'wasm') => {

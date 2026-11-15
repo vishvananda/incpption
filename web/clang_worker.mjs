@@ -1,7 +1,7 @@
 import {loadCompiler, insert, fileView, lookup, invoke, hash} from './wasi_runtime.mjs';
 import {CompilePool} from './compile_pool.mjs';
 self.onmessage = async ({data}) => {
-  const started = performance.now(), pool = new CompilePool(data.ports);
+  const started = performance.now(), pool = new CompilePool(data.ports, data);
   try {
     postMessage({kind: 'loading', message: 'Loading cppgm source and SDK'});
     const compiler = await loadCompiler('compiler/', {shareInputs: true});

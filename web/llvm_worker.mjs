@@ -4,7 +4,7 @@ import {CompilePool} from './compile_pool.mjs';
 import {archive} from './ar.mjs';
 import {invokeEmscripten} from './emscripten_host.mjs';
 self.onmessage = async ({data}) => {
-  const started = performance.now(), pool = new CompilePool(data.ports);
+  const started = performance.now(), pool = new CompilePool(data.ports, data);
   try {
     postMessage({kind: 'loading', message: 'Loading clang source and SDK'});
     const compiler = await loadCompiler('compiler/', {inputProfile: 'none', shareInputs: true});

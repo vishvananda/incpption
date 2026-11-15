@@ -1,5 +1,6 @@
 import {PlayerSession} from './player_session.mjs';
 import {BuildSession} from './build_session.mjs';
+import {buildPolicy} from './build_policy.mjs';
 import {InputBroker} from './input_broker.mjs';
 import {showJourney} from './journey.mjs';
 import {WorkflowState, paths, isGame} from './workflow_state.mjs';
@@ -8,9 +9,10 @@ const definitions = {
   llvm: {label:'clang', detail:'cppgm builds clang + LLD', project:'llvm', worker:'llvm_worker.mjs'},
   clang: {label:'cppgm-clang', detail:'clang builds cppgm', project:'cppgm', worker:'clang_worker.mjs'},
   match: {label:'cppgm', detail:'Rebuild & match every byte', project:'cppgm', worker:'wasi_worker.mjs'},
-  game: {label:'Lara', detail:'Compile & link OpenLara', project:'game', worker:'project_worker.mjs'},
-  'game-clang': {label:'Lara', detail:'Compile & link OpenLara', project:'game', worker:'project_worker.mjs'},
+  game: {label:'OpenLara', detail:'Compile & link OpenLara', project:'game', worker:'project_worker.mjs'},
+  'game-clang': {label:'OpenLara', detail:'Compile & link OpenLara', project:'game', worker:'project_worker.mjs'},
 };
+const policy = buildPolicy();
 const state = new WorkflowState(), jobs = new Map(), sourceNames = {}, grids = new Map(), downloads = new Map();
 const requestedProject=new URLSearchParams(location.search).get('project');
 let scenario, target = ['doom','lara','godot'].includes(requestedProject)?requestedProject:'lara', visiblePhase, automatic = false, player, playing = false, opening = false, gameLaunch = 0;
@@ -19,6 +21,8 @@ const gameData=new Map();
 const clock = seconds => `${Math.floor(seconds/60)}:${String(Math.floor(seconds%60)).padStart(2,'0')}`;
 const size = bytes => `${(bytes/1048576).toFixed(1)} MiB`;
 const busy = () => jobs.size > 0;
+$('worker-choice').value=String(policy.defaultWorkers);
+for(const option of $('worker-choice').options)option.disabled=Number(option.value)>policy.maximum;
 const canPlay=()=>target!=='doom'||typeof WebAssembly.promising==='function'&&typeof WebAssembly.Suspending==='function';
 function targetNote(){
  const item=plan?.targets[target];
@@ -31,7 +35,7 @@ const seconds = row => row.state === 'active' ? (performance.now()-row.started)/
 function buildTime(row) {
   if(row.result?.compileSeconds!==undefined)return row.result.compileSeconds;
   if(!row.compileStarted)return 0;
-  return row.state==='active'?(performance.now()-row.compileStarted)/1000:row.compileSeconds||0;
+  return row.state==='active'?((row.compilePaused||performance.now())-row.compileStarted-(row.loadingMs||0))/1000:row.compileSeconds||0;
 }
 function phaseClock(row) {
   if(scenario!=='game')return clock(seconds(row));
@@ -95,6 +99,8 @@ function addFlow(list, ids, compiler) {
 function drawFlow() {
   const comparison = scenario === 'game';
   $('flow-rows').classList.toggle('comparison', comparison);
+  $('build-grids').classList.toggle('comparison', comparison);
+  document.body.classList.toggle('building', busy());
   $('flow-clang').hidden = !comparison; $('clang-results').hidden = !comparison;
   addFlow($('flow'), comparison ? ['game'] : paths[scenario], 'cppgm');
   if (comparison) addFlow($('flow-clang'), ['game-clang'], 'clang');
@@ -131,7 +137,8 @@ function ensurePlayer(){
   }
   return player;
 }
-function preloadGameData(){
+function preloadGameData(id){
+  if(policy.lowMemory&&!isGame(id))return;
   const descriptor=plan?.targets[target]?.player;
   if(!canPlay()||!descriptor?.assets.length||preloadTarget===target)return;
   const project=target;preloadTarget=project;
@@ -150,7 +157,7 @@ function preloadGameData(){
 function updateTime() {
   $('workflow-time').textContent = clock(state.totalSeconds(scenario, target, seconds));
   const rows = paths[scenario].map(phase), count = rows.reduce((n,row) => n+row.rows.size,0), total = rows.reduce((n,row) => n+row.names.length,0);
-  $('workflow-files').textContent = total ? `${count.toLocaleString()} / ${total.toLocaleString()} files & links` : '';
+  $('workflow-files').textContent = total ? `${count.toLocaleString()} / ${total.toLocaleString()} files` : '';
   for (const button of document.querySelectorAll('[data-phase]')) {
     const id = button.dataset.phase, row = phase(id);
     button.querySelector('time').textContent = phaseClock(row);
@@ -195,7 +202,7 @@ function paintGrid(id, index) {
   if (index === undefined) grid.buttons.forEach((_,i) => update(i)); else update(index);
   const suffix = scenario === 'game' && id === 'game-clang' ? '-clang' : '';
   if (scenario === 'game' || visiblePhase === id) {
-    $('completed'+suffix).textContent = `${row.rows.size.toLocaleString()} / ${row.names.length.toLocaleString()} files & links`;
+    $('completed'+suffix).textContent = `${row.rows.size.toLocaleString()} / ${row.names.length.toLocaleString()}`;
     $('progress'+suffix).max = row.names.length || 1; $('progress'+suffix).value = row.rows.size;
   }
 }
@@ -235,30 +242,32 @@ function fail(message, cancelled=false) {
   }
   comparisonInputs?.close();comparisonInputs=null;
   stopGame();
-  automatic=false; drawFlow(); $('status').textContent=cancelled?'Cancelled. Use Rerun to try again.':'Build stopped. Open build details for the error.';
+  automatic=false; drawFlow(); $('status').textContent=cancelled?'Cancelled. Use Rerun to try again.':'Build stopped. Open Diagnostics for the error.';
   $('log').textContent+=message+'\n';
+  if(!cancelled)document.querySelector('.diagnostics').open=true;
   window.lastWorkflowEvent={kind:cancelled?'cancelled':'error',error:message};
   window.lastGameBuild=window.lastInceptionEvent=window.lastWorkflowEvent;
 }
 function invalidate(id) {
   for (const row of state.invalidate(scenario,target,id)) if(downloads.has(row)){URL.revokeObjectURL(downloads.get(row));downloads.delete(row);}
 }
-function start(id, {rerun=false}={}) {
+function start(id, {rerun=false,scroll=true}={}) {
   if (busy() || !canRun(id)) return;
   if (!rerun && phase(id).state === 'done') {showPhase(id); return;}
   closeGame();
   if (rerun) invalidate(id);
   if (scenario === 'game') {
     comparisonInputs=new InputBroker();
-    const workers = Math.min(4,Math.max(1,Math.floor(Number($('worker-choice').value)/2)));
+    const workers = Math.min(4,Math.max(1,Math.floor(Math.min(policy.maximum,Number($('worker-choice').value))/2)));
     launch('game',{workers,barrier:true}); launch('game-clang',{workers,barrier:true,compiler:'clang'});
     showPhase(id);
   } else {launch(id,{workers:Number($('worker-choice').value)}); showPhase(id);}
+  if(scroll&&policy.handheld)requestAnimationFrame(()=>$('build-grids').scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}));
 }
 function launch(id, args) {
   // Failed/cancelled attempts restart from clean inputs; completed rows are only
   // invalidated by the explicit rerun action.
-  const row=phase(id); row.rows.clear(); row.running.clear(); row.state='active'; row.started=performance.now(); row.seconds=0; row.compileStarted=null; row.compileSeconds=0; row.result=null; row.peak=0;
+  const row=phase(id); row.rows.clear(); row.running.clear(); row.state='active'; row.started=performance.now(); row.seconds=0; row.compileStarted=null; row.compileSeconds=0; row.loadingMs=0; row.compilePaused=null; row.result=null; row.peak=0;
   const session=new BuildSession('./'+definitions[id].worker,{workers:args.workers,maximum:8,inputBroker:comparisonInputs});
   const job={session,ready:false,deadline:setTimeout(()=>fail('This phase exceeded the 90-minute deadline.'),90*60000)};
   jobs.set(id,job); row.workers=session.count;
@@ -294,11 +303,13 @@ function launch(id, args) {
         const now=performance.now();
         for (const [id,job] of jobs) {phase(id).compileStarted=now;job.session.coordinator.postMessage({kind:'start'});}
         $('status').textContent='Both compilers ready. Building the same files.';
-        preloadGameData();
+        preloadGameData(id);
       } else $('status').textContent='Waiting for both compiler seeds before starting the comparison…';
     }
+    if(data.kind==='link-preparing')row.compilePaused=performance.now();
+    if(data.kind==='link-ready'&&row.compilePaused){row.loadingMs+=performance.now()-row.compilePaused;row.compilePaused=null;}
     if (data.kind==='progress') {
-      preloadGameData();
+      preloadGameData(id);
       row.names[data.index]=data.name;row.running.add(data.index);paintGrid(id,data.index);
       if(scenario!=='game'||visiblePhase===id)projectEvent(id,'progress',{name:data.source||data.name});$('status').textContent=data.name;
     }
@@ -323,7 +334,7 @@ function launch(id, args) {
         }
       } else {
         $('status').textContent=id==='match'?'Every object and the compiler match. Ready to build.':isGame(id)?'Built here. Ready to play.':`${definitions[id].label} built. Ready for the next phase.`;
-        if(automatic&&next)start(next);
+        if(automatic&&next)start(next,{scroll:false});
         else if(automatic&&isGame(id)){automatic=false;if(canPlay())openGame(id);else $('status').textContent='Built locally. This browser needs JSPI support to play Doom.';}
       }
     }
@@ -342,7 +353,17 @@ function chooseScenario(name) {
   showPhase(paths[name].find(id=>phase(id).state!=='done')||paths[name].at(-1));
   $('status').textContent=completed()?'Results from this tab. Select a stage to review, or use Rerun.':name==='roundtrip'?'Optional long build. cppgm → clang → cppgm → matching cppgm → project.':'Choose a box to build, or run the whole workflow.';
 }
-for(const button of document.querySelectorAll('[data-journey]'))button.onclick=()=>chooseScenario(button.dataset.journey);
+const journeyTabs=[...document.querySelectorAll('[data-journey]')];
+for(const button of journeyTabs){
+  button.onclick=()=>chooseScenario(button.dataset.journey);
+  button.onkeydown=event=>{
+    const offset={ArrowRight:1,ArrowLeft:-1}[event.key];
+    if(!offset&&event.key!=='Home'&&event.key!=='End')return;
+    event.preventDefault();
+    const next=journeyTabs[event.key==='Home'?0:event.key==='End'?journeyTabs.length-1:(journeyTabs.indexOf(button)+offset+journeyTabs.length)%journeyTabs.length];
+    next.focus();chooseScenario(next.dataset.journey);
+  };
+}
 $('build-target').onchange=()=>{
   if(busy())return;
   closeGame();stopGame();target=$('build-target').value;window.activeBuildTarget=target;
@@ -381,7 +402,7 @@ window.addEventListener('project-index-ready',({detail:{projects}})=>{
   if(!busy())showPhase(visiblePhase);
 });
 function updateRoutes(){
-  const project=plan?.targets[target]?.label||'Lara';
+  const project=plan?.targets[target]?.label||'OpenLara';
   const routes={game:[['cppgm',project],['clang',project]],inception:[['cppgm','cppgm ✓',project]],roundtrip:[['cppgm','clang','cppgm','cppgm ✓',project]]};
   for(const caption of document.querySelectorAll('[data-route]')){
     const fragment=document.createDocumentFragment();

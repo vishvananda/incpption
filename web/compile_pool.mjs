@@ -1,41 +1,73 @@
 export class CompilePool {
-  constructor(ports) {
+  constructor(ports, {controlPort, recycleEvery = 0} = {}) {
     if (!ports?.length) throw Error('No compile workers were supplied');
-    this.slots = ports.map(port => {
-      const slot = {port};
-      port.onmessage = ({data}) => {
-        const pending = slot.pending;
-        if (!pending) return;
-        slot.pending = null;
-        if (data.kind === 'error') pending.reject(Error(data.error));
-        else pending.resolve(data);
-      };
-      port.onmessageerror = () => slot.pending?.reject(Error('Compile worker message could not be decoded'));
-      return slot;
+    this.control = controlPort; this.recycleEvery = recycleEvery;
+    this.requests = new Map(); this.nextRequest = 0;
+    if (controlPort) controlPort.onmessage = ({data}) => {
+      const resolve = this.requests.get(data.request);
+      this.requests.delete(data.request); resolve?.(data.port);
+    };
+    this.slots = ports.map((port, index) => {
+      const slot = {index, uses: 0}; this.attach(slot, port); return slot;
+    });
+  }
+  attach(slot, port) {
+    slot.port = port;
+    port.onmessage = ({data}) => {
+      const pending = slot.pending;
+      if (!pending) return;
+      slot.pending = null;
+      if (data.kind === 'error') pending.reject(Error(data.error));
+      else pending.resolve(data);
+    };
+    port.onmessageerror = () => slot.pending?.reject(Error('Compile worker message could not be decoded'));
+  }
+  request(kind, index) {
+    return new Promise(resolve => {
+      const request = ++this.nextRequest; this.requests.set(request, resolve);
+      this.control.postMessage({kind, index, request});
     });
   }
   send(slot, data) {
     if (slot.pending) throw Error('Compile worker already busy');
-    return new Promise((resolve, reject) => {
-      slot.pending = {resolve, reject};
-      slot.port.postMessage(data);
-    });
+    return new Promise((resolve, reject) => {slot.pending = {resolve, reject}; slot.port.postMessage(data);});
   }
   async initialize(module, layers, host = null) {
-    await Promise.all(this.slots.map(slot => this.send(slot, {kind: 'init', module, layers, host})));
+    this.init = {kind: 'init', module, layers, host};
+    await Promise.all(this.slots.map(async slot => {
+      if (!slot.port) this.attach(slot, await this.request('replace', slot.index));
+      slot.uses = 0;
+      await this.send(slot, this.init);
+    }));
   }
+  async retire(slot) {
+    if (!slot.port || !this.control) return;
+    slot.port.close(); slot.port = null; slot.uses = 0;
+    await this.request('retire', slot.index);
+  }
+  async retireAll() {await Promise.all(this.slots.map(slot => this.retire(slot)));}
+  async execute(slot, task, index = 0) {
+    if (!slot.port) {
+      this.attach(slot, await this.request('replace', slot.index));
+      await this.send(slot, this.init);
+    }
+    const result = await this.send(slot, {kind: 'compile', index, args: task.args, output: task.output,
+      source: task.source, language: task.language, sourceDateEpoch: task.sourceDateEpoch,
+      files: task.files, allowFailure: task.allowFailure});
+    if (this.recycleEvery && ++slot.uses >= this.recycleEvery) await this.retire(slot);
+    return result;
+  }
+  invoke(task) {return this.execute(this.slots[0], task);}
   async run(tasks, completed) {
-    const results = new Array(tasks.length);
-    let next = 0;
+    const results = new Array(tasks.length); let next = 0;
     await Promise.all(this.slots.map(async slot => {
       while (next < tasks.length) {
         const index = next++, task = tasks[index];
         postMessage({kind: 'progress', ...task.progress});
-        const result = await this.send(slot, {kind: 'compile', index, args: task.args, output: task.output, language:task.language, sourceDateEpoch:task.sourceDateEpoch});
-        results[index] = await completed(result, task, index);
+        results[index] = await completed(await this.execute(slot, task, index), task, index);
       }
     }));
     return results;
   }
-  close() {for (const slot of this.slots) slot.port.close();}
+  close() {for (const slot of this.slots) slot.port?.close(); this.control?.close(); this.init = null;}
 }

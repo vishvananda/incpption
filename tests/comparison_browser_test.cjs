@@ -29,9 +29,17 @@ const methods=[],requests=[],server=http.createServer((req,res)=>{
     for(const width of [320,390,768,1440]){
       await page.setViewportSize({width,height:1000});
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`overflow at ${width}`);
+      const layout=await page.evaluate(()=>{
+        const a=document.getElementById('flow').getBoundingClientRect(),b=document.getElementById('flow-clang').getBoundingClientRect();
+        const c=document.querySelector('.phase-grid').getBoundingClientRect(),d=document.getElementById('clang-results').getBoundingClientRect();
+        return {flows:a.right<=b.left&&Math.abs(a.top-b.top)<2,grids:c.right<=d.left&&Math.abs(c.top-d.top)<2};
+      });assert(layout.flows&&layout.grids,'comparison is not side by side');
       await page.screenshot({path:path.join(out,`layout-${width}.png`),fullPage:true});
     }
     await page.setViewportSize({width:1440,height:1000});
+    await page.locator('#journey-game').focus();await page.keyboard.press('ArrowRight');
+    assert.equal(await page.locator('#journey-inception').getAttribute('aria-selected'),'true');
+    await page.keyboard.press('Home');assert.equal(await page.locator('#journey-game').getAttribute('aria-selected'),'true');
     const logo=page.locator('.logo-title .wordmark');
     await logo.click();assert.equal(await logo.evaluate(e=>e.getAnimations({subtree:true}).length),3);
     await page.waitForTimeout(2100);
@@ -39,7 +47,7 @@ const methods=[],requests=[],server=http.createServer((req,res)=>{
     await page.emulateMedia({reducedMotion:'no-preference'});
     for(const target of ['doom','godot','lara']){
       await page.locator('#build-target').selectOption(target);
-      assert.equal(await page.locator('[data-phase=game] .node-name').textContent(),target==='doom'?'Doom 3':target==='godot'?'Godot':'Lara');
+      assert.equal(await page.locator('[data-phase=game] .node-name').textContent(),target==='doom'?'Doom 3':target==='godot'?'Godot':'OpenLara');
       assert.equal(await page.locator('#run-workflow').isEnabled(),true);
       if(target==='doom'){
         assert.match(await page.locator('[data-flow-size=game] .download-data').textContent(),/458\.3 MiB game data/);
