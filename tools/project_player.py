@@ -35,7 +35,9 @@ def raw_asm_strings(evidence,wasm):
 
 def prepare(evidence,project,target):
     os.environ['EM_CONFIG']=str(evidence/'emsdk/.emscripten')
-    manifest=json.loads((project/'manifest.json').read_text());player=project/'player';player.mkdir(exist_ok=True);assets=project/'assets';assets.mkdir(exist_ok=True)
+    manifest=json.loads((project/'manifest.json').read_text());player=project/'player'
+    if player.exists():shutil.rmtree(player)
+    player.mkdir();assets=project/'assets';assets.mkdir(exist_ok=True)
     original={'doom':'d3wasm-rebased-current','godot':'godot-rebased-link'}.get(target)
     if target=='lara':
         runtime=(evidence/'openlara-runtime.mjs').read_bytes();name='runtime.'+sha(runtime)[:16]+'.mjs';(player/name).write_bytes(runtime)
@@ -85,7 +87,13 @@ Module['inceptionMount']=function(data){
         (work/'post-link.log').write_bytes(result.stdout+result.stderr)
         if result.returncode:raise RuntimeError(result.stderr.decode()[-3500:])
         if sha(module.read_bytes())!=manifest['link']['sha256']:raise ValueError('JS preparation changed the compiler output')
-        data=factory.read_bytes();name='factory.'+sha(data)[:16]+'.mjs';(player/name).write_bytes(data)
+        data=factory.read_bytes()
+        if target=='godot':
+            # Deferred IME/focus callbacks can run after GodotConfig.clear().
+            needle=b'GodotConfig.canvas.focus();'
+            if needle not in data:raise ValueError('Godot focus bridge changed')
+            data=data.replace(needle,b'GodotConfig.canvas?.focus();')
+        name='factory.'+sha(data)[:16]+'.mjs';(player/name).write_bytes(data)
         if target=='doom':
             entries=[asset(evidence/original/'demo00.data',assets,'demo00')|{'mount':'/usr/local/share/d3wasm/base/demo00.pk4'}]
             descriptor=dict(kind=target,runtime='player/'+name,assets=entries,jspi=True)

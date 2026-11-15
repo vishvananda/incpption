@@ -32,6 +32,14 @@ const requests=[],server=http.createServer((req,res)=>{
    assert.equal(await page.locator('#units .done').count(),units);assert.equal(await page.locator('#units-clang .done').count(),units);
    const report=await page.evaluate(()=>({cppgm:window.lastGameBuild,clang:window.lastClangGameBuild}));report.units=units;report.supportSources=manifest.commands.filter(row=>row.category==='support').length;
    assert(report.supportSources>0);assert.equal(report.cppgm.sha256,manifest.link.sha256);
+   fs.writeFileSync(path.join(out,target+'-compiled-manifest.json'),fs.readFileSync(path.join(root,'projects',target,'manifest.json')));
+   fs.writeFileSync(path.join(out,target+'-compiled-report.json'),JSON.stringify(report,null,2));
+   for(const compiler of ['cppgm','clang']){
+    const pending=page.waitForEvent('download');
+    await page.locator(`#downloads a[download="${target}-${compiler}.wasm"]`).evaluate(a=>a.click());
+    await(await pending).saveAs(path.join(out,`browser-${target}-${compiler}.wasm`));
+   }
+
    for(const [button,compiler]of [['game-play','cppgm'],['game-play-clang','clang']]){
     console.log(target,'playing',compiler);await page.locator('#'+button).click();
     await page.waitForFunction(()=>window.gamePlaying||window.gameError,null,{timeout:300000});
@@ -45,19 +53,7 @@ const requests=[],server=http.createServer((req,res)=>{
       assert.equal(await frame.locator('[aria-pressed=true]').count(),2);
       await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});assert.equal(await frame.locator('[aria-pressed=true]').count(),0);await cdp.detach();
     }
-    if(target==='godot'){
-      const canvas=page.frameLocator('#game-frame').locator('#canvas'),oldCanvas=await canvas.elementHandle();
-      const bounds=await canvas.boundingBox(),before=await page.evaluate(()=>window.openLaraGame.drawCalls);
-      await canvas.click({position:{x:bounds.width*35/1280,y:bounds.height*50/800}});
-      await page.waitForFunction(previous=>window.openLaraGame.drawCalls>previous,before);
-      await page.keyboard.press('ControlOrMeta+a');await page.keyboard.type('Browser '+compiler);
-      await canvas.click({position:{x:bounds.width*720/1280,y:bounds.height*588/800}});
-      await oldCanvas.waitForElementState('hidden');await oldCanvas.dispose();
-      const afterExit=await page.evaluate(()=>window.openLaraGame.drawCalls);
-      await page.waitForFunction(previous=>window.openLaraGame.drawCalls>previous+3,afterExit);
-      assert(!await page.locator('#log').textContent().then(text=>text.includes('Invalid project path')),'created project was lost during editor restart');
-      await canvas.screenshot({path:path.join(out,target+'-'+compiler+'-editor.png')});
-    }
+    if(target==='godot')await require('./godot_editor_journey.cjs').createProject(page,compiler,out);
     await page.evaluate(()=>window.openLaraGame.pause());await page.screenshot({path:path.join(out,target+'-'+compiler+'.png'),fullPage:true});await page.evaluate(()=>window.openLaraGame.resume());
     await page.locator('#game-close').click();assert.equal(await page.evaluate(()=>window.gamePlaying),false);
    }

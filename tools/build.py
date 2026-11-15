@@ -110,7 +110,12 @@ def main():
                 subprocess.run(['curl', '-fsSL', '--retry', '3', '--max-time', '120', seed_lock['url'] + '/' + row['path'], '-o', str(target)], check=True)
             if sha(target) != row['sha256']: raise RuntimeError('Clang seed hash mismatch')
     if not seed_dir.is_dir(): raise RuntimeError('Clang seed package missing; see README')
-    shutil.copytree(seed_dir, output / 'clang-seed')
+    if seed_lock and not args.seed_dir:
+        for row in seed_lock['files']:
+            target=output/'clang-seed'/row['path'];target.parent.mkdir(parents=True,exist_ok=True)
+            shutil.copyfile(seed_dir/row['path'],target)
+    else:
+        shutil.copytree(seed_dir, output / 'clang-seed')
     seed_manifest = json.loads((output / 'clang-seed/manifest.json').read_text())
     llvm_manifest = json.loads((output / 'llvm/manifest.json').read_text())
     if seed_manifest['llvm_manifest_sha256'] != sha(output / 'llvm/manifest.json') or any(

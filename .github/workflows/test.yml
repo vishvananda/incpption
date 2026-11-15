@@ -111,6 +111,7 @@ jobs:
           key: compiler-payload-${{ hashFiles('config/*lock.json') }}
       - run: npm run build
       - run: npm run test:projects
+      - run: npm run test:players
       - uses: actions/upload-artifact@v4
         if: always()
         with:

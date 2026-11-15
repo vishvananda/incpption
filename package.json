@@ -23,7 +23,8 @@
     "test:transport": "python3 tests/transport_test.py && node tests/bundle_layers_test.mjs",
     "test:comparison": "node tests/comparison_browser_test.cjs dist build/comparison-results",
     "test:workflow": "node tests/workflow_state_test.mjs && node tests/input_broker_test.mjs && node tests/file_buffers_test.mjs",
-    "test:projects": "node tests/projects_browser_test.cjs dist all build/project-results"
+    "test:projects": "node tests/projects_browser_test.cjs dist all build/project-results",
+    "test:players": "node tests/project_players_test.cjs dist godot build/project-results"
   },
   "license": "Apache-2.0"
 }
