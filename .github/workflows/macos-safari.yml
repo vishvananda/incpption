@@ -12,6 +12,11 @@ on:
         type: choice
         options: ['8', '4', '2']
         default: '8'
+      execution:
+        description: Worker execution or diagnostic page-stack probe
+        type: choice
+        options: ['worker', 'main-thread-probe']
+        default: worker
 permissions:
   contents: read
 jobs:
@@ -28,6 +33,7 @@ jobs:
         env:
           SAFARI_TEST_ORIGIN: ${{ inputs.origin }}
           SAFARI_TEST_WORKERS: ${{ inputs.workers }}
+          SAFARI_TEST_EXECUTION: ${{ inputs.execution }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

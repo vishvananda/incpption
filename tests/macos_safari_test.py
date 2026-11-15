@@ -13,10 +13,11 @@ import urllib.request
 
 ORIGIN = os.environ.get('SAFARI_TEST_ORIGIN', 'https://incpption.com').rstrip('/')
 WORKERS = os.environ.get('SAFARI_TEST_WORKERS', '8')
+EXECUTION = os.environ.get('SAFARI_TEST_EXECUTION', 'worker')
 OUT = Path(os.environ.get('SAFARI_TEST_OUTPUT', 'build/macos-safari'))
 OUT.mkdir(parents=True, exist_ok=True)
 SESSION = ''
-REPORT = {'origin': ORIGIN, 'workers': int(WORKERS), 'system': platform.platform()}
+REPORT = {'origin': ORIGIN, 'workers': int(WORKERS), 'execution': EXECUTION, 'system': platform.platform()}
 
 with socket.socket() as listener:
     listener.bind(('127.0.0.1', 0))
@@ -109,6 +110,21 @@ with (OUT / 'safaridriver.log').open('w') as log:
         wait('!document.getElementById("run-workflow")?.disabled && window.lastProjectEvent?.kind === "source"', 180)
         REPORT['browser'] = js('return {ua:navigator.userAgent,isolated:crossOriginIsolated,cores:navigator.hardwareConcurrency}')
         assert REPORT['browser']['isolated'], 'The page did not enable cross-origin isolation'
+        if EXECUTION == 'main-thread-probe':
+            # Diagnostic only: preserve Wasm bytes/arguments, change the host
+            # thread to distinguish Safari's worker stack from its page stack.
+            js("""const NativeWorker=window.Worker;
+              window.Worker=class {
+                constructor(url,options){
+                  if(!String(url).endsWith('/compile_worker.mjs')&&!String(url).endsWith('./compile_worker.mjs'))return new NativeWorker(url,options);
+                  this.queue=[];this.closed=false;this.frame=document.createElement('iframe');this.frame.hidden=true;
+                  this.frame.srcdoc='<script type="module">import '+JSON.stringify(new URL(url,location.href).href)+';<\\/script>';
+                  this.frame.onload=()=>{if(this.closed)return;this.ready=true;for(const [data,transfers]of this.queue)this.postMessage(data,transfers);this.queue=[];};
+                  document.body.append(this.frame);
+                }
+                postMessage(data,transfers=[]){if(this.closed)return;if(this.ready)this.frame.contentWindow.postMessage(data,location.origin,transfers);else this.queue.push([data,transfers]);}
+                terminate(){this.closed=true;this.queue=[];this.frame.remove();}
+              };""")
         js('''window.safariTestErrors=[];addEventListener('error',e=>safariTestErrors.push(e.message));
           addEventListener('unhandledrejection',e=>safariTestErrors.push(String(e.reason)));
           const target=document.getElementById('build-target');target.value='lara';target.dispatchEvent(new Event('change'));
