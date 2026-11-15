@@ -1,12 +1,12 @@
+import {loadPlayerInputs} from './blob_parts.mjs';
 import {attachGameControls} from './game_controls.mjs';
 import {runtimeExports} from './game_exports.mjs';
 // Start the actual browser-built module with its frozen runtime and assets.
-export async function playOpenLara(canvas, build, log = console.log) {
+export async function playOpenLara(canvas, build, log = console.log, onProgress) {
+  const inputs=await loadPlayerInputs(build.player,onProgress);build={...build,assets:inputs.assets};
   const audioContext = new AudioContext();
   await audioContext.resume();
-  const runtimeHash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', build.runtime)),
-    byte => byte.toString(16).padStart(2, '0')).join('');
-  const runtimeURL = new URL(`game/runtime.${runtimeHash}.mjs`, import.meta.url).href;
+  const runtimeURL=inputs.runtimeURL;
   const {default: OpenLara} = await import(runtimeURL);
   let draws = 0, processor;
   // The runtime promise resolves before the asynchronous settings/title load.

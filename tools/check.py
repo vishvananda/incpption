@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 for path in sorted((ROOT / 'tools').glob('*.py')):
     ast.parse(path.read_text(), filename=str(path))
-for directory, suffix in [('web', '*.mjs'), ('tests', '*.cjs')]:
+for directory, suffix in [('web', '*.mjs'), ('tools', '*.mjs'), ('tests', '*.mjs'), ('tests', '*.cjs')]:
     for path in sorted((ROOT / directory).rglob(suffix)):
         subprocess.run(['node', '--check', str(path)], check=True)
 config = json.loads((ROOT / 'site.json').read_text())

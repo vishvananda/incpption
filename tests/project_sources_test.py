@@ -7,7 +7,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'tools'))
-from project_sources import prepare_sources
+from project_sources import prepare_sources, prepare_projects
 
 
 def digest(data):
@@ -113,6 +113,26 @@ class ProjectSourcesTest(unittest.TestCase):
             self.read_index()
         with self.assertRaisesRegex(RuntimeError, 'outside the frozen payload'):
             prepare_sources(self.payload, self.payload / 'assets-output')
+
+
+    def test_complete_profiles_include_sdk_and_assembly_with_bounded_source_views(self):
+        checksum=self.package(self.payload,[('dev/main.cpp',b'int main(){}')],dict(sources=['dev/main.cpp']))
+        self.package(self.payload/'llvm',[('clang/main.cpp',b'int main(){}')],dict(commands=[dict(source='clang/main.cpp')]))
+        large=b'// generated source\n'*40000
+        files=[('game/main.cpp',b'int main(){}'),('sdk/libc.c',b'int support;'),('sdk/memory.S',b'.text\n'),('game/generated.cpp',large)]
+        commands=[dict(name=path,source=path,category='support'if path.startswith('sdk/')else'project')for path,_ in files]
+        self.package(self.payload/'projects/doom',files,dict(compiler_manifest=checksum,commands=commands,archives=[dict(name='Archive libc')],link=dict(name='Link Doom')))
+        url=prepare_projects(self.payload,self.output,{'doom':dict(available=True,name='Doom 3')})
+        index=json.loads((self.output/url).read_bytes());project=index['projects'][0]
+        self.assertEqual(project['buildSources'],[path for path,_ in files]);self.assertEqual(len(project['buildUnits']),6)
+        by_path={row['path']:row for row in project['files']};row=by_path['game/generated.cpp'];blob=row['blob']
+        self.assertTrue(blob['truncated']);self.assertEqual(blob['sourceBytes'],len(large));self.assertLessEqual(blob['size'],120000)
+        shard=gzip.decompress((self.output/blob['url']).read_bytes());preview=shard[blob['offset']:blob['offset']+blob['size']]
+        self.assertEqual(preview,large[:120000]);self.assertEqual(digest(preview),blob['sha256']);self.assertEqual(digest(large),row['sha256'])
+        self.assertEqual(by_path['game/main.cpp']['blob'],index['projects'][1]['files'][0]['blob'])
+        manifest_path=self.payload/'projects/doom/manifest.json';manifest=json.loads(manifest_path.read_text());manifest['compiler_manifest']='0'*64;manifest_path.write_text(json.dumps(manifest))
+        with self.assertRaisesRegex(RuntimeError,'different compiler'):
+            prepare_projects(self.payload,self.output,{'doom':dict(available=True,name='Doom 3')})
 
 
 if __name__ == '__main__':

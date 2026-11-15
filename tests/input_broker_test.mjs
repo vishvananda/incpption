@@ -12,3 +12,11 @@ assert(first.bytes.buffer instanceof SharedArrayBuffer);first.bytes[0]=9;assert.
 assert.equal((await request(a.port2,'https://elsewhere.test/input')).error.includes('site origin'),true);
 broker.close();a.port2.close();b.port2.close();assert.equal(broker.cache.size,0);assert.equal(broker.abort.signal.aborted,true);
 console.log('PASS: comparison input downloads coalesce, share memory, reject other origins and release on cancel');
+const joinedBroker=new InputBroker(),c=new MessageChannel(),d=new MessageChannel();joinedBroker.connect(c.port1);joinedBroker.connect(d.port1);
+requests=0;globalThis.fetch=async url=>{requests++;return new Response(new Uint8Array(url.endsWith('a.bin')?[1,2]:[3,4]));};
+const joinedRequest=port=>new Promise(resolve=>{port.onmessage=({data})=>resolve(data);port.postMessage({id:2,kind:'file',sha256:'a'.repeat(64),size:4,parts:[{path:'/a.bin',offset:0,size:2},{path:'/b.bin',offset:2,size:2}]});});
+const [joinedA,joinedB]=await Promise.all([joinedRequest(c.port2),joinedRequest(d.port2)]);
+assert.equal(requests,2);assert.deepEqual(new Uint8Array(joinedA.bytes),new Uint8Array([1,2,3,4]));assert(joinedA.bytes.buffer instanceof SharedArrayBuffer);
+joinedA.bytes[3]=8;assert.equal(joinedB.bytes[3],8,'large source was copied for the second pool');
+joinedBroker.close();c.port2.close();d.port2.close();
+console.log('PASS: both compiler pools share one reconstruction of a split generated source');

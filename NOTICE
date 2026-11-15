@@ -16,3 +16,7 @@ See third_party/llvm-LICENSE.txt. Upstream notices in those files remain.
 Downloaded compiler, SDK, project source and game assets have their own
 licenses. They are not covered by this site's license. The frozen package
 manifests and the deployed Credits page identify these inputs and licenses.
+
+third_party/runtime/emscripten_sjlj.c adapts Emscripten's compiler-rt
+setjmp support, copyright 2020 The Emscripten Authors, under its MIT and
+University of Illinois/NCSA licenses. See third_party/emscripten-LICENSE and the frozen SDK notices.

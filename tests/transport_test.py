@@ -43,3 +43,15 @@ with tempfile.TemporaryDirectory() as temporary:
     else:
         raise AssertionError('path escape accepted')
 print('PASS: transport boundaries, empty inputs, oversized inputs, checksum and path failures')
+
+with tempfile.TemporaryDirectory() as temporary:
+    root=Path(temporary);data=b'head'+bytes(range(32))+b'tail';source=root/'input';source.write_bytes(data)
+    parts=[data[:4],data[4:36],data[36:]];offset=0;rows=[]
+    for i,part in enumerate(parts):
+        rows.append(dict(path=str(i),offset=offset,size=len(part),sha256=hashlib.sha256(part).hexdigest()));offset+=len(part)
+    manifest=dict(bundle_sha256=hashlib.sha256(data).hexdigest(),files=rows)
+    result=transport.publish_bundle(source,root/'split',manifest,split_large_files=True)
+    assert result['split_files']
+    assert all(row['size']<=transport.CHUNK for row in result['chunks'])
+    assert transport.logical_bytes(root/'split/bundle.bin')==data
+print('PASS: large generated source splits into bounded chunks and reconstructs unchanged')

@@ -1,3 +1,4 @@
+import {fetchBytes} from './transport_bytes.mjs';
 import {highlight, highlightCode} from './highlight.mjs';
 import {ProjectTree} from './project_tree.mjs';
 const $ = id => document.getElementById(id);
@@ -5,7 +6,7 @@ const example = `// Edit this example, then compile for either target.\nextern "
 let projects = [], project, active, worker, result, url, busy = false, deadline, request = 0;
 let editedExample = example, currentTab = 'source';
 const builds = new Map(), generations = new Map();
-const textUrls = new Map();
+const textUrls = new Map(), sourceCache=new Map();
 function outputView(id, code, language) {
   const end = Math.min(code.length, 120000);
   const cut = code.length > end ? Math.max(code.lastIndexOf('\n', end), 0) || end : end;
@@ -65,7 +66,7 @@ function fileState() {
   const row = project && active && buildState(project.id).get(active.path);
   $('source-state').textContent = row?.state === 'matched' ? '✓ Bytes matched' : row?.state === 'built' ? 'Built locally'
     : row?.state === 'running' ? 'Building locally…' : row?.state === 'failed' ? 'Build stopped'
-    : project?.id === 'example' ? 'Editable example' : canCompile() ? 'C++ source file' : 'Header input';
+    : project?.id === 'example' ? 'Editable example' : canCompile() ? /\.[Ss]$/.test(active.path)?'WebAssembly assembly source':active.path.endsWith('.c')?'C source file':'C++ source file' : 'Header input';
 }
 function renderTree() {
   if (!project) return;
@@ -82,14 +83,15 @@ async function choose(file) {
   if (owner === 'example') {$('source-code').value = editedExample; paintSource(); return;}
   $('inspector-status').textContent = 'Loading selected source file…';
   try {
-    const response = await fetch(new URL(file.url, document.baseURI));
-    if (!response.ok) throw Error('Source download failed');
-    const bytes = await response.arrayBuffer();
+    const url=new URL(file.blob?.url||file.url,document.baseURI).href;
+    if(!sourceCache.has(url))sourceCache.set(url,fetchBytes(url));
+    const block=await sourceCache.get(url);
+    const bytes=file.blob?block.subarray(file.blob.offset,file.blob.offset+file.blob.size):block;
     const digest = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), b => b.toString(16).padStart(2, '0')).join('');
-    if (digest !== file.sha256) throw Error('Source file hash mismatch');
+    if (digest !== (file.blob?.sha256||file.sha256)) throw Error('Source file hash mismatch');
     if (project.id !== owner || active.path !== wanted) return;
     $('source-code').value = new TextDecoder().decode(bytes); paintSource();
-    $('inspector-status').textContent = 'Verified project source. Build the project, or compile this file to inspect its LowIR and generated code.';
+    $('inspector-status').textContent = file.blob?.truncated ? `Source preview: first 120 KB of ${(file.blob.sourceBytes/1048576).toFixed(1)} MiB. Compilation uses the complete file.` : 'Verified project source. Build the project, or compile this file to inspect its LowIR and generated code.';
     window.lastProjectEvent = {kind: 'source', project: owner, path: wanted};
   } catch (error) {$('inspector-status').textContent = String(error); window.lastProjectEvent = {kind: 'error', error: String(error)};}
 }
@@ -97,7 +99,7 @@ function selectProject(id) {
   const next = projects.find(project => project.id === id);
   if (!next || busy) return;
   project = next; $('source-project').value = id; $('file-filter').value = '';
-  const x86 = $('inspect-target').querySelector('[value=x86]'); x86.disabled = id === 'game' || id === 'llvm';
+  const x86 = $('inspect-target').querySelector('[value=x86]'); x86.disabled = !['cppgm','example'].includes(id);
   if (x86.disabled) $('inspect-target').value = 'wasm';
   $('tab-generated').textContent = $('inspect-target').value === 'wasm' ? 'WebAssembly' : 'x86 assembly';
   $('inspector-note').textContent = id === 'example'
@@ -191,6 +193,6 @@ try {
   }
   projects = [...index.projects, {id:'example',name:'Editable example',root:'',buildSources:[],files:[{path:'example.cpp'}]}];
   window.dispatchEvent(new CustomEvent('project-index-ready', {detail: {projects: index.projects}}));
-  selectProject(window.activeJourney === 'roundtrip' ? 'llvm' : window.activeJourney === 'inception' ? 'cppgm' : 'game');
+  selectProject(window.activeJourney === 'roundtrip' ? 'llvm' : window.activeJourney === 'inception' ? 'cppgm' : window.activeBuildTarget||'doom');
   window.lastInspectorEvent = {kind:'ready'};
 } catch (error) {fail(String(error));}

@@ -4,11 +4,10 @@
 It downloads static files. Compilation, linking, byte checks and gameplay run
 on your device. There is no build server.
 
-[cppgm](https://github.com/vishvananda/cppgm-extended) is a C++ compiler designed
+[cppgm](https://github.com/vishvananda/cppgm) is a C++ compiler designed
 for fast compilation. The starting cppgm compiler is a self-compiled WebAssembly
 build. This repository contains the site, workers and static hosting tools.
-The compiler repository and executable are being renamed to `cppgm`; older
-published packages still use the name `cppgm++`.
+The compiler profile uses the official cppgm v0.9.0 export.
 
 Choose a project and a workflow:
 
@@ -16,14 +15,15 @@ Choose a project and a workflow:
 | --- | --- |
 | compile | cppgm and Clang compile the same source at O3, with the same SDK and equal worker counts. Both start together. Each uses its own linker. |
 | inception | cppgm builds itself. Every object and the final compiler must match the published bytes. That rebuilt compiler then builds the project. |
-| inception² | cppgm builds LLVM, Clang builds cppgm, and that compiler rebuilds a matching cppgm. The matching compiler then builds the project. This is a long build. |
+| inception² | cppgm builds clang, clang builds cppgm, and that compiler rebuilds a matching cppgm. The matching compiler then builds the project. This is a long build. |
 
-OpenLara is the current packaged target. Doom 3 and the Godot editor have native
-build and browser execution prototypes; their browser build packages are still
-being prepared. Selecting them preserves the compiler stages and changes only
-the final project stage. The site does not offer an unqualified build as ready.
+Doom 3 is the default project. OpenLara and the Godot editor are also available.
+Each build compiles its C, C++ and assembly sources, including the supporting
+SDK libraries. The grid shows every source, archive and final link. Selecting
+another project keeps completed compiler stages and changes the final stage.
+The final action plays the game or opens the editor in a separate modal.
 
-The Clang and LLD seeds were built by cppgm and match the optional LLVM stage.
+The clang and LLD seeds were built by cppgm and match the optional clang stage.
 Build results stay in the current tab. Select a completed stage to review it.
 Use **Rerun** to build again and clear later results. Download badges estimate
 cold, compressed input downloads, counting shared files once per workflow. The comparison downloads shared
@@ -31,10 +31,11 @@ inputs once and shares their memory between the two compiler pools.
 Comparison build times exclude seed loading. Workflow time includes loading.
 This is a comparison on your device, not a general compiler benchmark.
 
-Source browsing loads individual files. The compiler and SDK load only when
+Source browsing loads small source shards. The compiler and SDK load only when
 you compile. The code viewer shows source, LowIR, WebAssembly or x86 assembly.
-Supplied inputs include SDK libraries, generated headers, runtime glue and game
-assets. A byte match checks reproduction of the pinned build, not correctness
+Generated headers, JavaScript runtime glue and game assets are supplied inputs.
+Project SDK libraries are built from source. Doom loads its demo data when you
+choose Play; it requires a browser with WebAssembly JSPI support. A byte match checks reproduction of the pinned build, not correctness
 of every possible program.
 
 ## Run locally
@@ -58,11 +59,11 @@ These allow workers to share immutable inputs. Without isolation, each build
 uses one worker. The comparison still runs both compilers in separate workers.
 
 See [build and artifact notes](docs/build-and-artifacts.md) for package
-preparation, the optional full LLVM round trip and Cloudflare Pages deployment.
+preparation, the optional full clang round trip and Cloudflare Pages deployment.
 
 ## Source and licenses
 
-- [cppgm compiler](https://github.com/vishvananda/cppgm-extended)
+- [cppgm compiler](https://github.com/vishvananda/cppgm)
 - [LLVM and Clang](https://github.com/llvm/llvm-project)
 - [OpenLara](https://github.com/XProger/OpenLara)
 - [Doom 3 web port](https://github.com/gabrielcuvillier/d3wasm)

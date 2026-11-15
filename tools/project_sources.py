@@ -29,7 +29,7 @@ def _manifest(directory):
     if checksum.is_file() and _logical_bytes(checksum).decode().strip() != _digest(data):
         raise RuntimeError('project manifest hash mismatch: ' + str(directory))
     manifest = json.loads(data)
-    if manifest.get('schema') != 1 or not isinstance(manifest.get('files'), list):
+    if manifest.get('schema') not in [1,2] or not isinstance(manifest.get('files'), list):
         raise RuntimeError('unsupported project manifest: ' + str(directory))
     return manifest, _digest(data)
 
@@ -110,3 +110,63 @@ def prepare_sources(payload: Path, output: Path) -> str:
             [row['source'] for row in llvm['commands']]))
     data = (json.dumps(dict(schema=1, projects=projects), indent=2) + '\n').encode()
     return _publish(assets, 'projects.' + _digest(data) + '.json', data)
+
+class SourceAssets:
+    """Small compressed source shards keep large SDK trees within host file limits."""
+    def __init__(self, assets):
+        self.assets=assets;self.seen={};self.data=bytearray();self.pending=[]
+    def add(self,data,checksum):
+        if checksum in self.seen:return self.seen[checksum]
+        if self.data and len(self.data)+len(data)>1024*1024:self.flush()
+        truncated=len(data)>512*1024
+        preview=data[:120000] if truncated else data
+        row=dict(offset=len(self.data),size=len(preview),sha256=_digest(preview),truncated=truncated,sourceBytes=len(data));self.seen[checksum]=row
+        self.pending.append(row);self.data.extend(preview)
+        return row
+    def flush(self):
+        if not self.pending:return
+        import gzip
+        raw=bytes(self.data);name='source.'+_digest(raw)+'.bin'
+        target=self.assets/name
+        if not target.exists():target.write_bytes(gzip.compress(raw,compresslevel=6,mtime=0))
+        for row in self.pending:row['url']='assets/'+name
+        self.data.clear();self.pending.clear()
+
+
+def prepare_projects(payload,output,registry):
+    """Publish complete project/SDK source views from schema-2 frozen packages."""
+    assets=output/'assets';assets.mkdir(parents=True,exist_ok=True);publisher=SourceAssets(assets);projects=[]
+    def project(directory,project_id,name,root,build_sources,units=None):
+        manifest,_=_manifest(directory);bundle=_logical_bytes(directory/'bundle.bin')
+        if _digest(bundle)!=manifest['bundle_sha256']:raise RuntimeError('source bundle changed')
+        rows=[];seen=set()
+        for row in manifest['files']:
+            path=_source_path(row['path'])
+            if root and not path.is_relative_to(root):continue
+            if path.suffix not in {'.cpp','.cc','.cxx','.c','.h','.hpp','.hh','.inc','.inl','.def','.S','.s','.xpm','.glsl',''}:continue
+            if row['path']in seen:raise RuntimeError('duplicate source input')
+            seen.add(row['path'])
+            if type(row['offset'])is not int or type(row['size'])is not int or row['offset']<0 or row['size']<0 or row['offset']>len(bundle)or row['size']>len(bundle)-row['offset']:raise RuntimeError('invalid source input bounds')
+            data=memoryview(bundle)[row['offset']:row['offset']+row['size']]
+            if len(data)!=row['size'] or _digest(data)!=row['sha256']:raise RuntimeError('source input changed')
+            rows.append(dict(path=row['path'],sha256=row['sha256'],blob=publisher.add(data,row['sha256'])))
+        available={row['path']for row in rows}
+        if not set(build_sources)<=available:raise RuntimeError('compiled source absent from project index')
+        item=dict(id=project_id,name=name,root=root,buildSources=list(dict.fromkeys(build_sources)),files=rows)
+        if units:item['buildUnits']=units
+        projects.append(item)
+    _,compiler_hash=_manifest(payload)
+    for project_id,metadata in registry.items():
+        if not metadata.get('available'):continue
+        directory=payload/'projects'/project_id;manifest,_=_manifest(directory)
+        if manifest.get('compiler_manifest')!=compiler_hash:raise RuntimeError('project sources use a different compiler manifest')
+        units=[*manifest['commands'],*manifest['archives'],manifest['link']]
+        project(directory,project_id,metadata['name'],'',[row['source']for row in manifest['commands']],
+                [dict(name=row['name'],source=row.get('source'),category=row.get('category','link'))for row in units])
+    compiler,_=_manifest(payload)
+    project(payload,'cppgm','cppgm','dev',compiler['sources'])
+    clang,_=_manifest(payload/'llvm')
+    project(payload/'llvm','llvm','clang','',[row['source']for row in clang['commands']])
+    publisher.flush()
+    data=(json.dumps(dict(schema=1,projects=projects),separators=(',',':'))+'\n').encode()
+    return _publish(assets,'projects.'+_digest(data)+'.json',data)

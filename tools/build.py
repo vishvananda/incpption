@@ -9,7 +9,7 @@ import shutil
 import subprocess
 
 from inspector_vendor import prepare_vendor
-from project_sources import prepare_sources
+from project_sources import prepare_sources,prepare_projects
 from artifact_transport import logical_bytes
 from download_plan import prepare_download_plan
 
@@ -86,14 +86,18 @@ def main():
             sha256=manifest['bundle_sha256'], chunks=[dict(path='bundle.bin', offset=0,
                 size=len(logical_bytes(payload / 'bundle.bin')), sha256=manifest['bundle_sha256'])])
         (output / 'compiler/transport.json').write_text(json.dumps(transport) + '\n')
-    for name in sorted(n for n in entries if n.startswith('openlara/')):
-        copy(name, output / 'game' / name.removeprefix('openlara/'))
-    if not (output / 'game/transport.json').is_file():
-        game_manifest = json.loads((payload / 'openlara/manifest.json').read_text())
-        size = len(logical_bytes(payload / 'openlara/bundle.bin'))
-        transport = dict(schema=1, bytes=size, sha256=game_manifest['bundle_sha256'],
-            chunks=[dict(path='bundle.bin', offset=0, size=size, sha256=game_manifest['bundle_sha256'])])
-        (output / 'game/transport.json').write_text(json.dumps(transport) + '\n')
+    complete_projects=any(name.startswith('projects/')for name in entries)
+    if complete_projects:
+        for name in sorted(n for n in entries if n.startswith('projects/')):copy(name,output/name)
+    else:
+        for name in sorted(n for n in entries if n.startswith('openlara/')):
+            copy(name, output / 'game' / name.removeprefix('openlara/'))
+        if not (output / 'game/transport.json').is_file():
+            game_manifest = json.loads((payload / 'openlara/manifest.json').read_text())
+            size = len(logical_bytes(payload / 'openlara/bundle.bin'))
+            transport = dict(schema=1, bytes=size, sha256=game_manifest['bundle_sha256'],
+                chunks=[dict(path='bundle.bin', offset=0, size=size, sha256=game_manifest['bundle_sha256'])])
+            (output / 'game/transport.json').write_text(json.dumps(transport) + '\n')
     for name in sorted(n for n in entries if n.startswith(('licenses/', 'shim/', 'llvm/'))):
         copy(name, output / name)
     seed_lock = json.loads((ROOT / 'config/clang-seed-lock.json').read_text()) if (ROOT / 'config/clang-seed-lock.json').is_file() else None
@@ -121,7 +125,7 @@ def main():
             shutil.copyfile(path, target)
     # Pages gives CSS a four-hour browser cache lifetime. Give each version a
     # distinct URL so fresh HTML cannot pick up styling from an older release.
-    project_index = prepare_sources(payload, output)
+    project_index = prepare_projects(payload,output,json.loads((ROOT/'config/projects.json').read_text())) if complete_projects else prepare_sources(payload, output)
     styles = {}
     for path in sorted((ROOT / 'web').glob('*.css')):
         name = f'assets/{path.stem}.{sha(path)[:16]}.css'
@@ -141,12 +145,12 @@ def main():
     credits = (payload / 'credits.html').read_text().replace('href="manifest.json"', 'href="compiler/manifest.json"')
     credits = credits.replace('href="openlara/manifest.json"', 'href="game/manifest.json"')
     if (output / 'llvm/manifest.json').is_file():
-        credits = credits.replace('</main>', '<h2>Optional LLVM roundtrip</h2>'
-            '<p>LLVM 22.1.2 is built here from C/C++ source, including Clang and LLD. '
+        credits = credits.replace('</main>', '<h2>Optional clang round trip</h2>'
+            '<p>clang 22.1.2 and its LLVM libraries are built here from C/C++ source, including Clang and LLD. '
             'The browser profile supplies generated headers, SDK libraries and Emscripten glue. '
             'Source adaptations use the Emscripten stack API, disable process crash recovery, '
             'flatten MSP430 StringSwitch chains, and split long generated ARM case-label chains. '
-            '<a href="llvm/manifest.json">LLVM inputs and source hashes</a> · '
+            '<a href="llvm/manifest.json">clang inputs and source hashes</a> · '
             '<a href="licenses/llvm/llvm-LICENSE.TXT">LLVM license and exceptions</a> · '
             '<a href="licenses/llvm/clang-LICENSE.TXT">Clang license</a> · '
             '<a href="licenses/llvm/lld-LICENSE.TXT">LLD license</a>.</p></main>')
@@ -154,6 +158,7 @@ def main():
     for name in ['LICENSE', 'NOTICE']:
         shutil.copyfile(ROOT / name, output / 'licenses/site' / name)
     shutil.copyfile(ROOT / 'third_party/octicons-LICENSE', output / 'licenses/site/octicons-LICENSE')
+    shutil.copyfile(ROOT / 'third_party/emscripten-LICENSE', output / 'licenses/site/emscripten-LICENSE')
     credits = credits.replace('</main>', '<h2>Site source</h2><p><a href="https://github.com/vishvananda/incpption">cppgm inception</a> is Apache-2.0. <a href="licenses/site/NOTICE">Notices</a>. GitHub mark: <a href="licenses/site/octicons-LICENSE">Octicons MIT license</a>.</p></main>')
     for original, versioned in styles.items():
         credits = credits.replace(f'href="{original}"', f'href="{versioned}"')

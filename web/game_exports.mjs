@@ -6,3 +6,10 @@ export function runtimeExports(exports) {
   if (typeof exports.__main_argc_argv !== 'function') throw Error('The game has no main entry point');
   return {...exports, main: exports.__main_argc_argv};
 }
+
+// Clang imports the Wasm-EH longjmp tag; cppgm defines the same tag internally.
+export function runtimeImports(imports){
+  imports.env??={};
+  if(!imports.env.__c_longjmp)imports.env.__c_longjmp=new WebAssembly.Tag({parameters:['i32']});
+  return imports;
+}

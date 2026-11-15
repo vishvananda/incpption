@@ -21,6 +21,7 @@ const server = http.createServer((req, res) => {
   }
   res.setHeader('Content-Type', mime[path.extname(file)] || 'application/octet-stream');
   // Match Pages: precompressed binaries arrive without Content-Encoding.
+  res.setHeader('Access-Control-Allow-Origin','*');
   const stream = fs.createReadStream(file);
   stream.on('error',()=>{res.writeHead(404);res.end();});stream.pipe(res);
 });
@@ -37,7 +38,7 @@ const server = http.createServer((req, res) => {
     page.on('worker', worker => {liveWorkers.add(worker); worker.on('close', () => liveWorkers.delete(worker));});
     async function buildWorkersStopped() {
       for(let i=0;i<100;i++){
-        if(![...liveWorkers].some(w=>/\/(compile_worker|wasi_worker|openlara_worker|llvm_worker|clang_worker)\.mjs$/.test(w.url()))) return;
+        if(![...liveWorkers].some(w=>/\/(compile_worker|wasi_worker|project_worker|llvm_worker|clang_worker)\.mjs$/.test(w.url()))) return;
         await page.waitForTimeout(100);
       }
       throw Error('Build workers survived cancellation or completion');
@@ -70,6 +71,8 @@ const server = http.createServer((req, res) => {
     await page.locator('#share-feedback').evaluate(e=>e.hidden=true);
     report.headerPassed=true;
     await page.waitForFunction(()=>!document.getElementById('run-workflow').disabled);
+    if(await page.locator('#build-target').inputValue()!=='doom')throw Error('Doom is not the default');
+    await page.locator('#build-target').selectOption('lara');
     if (!await page.locator('[data-phase=game]').isEnabled())throw Error('Supplied compiler cannot build the game first');
     await page.waitForFunction(()=>window.lastProjectEvent?.kind==='source');
     if(requests.some(r=>/^\/compiler\//.test(r.url)))throw Error('Source browsing downloaded the compiler or SDK');
@@ -106,14 +109,14 @@ const server = http.createServer((req, res) => {
     const download=page.waitForEvent('download');await page.locator('#object-download').click();
     const downloadPath=path.join(out,'inspector-x86.o');await(await download).saveAs(downloadPath);
     if(fs.readFileSync(downloadPath).subarray(0,4).toString('hex')!=='7f454c46')throw Error('Download is not an ELF object');
-    await page.locator('#source-project').selectOption('game');
+    await page.locator('#source-project').selectOption('lara');
     report.gameProjectSources=[];
     for(const source of ['openlara/src/platform/web/main.cpp','openlara/src/libs/stb_vorbis/stb_vorbis.c','openlara/src/libs/tinf/tinflate.c']){
       await page.locator('#file-filter').fill(source);
       await page.locator('#source-files button[aria-selected]').click();
       await page.waitForFunction(source=>window.lastProjectEvent?.path===source,source);
       const event=await compiled('wasm');
-      if(event.project!=='game')throw Error('Game source compilation did not use its own build settings');
+      if(event.project!=='lara')throw Error('Game source compilation did not use its own build settings');
       report.gameProjectSources.push({path:source,lowirLength:event.lowir.length,generatedLength:event.generated.length});
       if(source.endsWith('/main.cpp')){
         for(const [id,contents] of [['lowir',event.lowir],['generated',event.generated]]){

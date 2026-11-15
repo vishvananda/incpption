@@ -6,6 +6,7 @@ const methods=[],requests=[],server=http.createServer((req,res)=>{
   if(!file.startsWith(root+'/')){res.writeHead(403).end();return;}
   res.setHeader('Cross-Origin-Resource-Policy','cross-origin');res.setHeader('Cross-Origin-Opener-Policy','same-origin');res.setHeader('Cross-Origin-Embedder-Policy','require-corp');
   res.setHeader('Content-Type',({'.mjs':'text/javascript','.js':'text/javascript','.html':'text/html','.css':'text/css','.json':'application/json','.wasm':'application/wasm'})[path.extname(file)]||'application/octet-stream');
+  res.setHeader('Access-Control-Allow-Origin','*');
   const stream=fs.createReadStream(file);stream.on('error',()=>res.writeHead(404).end());stream.pipe(res);
 });
 (async()=>{
@@ -20,7 +21,7 @@ const methods=[],requests=[],server=http.createServer((req,res)=>{
     await page.waitForFunction(()=>window.lastProjectEvent?.kind==='source'&&!document.getElementById('run-workflow').disabled);
     assert.equal(await page.title(),'cppgm inception');
     assert.equal(await page.locator('.header-actions a').getAttribute('href'),'https://github.com/vishvananda/incpption');
-    assert.equal(await page.locator('[data-flow-size=game]').textContent(),(()=>{const p=JSON.parse(fs.readFileSync(path.join(root,'download-plan.json')));return([...new Set([...p.stages.game,...p.stages['game-clang']])].reduce((n,f)=>n+p.files[f],0)/1048576).toFixed(1)+' MiB';})());
+    assert.equal(await page.locator('[data-flow-size=game]').textContent(),(()=>{const p=JSON.parse(fs.readFileSync(path.join(root,'download-plan.json')));return([...new Set([...p.targets.doom.stages.game,...p.targets.doom.stages['game-clang'],...p.targets.doom.playFiles])].reduce((n,f)=>n+p.files[f],0)/1048576).toFixed(1)+' MiB';})());
     for(const width of [320,390,768,1440]){
       await page.setViewportSize({width,height:1000});
       assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`overflow at ${width}`);
@@ -35,8 +36,9 @@ const methods=[],requests=[],server=http.createServer((req,res)=>{
     for(const target of ['doom','godot','lara']){
       await page.locator('#build-target').selectOption(target);
       assert.equal(await page.locator('[data-phase=game] .node-name').textContent(),target==='doom'?'Doom 3':target==='godot'?'Godot':'Lara');
-      if(target!=='lara'){assert.equal(await page.locator('#run-workflow').isEnabled(),false);assert.match(await page.locator('#target-note').textContent(),/package/);}
+      assert.equal(await page.locator('#run-workflow').isEnabled(),true);
     }
+    const m=JSON.parse(fs.readFileSync(path.join(root,'projects/lara/manifest.json'))),units=m.commands.length+m.archives.length+1;
     await page.locator('[data-phase=game]').click();
     assert.equal(await page.locator('#cancel').isEnabled(),true);
     assert.equal(await page.locator('#flow-rows .flow-node.active').count(),2);
@@ -44,7 +46,7 @@ const methods=[],requests=[],server=http.createServer((req,res)=>{
     const report=await page.evaluate(()=>({cppgm:window.lastGameBuild,clang:window.lastClangGameBuild,error:window.lastWorkflowEvent?.kind==='error'?window.lastWorkflowEvent.error:null}));
     assert.equal(report.error,null);assert.equal(report.cppgm.kind,'complete');assert.equal(report.clang.kind,'complete');
     assert.equal(report.cppgm.workerCount,report.clang.workerCount);
-    assert.equal(await page.locator('#units .done').count(),4);assert.equal(await page.locator('#units-clang .done').count(),4);
+    assert.equal(await page.locator('#units .done').count(),units);assert.equal(await page.locator('#units-clang .done').count(),units);
     for(const id of ['game','game-clang']){
       const before=await page.locator(`[data-phase="${id}"] time`).textContent();
       await page.locator(`[data-phase="${id}"]`).click();await page.waitForTimeout(300);
@@ -52,10 +54,10 @@ const methods=[],requests=[],server=http.createServer((req,res)=>{
       assert.equal(await page.locator('#cancel').isEnabled(),false,'reviewing a result started a build');
     }
     await page.locator('.journey-nav [data-journey=inception]').click();await page.locator('.journey-nav [data-journey=game]').click();
-    assert.equal(await page.locator('#units .done').count(),4,'changing workflows lost results');
+    assert.equal(await page.locator('#units .done').count(),units,'changing workflows lost results');
     await page.locator('#build-target').selectOption('godot');await page.locator('#build-target').selectOption('lara');
-    assert.equal(await page.locator('#units .done').count(),4,'changing targets lost results');
-    for(const url of new Set(requests.filter(url=>/\/(game\/chunks\/|compiler\/inputs\/w1\/cppgm\.wasm)/.test(url))))assert.equal(requests.filter(value=>value===url).length,1,'comparison downloaded a shared input twice: '+url);
+    assert.equal(await page.locator('#units .done').count(),units,'changing targets lost results');
+    for(const url of new Set(requests.filter(url=>/\/(projects\/lara\/chunks\/|compiler\/inputs\/w1\/cppgm\.wasm)/.test(url))))assert.equal(requests.filter(value=>value===url).length,1,'comparison downloaded a shared input twice: '+url);
     for(const compiler of ['cppgm','clang']) {
       const bytes=await page.locator(`#downloads a[download="lara-${compiler}.wasm"]`).evaluate(async a=>Array.from(new Uint8Array(await(await fetch(a.href)).arrayBuffer())));
       fs.writeFileSync(path.join(out,compiler+'.wasm'),Buffer.from(bytes));

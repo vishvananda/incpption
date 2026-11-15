@@ -31,7 +31,7 @@ export class CompilePool {
       while (next < tasks.length) {
         const index = next++, task = tasks[index];
         postMessage({kind: 'progress', ...task.progress});
-        const result = await this.send(slot, {kind: 'compile', index, args: task.args, output: task.output});
+        const result = await this.send(slot, {kind: 'compile', index, args: task.args, output: task.output, language:task.language, sourceDateEpoch:task.sourceDateEpoch});
         results[index] = await completed(result, task, index);
       }
     }));

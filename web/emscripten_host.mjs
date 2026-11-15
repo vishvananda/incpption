@@ -1,3 +1,4 @@
+import {mountInputs} from './emscripten_inputs.mjs';
 // A fresh tool instance per invocation keeps Clang's process globals isolated.
 const factories = new Map();
 export async function invokeEmscripten({module, runtime, program, layers = [], files = [], args, output}) {
@@ -12,14 +13,12 @@ export async function invokeEmscripten({module, runtime, program, layers = [], f
       receive(instance, module); return instance.exports;
     }});
   const fs = tool.FS, directories = new Set(['/inputs']);
-  fs.mkdir('/inputs');
+  mountInputs(fs,layers);
   function mount(path, bytes) {
     const parts = path.split('/'), name = parts.pop(), directory = '/inputs/' + parts.join('/');
     if (!directories.has(directory)) {fs.mkdirTree(directory); directories.add(directory);}
     fs.createDataFile(directory, name, bytes, true, false, true);
   }
-  for (const layer of layers) for (const file of layer.files)
-    mount(file.path, layer.bundle.subarray(file.offset, file.offset + file.size));
   for (const file of files) mount(file.path, file.bytes);
   fs.chdir('/inputs');
   fs.mkdirTree(output.split('/').slice(0, -1).join('/') || '.');
@@ -27,6 +26,6 @@ export async function invokeEmscripten({module, runtime, program, layers = [], f
   catch (error) {if (error.name === 'ExitStatus') status = error.status; else throw Error([...log, String(error)].join('\n'));}
   if (status) throw Error(log.join('\n') || `${program} exited ${status}`);
   const node = fs.lookupPath(output).node;
-  const bytes = node.contents.subarray(0, node.usedBytes);
+  const bytes = node.contents.length===node.usedBytes?node.contents:node.contents.slice(0,node.usedBytes);
   return {status, log, bytes, memoryBytes: exports.memory.buffer.byteLength};
 }

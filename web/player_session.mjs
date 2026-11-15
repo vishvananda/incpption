@@ -6,12 +6,13 @@ export class PlayerSession {
     this.token = crypto.randomUUID(); this.log = log; this.draws = 0;
     this.requests = new Map(); this.sequence = 0; this.closed = false;
     this.frame = document.createElement('iframe');
-    Object.assign(this.frame, {id:'game-frame', src:url, title:'OpenLara built in this browser', allow:'autoplay; fullscreen'});
+    Object.assign(this.frame, {id:'game-frame', src:url, title:'Project built in this browser', allow:'autoplay; fullscreen'});
     this.receive = ({source, origin, data}) => {
       if (this.closed || source !== this.frame.contentWindow || origin !== this.origin || data?.channel !== 'cpp-inception-game') return;
       if (data.kind === 'ready') {this.readyResolve?.(); return;}
       if (data.token !== this.token) return;
       if (data.kind === 'log') this.log(data.message);
+      if(data.kind==='progress')this.onprogress?.(data);
       if (data.kind === 'draws') this.draws = data.count;
       if (data.kind === 'size') this.frame.style.height = Math.max(240, Math.min(1200, data.height)) + 'px';
       if (data.kind === 'playing') {this.draws = data.count; this.frame.focus(); this.startResolve?.(this);}
@@ -26,10 +27,10 @@ export class PlayerSession {
     const result = new Promise((resolve,reject) => {this.startResolve = resolve; this.startReject = reject;});
     // Register the rejection handler before a user can close during loading.
     result.catch(() => {});
-    this.timeout = setTimeout(() => {this.readyReject?.(Error('Player did not load')); this.startReject?.(Error('Player did not start'));}, 90000);
+    this.timeout = setTimeout(() => {this.readyReject?.(Error('Player did not load')); this.startReject?.(Error('Player did not start'));}, 300000);
     await this.ready;
     if (this.closed) throw Error('Player closed');
-    this.post({kind:'start', build:{game:build.game, runtime:build.runtime, assets:build.assets}});
+    this.post({kind:'start', build:{game:build.game, player:build.player, project:build.project}});
     try {return await result;} finally {clearTimeout(this.timeout);}
   }
   post(data) {if (!this.closed) this.frame.contentWindow.postMessage({channel:'cpp-inception-game',token:this.token,...data}, this.origin);}

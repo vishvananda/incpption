@@ -93,6 +93,10 @@ def prepare(args):
                         *flags, '-o', name + '.wasi.o'], cwd=inputs, check=True)
         if (inputs / (name + '.native.o')).read_bytes() != (inputs / (name + '.wasi.o')).read_bytes():
             raise RuntimeError('published compiler differs on x86 floating-point output')
+    if args.reference_only:
+        shutil.copytree(source / 'licenses', output / 'licenses/reference-export')
+        print('Published compiler independently reproduced and x86 output checked:', output)
+        return
     # Keep the existing source, SDK, runtime glue and build date. Rebuild all game
     # outputs with this compiler so the game's reference bytes match the new seed.
     game = output / 'openlara'
@@ -128,10 +132,16 @@ def prepare(args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    for name in ['export', 'output', 'compiler', 'cppgm-root', 'shim', 'game-template', 'credits-template', 'wasmtime']:
+    for name in ['export', 'output', 'compiler', 'cppgm-root', 'shim', 'wasmtime']:
         parser.add_argument('--' + name, type=Path, required=True)
+    parser.add_argument('--reference-only', action='store_true', help='qualify the compiler without a legacy game package')
+    parser.add_argument('--game-template', type=Path)
+    parser.add_argument('--credits-template', type=Path)
     parser.add_argument('--jobs', type=int, default=8)
-    prepare(parser.parse_args())
+    args = parser.parse_args()
+    if not args.reference_only and (not args.game_template or not args.credits_template):
+        parser.error('legacy game preparation needs --game-template and --credits-template')
+    prepare(args)
 
 
 if __name__ == '__main__':

@@ -6,7 +6,11 @@ on:
   workflow_dispatch:
     inputs:
       clang_roundtrip:
-        description: Build LLVM and verify the complete optional Clang roundtrip
+        description: Build clang and verify the complete optional compiler round trip
+        type: boolean
+        default: false
+      all_projects:
+        description: Compile all three projects with both compilers and open each output
         type: boolean
         default: false
 permissions:
@@ -34,6 +38,7 @@ jobs:
       - run: python3 tests/reference_names_test.py
       - run: python3 tests/project_sources_test.py
       - run: python3 tests/llvm_profile_test.py
+      - run: python3 tests/translation_profile_test.py
       - uses: actions/cache@v4
         with:
           path: .cache
@@ -83,4 +88,32 @@ jobs:
         with:
           name: clang-roundtrip-results
           path: build/roundtrip-results
+          retention-days: 7
+
+  all-projects:
+    if: github.event_name == 'workflow_dispatch' && inputs.all_projects
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - uses: actions/cache@v4
+        with:
+          path: .cache
+          key: compiler-payload-${{ hashFiles('config/*lock.json') }}
+      - run: npm run build
+      - run: npm run test:projects
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: all-project-results
+          path: build/project-results
           retention-days: 7

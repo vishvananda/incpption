@@ -21,3 +21,11 @@
 
 /*.mjs
   Cache-Control: public, max-age=0, must-revalidate
+
+/projects/*
+  Access-Control-Allow-Origin: *
+  Cross-Origin-Resource-Policy: cross-origin
+
+/game_exports.mjs
+  Access-Control-Allow-Origin: *
+  Cross-Origin-Resource-Policy: cross-origin

@@ -3,22 +3,27 @@
     "label": "Lara",
     "name": "OpenLara",
     "available": true,
-    "project": "game",
-    "package": "game/",
-    "kind": "game"
+    "project": "lara",
+    "package": "projects/lara/",
+    "kind": "game",
+    "description": "Tomb Raider game"
   },
   "doom": {
     "label": "Doom 3",
     "name": "Doom 3",
-    "available": false,
+    "available": true,
     "kind": "game",
-    "reason": "Needs the newer compiler package and browser build checks."
+    "project": "doom",
+    "package": "projects/doom/",
+    "description": "First-person shooter"
   },
   "godot": {
     "label": "Godot",
     "name": "Godot editor",
-    "available": false,
+    "available": true,
     "kind": "editor",
-    "reason": "Needs the newer compiler package and browser build checks."
+    "project": "godot",
+    "package": "projects/godot/",
+    "description": "Game editor"
   }
 }

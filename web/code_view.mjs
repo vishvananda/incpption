@@ -43,6 +43,8 @@ export function elfCode(bytes) {
 
 export async function disassemble(bytes, target) {
   if (target === 'wasm') {
+    // WABT reads the backing buffer; omit spare output capacity and unrelated views.
+    if(bytes.byteOffset||bytes.byteLength!==bytes.buffer.byteLength)bytes=bytes.slice();
     const {default: factory} = await import('./vendor/wabt.mjs');
     const wabt = await factory();
     const module = wabt.readWasm(bytes, {readDebugNames: true, exceptions: true, simd: true, threads: true});

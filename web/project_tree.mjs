@@ -11,6 +11,7 @@ export class ProjectTree {
     container.setAttribute('role', 'tree');
   }
   setProject(project, selected) {
+    const reveal=this.project?.id!==project.id||this.selected!==selected;
     this.project = project;
     this.selected = selected;
     this.focused = selected;
@@ -27,6 +28,11 @@ export class ProjectTree {
         node.files.push(file.path);
         if (index === parts.length - 1) node.file = file;
       });
+    }
+    if(reveal&&selected){
+      const relative=selected.startsWith(project.root+'/')?selected.slice(project.root.length+1):selected;
+      const parts=relative.split('/');
+      for(let index=1;index<parts.length;index++)this.expanded.add(parts.slice(0,index).join('/'));
     }
     this.container.setAttribute('aria-label', project.name + ' source files');
     this.render();

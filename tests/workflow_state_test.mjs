@@ -25,7 +25,7 @@ assert.equal(state.phase('game','lara','game-clang').state,'waiting');
 const args=clangCompileArgs(['-O3','-c','test.c','-o','build/test.o']);
 assert(args.includes('-O3'));assert(args.includes('emscripten/cache/sysroot/include/c++/v1'));assert.deepEqual(args.slice(0,2),['-x','c++']);
 assert.deepEqual(lldArgs(['--target=wasm32-unknown-unknown','-nostdlib','-Wl,-z,stack-size=8388608','--export-ctors','--export','main','--import-function','glClear','main.o','-o','game.wasm']),
-  ['--no-entry','--export-memory','-z','stack-size=8388608','--export=__wasm_call_ctors','--export-if-defined=main','--export-if-defined=__main_argc_argv','--allow-undefined','main.o','-o','game.wasm']);
+  ['--no-entry','--export-memory','-z','stack-size=8388608','--export=__wasm_call_ctors','--export-if-defined=main','--export-if-defined=__main_argc_argv','--allow-undefined-file=browser-imports.txt','main.o','-o','game.wasm']);
 console.log('PASS: retained results, project boundaries, rerun invalidation, parallel timing and matched toolchain arguments');
 
 const {runtimeExports}=await import('../web/game_exports.mjs');

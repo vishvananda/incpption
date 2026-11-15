@@ -7,11 +7,12 @@ on a server when a visitor uses the site.
 ## Frozen inputs
 
 `config/artifact-lock.json` pins the published cppgm seed, compiler source,
-WASI SDK, OpenLara source and assets, and the optional LLVM source profile.
+WASI SDK, all three project profiles, runtime glue, game data and the optional
+clang source profile.
 It preserves the compiler manifest and all byte-match reference files.
 
 `config/clang-seed-lock.json` pins Clang and LLD seeds built by cppgm. Their
-binary hashes equal those in the optional LLVM build manifest. They use the
+binary hashes equal those in the optional clang build manifest. They use the
 same Emscripten host as the Clang built during inception². The comparison runs
 Clang with LLD and cppgm with its internal linker. It does not use a server or
 substitute a native Clang process.
@@ -20,8 +21,11 @@ The locks use immutable Pages deployment URLs, not a moving branch alias.
 The build verifies every downloaded file. Source, SDK and seed chunks are
 compressed before upload; the worker checks decoded hashes too. Large compiler
 executables use 16 MiB ranges so every static file stays below Pages' 25 MiB
-limit. Filesystem bundles split at file boundaries, so workers can share
-immutable file views without making a complete SDK copy per worker. The two
+limit. Filesystem bundles normally split at file boundaries. A very large generated
+source is split into ranges and reconstructed once in shared memory. Workers
+share immutable file views without making a complete SDK copy per worker.
+The file viewer uses small compressed shards and bounded previews for large
+generated files; compilation always uses the complete checked source. The two
 comparison pools also share downloaded input buffers. Their shared cache is
 released on completion or cancellation.
 
@@ -41,9 +45,9 @@ main payload can replace downloads with `--artifact-dir /path/to/payload`.
 
 `tools/reference_prepare.py` can prepare a package from an official reference
 export. It checks the seed, recompiles the compiler, checks its output bytes,
-checks x86 output from native and Wasm compilers, and rebuilds OpenLara.
-Legacy exports contain the executable `cppgm++`; the site calls it cppgm and
-retains compatibility with those frozen packages during the rename.
+checks x86 output from native and Wasm compilers, and can rebuild a legacy OpenLara profile. Use `--reference-only` when preparing
+the complete project profiles.
+Current exports contain `cppgm`. Historical export names remain supported.
 
 ## Compiler and project profiles
 
@@ -58,15 +62,49 @@ They use the Emscripten stack API, disable process crash recovery, flatten two
 MSP430 StringSwitch chains, and split long generated ARM case-label chains.
 The generated ARM change preserves the resulting object bytes.
 
-The current OpenLara package compiles its three application units, then links
-against supplied SDK archives. Upstream OpenLara also compiles its two `.c`
-units as C++ in this web build. `tools/openlara_prepare.py` freezes the source,
-SDK, commands, runtime and game assets. The build date is fixed for byte checks.
+`tools/project_prepare.py` freezes all application and supporting source recipes
+for OpenLara, Doom 3 and the Godot editor. Schema 2 lists every C, C++ and
+assembly compilation, each archive's members and the final link. No precompiled
+project objects or SDK libraries are supplied to the browser. The native
+qualification uses the shipped cppgm binary and records output hashes. `tools/project_wasi.py` then builds the references with the actual shipped WASI
+compiler. Browser cppgm builds must reproduce each WASI object, archive and final
+module. Native hashes are retained separately: v0.9.0 has two known Doom files
+whose shared copy vectorization differs between native and WASI hosts. Compiler
+self-build matching remains strict against the published compiler export.
 
-Doom 3 and Godot need separate frozen packages and browser compilation checks
-before they are enabled. Native prototype success and execution of native-built
-Wasm in a browser do not qualify compilation inside the browser. Godot's output
-is the editor, so its final action will open the editor rather than start a game.
+Both compilers use the same source, ABI, SDK and O3 recipes. Supporting sources
+needed by either optimizer are listed in `config/project-support.json` and built
+by both. Clang's link allows only the recorded browser imports; missing C
+library functions are link errors. A shared Emscripten ABI adapter supplies the
+three setjmp helpers; clang imports the longjmp tag from the JavaScript host,
+while cppgm defines the same tag internally. The adapter is compiled by both. Godot enables clang's legacy Wasm-EH setjmp lowering to use the same longjmp
+runtime as cppgm. Assembly uses clang's in-process preprocessor
+and assembler because a browser cannot spawn an external assembler.
+
+Doom embeds the current date and time. Its profile fixes the compiler's realtime
+clock to 2025-01-01 UTC for reproducible output. Native qualification uses
+`tools/frozen_time.c` as a Linux preload shim; the browser uses a WASI clock
+adapter. Clang receives matching predefined date/time values. Measurement uses
+the unchanged monotonic clock. No project C/C++ source is changed for this.
+
+Godot's generated documentation translation data is split into one unit per
+locale and uses escaped byte strings instead of millions of initializer tokens. `tools/translation_profile.py`
+retains every compressed byte and table length, adds one unused NUL per string,
+and records original/encoded hashes in `generated_inputs`. This avoids exhausting
+the WASI compiler's address space without removing translations or changing
+editor implementation source. Both compilers consume the same encoded file.
+
+`tools/project_player.py` prepares the projects' Emscripten JavaScript hosts.
+It does not change the compiled Wasm bytes. Doom uses JSPI and loads its demo
+PK4 only on Play. Its known EM_ASM handlers are bound to the actual linked
+addresses, so both linker layouts work without evaluating Wasm strings.
+Godot accepts the browser-built bytes through its Engine loader and starts the
+project manager. Game data and JavaScript hosts are static inputs.
+
+`tools/project_clang.py` checks the shared recipes and runtime closure with native
+clang/LLD. `tools/llvm_refresh.py` requalifies the frozen clang profile after a
+compiler release. `tools/package_payload.py` assembles the static payload and
+its candidate lock. Publish only after full browser build and player checks.
 
 `tools/prepare_emscripten.py` and `tools/probe_project.py` support compiler/SDK
 experiments. They are not part of a visitor's build path. These newer profiles
@@ -94,9 +132,13 @@ npm run test:mobile
 GAME_TEST_TOUCH=1 npm run test:game
 ```
 
-The complete LLVM round trip is a separate manual CI job because it takes much
+The complete clang round trip is a separate manual CI job because it takes much
 longer. Run it locally with `npm run test:roundtrip`, or select `clang_roundtrip`
-when starting the Browser demo workflow. No results are sent to a build server.
+when starting the Browser demo workflow. No source or build results are sent to a build server.
+
+`npm run test:projects` compiles all three projects with both browser compilers
+and checks both players. This longer check is also a manual CI lane. Normal CI
+uses OpenLara for the comparison and phone checks, plus a full cppgm self-build.
 
 ## Deploy
 

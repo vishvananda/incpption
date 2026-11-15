@@ -17,12 +17,13 @@
     "check": "python3 tools/check.py",
     "test": "node tests/demo_browser_test.cjs dist node_modules/playwright full build/test-results",
     "test:inspector": "node tests/demo_browser_test.cjs dist node_modules/playwright inspector build/inspector-results",
-    "test:game": "node tests/openlara_browser_test.cjs dist node_modules/playwright build/game-results",
+    "test:game": "node tests/projects_browser_test.cjs dist lara build/game-results",
     "test:mobile": "node tests/mobile_journey_test.cjs dist build/mobile-journey",
     "test:roundtrip": "node tests/demo_browser_test.cjs dist node_modules/playwright roundtrip build/roundtrip-results",
     "test:transport": "python3 tests/transport_test.py && node tests/bundle_layers_test.mjs",
     "test:comparison": "node tests/comparison_browser_test.cjs dist build/comparison-results",
-    "test:workflow": "node tests/workflow_state_test.mjs && node tests/input_broker_test.mjs"
+    "test:workflow": "node tests/workflow_state_test.mjs && node tests/input_broker_test.mjs && node tests/file_buffers_test.mjs",
+    "test:projects": "node tests/projects_browser_test.cjs dist all build/project-results"
   },
   "license": "Apache-2.0"
 }

@@ -1,4 +1,4 @@
-import {fetchBytes} from './transport_bytes.mjs';
+import {fetchBytes,fetchJoined} from './transport_bytes.mjs';
 
 async function hash(bytes) {
   if (typeof SharedArrayBuffer !== 'undefined' && bytes.buffer instanceof SharedArrayBuffer) bytes = new Uint8Array(bytes);
@@ -27,11 +27,19 @@ export async function bundleLayers(prefix, manifest, {shared = false, select = (
         paths.has(file.path)) throw Error('Invalid frozen input bounds or path');
     paths.add(file.path);
   }
-  const wanted = manifest.files.filter(select);
+  const wanted = manifest.files.filter(select),spanning=[];
+  if(transport.split_files)for(const file of wanted){
+    const chunks=transport.chunks.filter(row=>row.offset<file.offset+file.size&&row.offset+row.size>file.offset);
+    if(chunks.length>1){
+      if(chunks[0].offset!==file.offset||chunks.at(-1).offset+chunks.at(-1).size!==file.offset+file.size)throw Error('Large source bounds differ');
+      spanning.push({file,chunks});
+    }
+  }
+  const spans=new Set(spanning.map(row=>row.file.path));
   let next = 0;
   const jobs = transport.chunks.flatMap((row, index) => {
-    const files = wanted.filter(file => file.offset >= row.offset && (file.offset < row.offset + row.size ||
-      file.size === 0 && index === transport.chunks.length - 1 && file.offset === row.offset + row.size));
+    const files = wanted.filter(file => !spans.has(file.path) && ( file.offset >= row.offset && (file.offset < row.offset + row.size ||
+      file.size === 0 && index === transport.chunks.length - 1 && file.offset === row.offset + row.size)));
     if (!files.length) return [];
     for (const file of files) if (file.size < 0 || file.offset + file.size > row.offset + row.size) throw Error('Chunk splits an input file');
     return [{row, files}];
@@ -53,6 +61,11 @@ export async function bundleLayers(prefix, manifest, {shared = false, select = (
       layers[index] = {bundle, files: files.map(file => ({...file, offset: file.offset - row.offset}))};
     }
   }));
+  for(const {file,chunks}of spanning){
+    const bundle=await fetchJoined(chunks.map(row=>({path:prefix+row.path,offset:row.offset-file.offset,size:row.size,sha256:row.sha256})),file.size,file.sha256,{shared});
+    if(await hash(bundle)!==file.sha256)throw Error('Large source checksum mismatch');
+    layers.push({bundle,files:[{...file,offset:0}]});
+  }
   if (layers.reduce((sum, layer) => sum + layer.files.length, 0) !== wanted.length) throw Error('Input files are outside their chunks');
   return layers;
 }

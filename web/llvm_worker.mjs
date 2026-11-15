@@ -6,7 +6,7 @@ import {invokeEmscripten} from './emscripten_host.mjs';
 self.onmessage = async ({data}) => {
   const started = performance.now(), pool = new CompilePool(data.ports);
   try {
-    postMessage({kind: 'loading', message: 'Loading LLVM source and SDK'});
+    postMessage({kind: 'loading', message: 'Loading clang source and SDK'});
     const compiler = await loadCompiler('compiler/', {inputProfile: 'none', shareInputs: true});
     const {manifest, layers} = await loadLLVM(compiler, {shared: true}), root = mountLayers(layers);
     const names = [...manifest.commands.map(command => command.source), 'Link LLD', 'Link Clang'];
@@ -16,7 +16,7 @@ self.onmessage = async ({data}) => {
     await pool.run(manifest.commands.map((command, index) => ({...command, progress: {index, name: command.source}})),
       async (result, command, index) => {
         const sha256 = await hash(result.bytes);
-        if (sha256 !== command.sha256) throw Error('LLVM object differs: ' + command.source);
+        if (sha256 !== command.sha256) throw Error('clang object differs: ' + command.source);
         objects.set(command.output, result.bytes);
         postMessage({kind: 'unit', index, name: command.source, seconds: result.seconds, bytes: result.bytes.length,
           memoryBytes: result.memoryBytes, sha256, matched: false});

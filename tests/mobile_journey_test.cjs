@@ -8,6 +8,7 @@ const server=http.createServer((req,res)=>{
   res.setHeader('Cross-Origin-Resource-Policy','cross-origin');
   res.setHeader('Cross-Origin-Opener-Policy','same-origin');res.setHeader('Cross-Origin-Embedder-Policy','require-corp');
   const ext=path.extname(file);res.setHeader('Content-Type',({'.html':'text/html','.mjs':'text/javascript','.js':'text/javascript','.css':'text/css','.wasm':'application/wasm','.json':'application/json'})[ext]||'application/octet-stream');
+  res.setHeader('Access-Control-Allow-Origin','*');
   const stream=fs.createReadStream(file);stream.on('error',()=>{res.writeHead(404).end();});stream.pipe(res);
 });
 (async()=>{
@@ -24,6 +25,7 @@ const server=http.createServer((req,res)=>{
       for(const width of [320,390,430]){
         await page.setViewportSize({width,height:844});
         if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth))throw Error(`${name} overflow at ${width}`);
+        await page.waitForFunction(()=>[...document.querySelectorAll('.units')].every(e=>e.getBoundingClientRect().height<=240));
         if(!await page.locator('.project-files').evaluate(e=>e.open))throw Error('File browser is collapsed by default');
         if(!await page.locator('#source-files button[aria-selected]').first().isVisible())throw Error('Source files are hidden');
         await page.screenshot({path:path.join(out,`${name}-${width}.png`),fullPage:true});
@@ -34,7 +36,8 @@ const server=http.createServer((req,res)=>{
         if(await page.locator('#explorer').evaluate(e=>e.parentElement.tagName)!=='MAIN')throw Error('File browser moved between phases');
         await page.screenshot({path:path.join(out,`${name}-${journey}.png`),fullPage:true});
       }
-      if(name==='chromium'){
+      if(name==='chromium'&&!process.env.MOBILE_TEST_LAYOUT_ONLY){
+        await page.locator('#build-target').selectOption('lara');
         await page.setViewportSize({width:390,height:844});
         await page.locator('[data-phase=game]').click();
         await page.waitForFunction(()=>window.lastWorkflowEvent?.kind==='error'||window.lastGameBuild?.kind==='complete'&&window.lastClangGameBuild?.kind==='complete',null,{timeout:300000});

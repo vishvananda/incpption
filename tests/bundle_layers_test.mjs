@@ -35,3 +35,14 @@ for(const member of members) {
 }
 assert.deepEqual(archive(members),bytes(golden));
 console.log('PASS: selective input loading, shared cache identity, corrupt inputs and BSD archive bytes');
+const big=bytes('a source larger than one chunk'),splitAt=10;
+const split={schema:1,split_files:true,sha256:hash(big),bytes:big.length,chunks:[
+ {path:'chunks/one.bin',offset:0,size:splitAt,sha256:hash(big.subarray(0,splitAt))},
+ {path:'chunks/two.bin',offset:splitAt,size:big.length-splitAt,sha256:hash(big.subarray(splitAt))}]};
+globalThis.fetch=async url=>url.endsWith('transport.json')?Response.json(split):new Response(url.endsWith('one.bin')?big.subarray(0,splitAt):big.subarray(splitAt));
+const large={bundle_sha256:hash(big),files:[{path:'generated.cpp',offset:0,size:big.length,sha256:hash(big)}]};
+const joined=await bundleLayers('/large/',large,{shared:true});
+assert.deepEqual(new Uint8Array(joined[0].bundle),big);assert(joined[0].bundle.buffer instanceof SharedArrayBuffer);
+assert.equal(joined[0].files[0].offset,0);
+await assert.rejects(()=>bundleLayers('/large/',{...large,files:[{...large.files[0],sha256:'0'.repeat(64)}]}),/checksum/);
+console.log('PASS: large generated files reconstruct in shared storage and reject corruption');

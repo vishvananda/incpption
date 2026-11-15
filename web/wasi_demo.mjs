@@ -5,19 +5,27 @@ import {showJourney} from './journey.mjs';
 import {WorkflowState, paths, isGame} from './workflow_state.mjs';
 const $ = id => document.getElementById(id);
 const definitions = {
-  llvm: {label:'LLVM', detail:'cppgm builds clang + LLD', project:'llvm', worker:'llvm_worker.mjs'},
-  clang: {label:'cppgm-LLVM', detail:'clang builds cppgm', project:'cppgm', worker:'clang_worker.mjs'},
+  llvm: {label:'clang', detail:'cppgm builds clang + LLD', project:'llvm', worker:'llvm_worker.mjs'},
+  clang: {label:'cppgm-clang', detail:'clang builds cppgm', project:'cppgm', worker:'clang_worker.mjs'},
   match: {label:'cppgm', detail:'Rebuild & match every byte', project:'cppgm', worker:'wasi_worker.mjs'},
-  game: {label:'Lara', detail:'Compile & link OpenLara', project:'game', worker:'openlara_worker.mjs'},
-  'game-clang': {label:'Lara', detail:'Compile & link OpenLara', project:'game', worker:'openlara_worker.mjs'},
+  game: {label:'Doom 3', detail:'Compile & link Doom 3', project:'game', worker:'project_worker.mjs'},
+  'game-clang': {label:'Doom 3', detail:'Compile & link Doom 3', project:'game', worker:'project_worker.mjs'},
 };
 const state = new WorkflowState(), jobs = new Map(), sourceNames = {}, grids = new Map(), downloads = new Map();
-let scenario, target = 'lara', visiblePhase, automatic = false, player, playing = false, opening = false, gameLaunch = 0;
+const requestedProject=new URLSearchParams(location.search).get('project');
+let scenario, target = ['doom','lara','godot'].includes(requestedProject)?requestedProject:'doom', visiblePhase, automatic = false, player, playing = false, opening = false, gameLaunch = 0;
 let selectedGame = 'game', plan, comparisonInputs;
 const clock = seconds => `${Math.floor(seconds/60)}:${String(Math.floor(seconds%60)).padStart(2,'0')}`;
 const size = bytes => `${(bytes/1048576).toFixed(1)} MiB`;
 const busy = () => jobs.size > 0;
-const phase = id => state.phase(scenario, target, id, isGame(id) && target !== 'lara' ? [] : sourceNames[id] || []);
+const canPlay=()=>target!=='doom'||typeof WebAssembly.promising==='function'&&typeof WebAssembly.Suspending==='function';
+function targetNote(){
+ const item=plan?.targets[target];
+ $('target-note').textContent=!item?.available?item?.reason||'Loading project information…':!canPlay()?'Doom play needs JSPI support. Use Chrome or choose another project.':'';
+}
+const phase = id => state.phase(scenario,target,id,sourceNames[isGame(id)?target:id]||[]);
+const projectId=id=>isGame(id)?target:definitions[id].project;
+window.activeBuildTarget=target;
 const seconds = row => row.state === 'active' ? (performance.now()-row.started)/1000 : row.seconds;
 function buildTime(row) {
   if(row.result?.compileSeconds!==undefined)return row.result.compileSeconds;
@@ -29,9 +37,9 @@ function phaseClock(row) {
   return row.state==='active'&&!row.compileStarted?'loading':clock(buildTime(row));
 }
 const completed = () => state.completed(scenario, target);
-const projectEvent = (id, kind, detail = {}) => window.dispatchEvent(new CustomEvent('project-build', {detail:{project:definitions[id].project, kind, ...detail}}));
+const projectEvent = (id, kind, detail = {}) => window.dispatchEvent(new CustomEvent('project-build', {detail:{project:projectId(id), kind, ...detail}}));
 function selectProject(id) {
-  const project=isGame(id)&&plan&&!plan.targets[target]?.available?'cppgm':definitions[id].project;
+  const project=projectId(id);
   window.dispatchEvent(new CustomEvent('project-select', {detail:{project}}));
 }
 function canRun(id) {
@@ -40,11 +48,11 @@ function canRun(id) {
   const index = paths[scenario].indexOf(id);
   return index === 0 || phase(paths[scenario][index-1]).state === 'done';
 }
-function downloadFiles(ids) {return new Set(ids.flatMap(id => plan?.stages[id] || []));}
+function downloadFiles(ids) {return new Set(ids.flatMap(id => (isGame(id)?plan?.targets[target]?.stages?.[id]:plan?.stages[id]) || []));}
 function downloadSize(ids) {return [...downloadFiles(ids)].reduce((total,name) => total + (plan?.files[name] || 0), 0);}
 function updateBadges() {
   for (const badge of document.querySelectorAll('[data-flow-size]')) {
-    const bytes = downloadSize(paths[badge.dataset.flowSize]);
+    const bytes = [...new Set([...downloadFiles(paths[badge.dataset.flowSize]),...(plan?.targets[target]?.playFiles||[])])].reduce((n,path)=>n+(plan?.files[path]||0),0);
     badge.textContent = plan && !plan.targets[target]?.available ? badge.dataset.flowSize === 'game' ? 'Package pending' : '≥ '+size(bytes)+' + project' : bytes ? size(bytes) : '';
     badge.title = 'Cold download, shared files counted once. Cached files may need no transfer.';
   }
@@ -52,7 +60,7 @@ function updateBadges() {
 function addFlow(list, ids, compiler) {
   const fragment = document.createDocumentFragment(), seed = document.createElement('li');
   seed.className = 'endpoint seed';
-  seed.innerHTML = `<span class="dot" aria-hidden="true"></span><strong>${compiler} seed</strong><small>${compiler === 'cppgm' ? 'Self-compiled Wasm' : 'Wasm · LLVM 22'}</small>`;
+  seed.innerHTML = `<span class="dot" aria-hidden="true"></span><strong>${compiler} seed</strong><small>${compiler === 'cppgm' ? 'Self-compiled Wasm' : 'Wasm · clang 22'}</small>`;
   fragment.append(seed);
   for (const id of ids) {
     const row = phase(id), definition = definitions[id], node = document.createElement('li');
@@ -65,13 +73,15 @@ function addFlow(list, ids, compiler) {
       if (row.state === 'done' || row.state === 'active') {showPhase(id); return;}
       automatic = false; start(id);
     };
+    const action=document.createElement('span');action.className='flow-action';action.textContent='compile';node.append(action);
     node.append(button); fragment.append(node);
   }
   const end = document.createElement('li'), gameId = compiler === 'clang' ? 'game-clang' : 'game';
   end.className = 'endpoint finish' + (phase(gameId).state === 'done' ? ' done' : '');
+  const runAction=document.createElement('span');runAction.className='flow-action';runAction.textContent='run';end.append(runAction);
   const play = document.createElement('button'); play.id = compiler === 'clang' ? 'game-play-clang' : 'game-play'; play.type = 'button';
-  play.disabled = phase(gameId).state !== 'done' || busy();
-  play.innerHTML = `<span class="dot" aria-hidden="true">▶</span><strong>${plan?.targets[target]?.kind === 'editor' ? 'Open' : 'Play'}</strong>`;
+  play.disabled = phase(gameId).state !== 'done' || busy() || !canPlay();
+  play.innerHTML = `<span class="dot" aria-hidden="true">▶</span><strong>${plan?.targets[target]?.kind === 'editor' ? 'Open' : 'Play'}</strong><small title="Additional player and game-data download">↓ ${size((plan?.targets[target]?.playFiles||[]).reduce((n,path)=>n+(plan?.files[path]||0),0))}</small>`;
   play.onclick = () => openGame(gameId); end.append(play); fragment.append(end);
   list.replaceChildren(fragment);
 }
@@ -102,6 +112,15 @@ function updateTime() {
   if (visiblePhase) $('elapsed').textContent = phaseClock(phase(scenario==='game'?'game':visiblePhase));
   if (scenario === 'game') $('elapsed-clang').textContent = phaseClock(phase('game-clang'));
 }
+function sizeGrid(element){
+  const width=element.clientWidth,count=Number(element.dataset.units)||0;
+  if(!width||!count)return;
+  const gap=count>512?2:3,height=width<600?180:200,cell=width<600?10:16;
+  const columns=Math.max(Math.ceil((width+gap)/(cell+gap)),Math.ceil(Math.sqrt(count*width/height)));
+  element.style.gridTemplateColumns=`repeat(${columns},minmax(0,1fr))`;
+  element.style.gap=gap+'px';
+}
+const gridSizer=new ResizeObserver(entries=>{requestAnimationFrame(()=>{for(const entry of entries)sizeGrid(entry.target);});});
 function makeGrid(id, element) {
   const row = phase(id), buttons = [], fragment = document.createDocumentFragment();
   element.classList.toggle('dense', row.names.length > 1000);
@@ -110,12 +129,13 @@ function makeGrid(id, element) {
     button.onclick = () => {
       const result = row.rows.get(index), grid = grids.get(id); grid.selected = index;
       $('unit-detail').textContent = `${scenario === 'game' ? id === 'game-clang' ? 'clang · ' : 'cppgm · ' : ''}${name}${result ? ' · '+result.seconds.toFixed(2)+' s'+(id === 'match' ? ' · matched' : ' · built') : row.running.has(index) ? ' · building' : ' · waiting'}`;
-      if (name.includes('/')) window.dispatchEvent(new CustomEvent('project-source-select', {detail:{project:definitions[id].project, path:name}}));
+      const source=row.sources?.[index]||name;
+      if (source.includes('/')) window.dispatchEvent(new CustomEvent('project-source-select', {detail:{project:projectId(id), path:source}}));
       paintGrid(id);
     };
     buttons.push(button); fragment.append(button);
   }
-  element.replaceChildren(fragment); grids.set(id,{buttons, selected:-1}); paintGrid(id);
+  element.replaceChildren(fragment);element.dataset.units=row.names.length;sizeGrid(element);gridSizer.observe(element);grids.set(id,{buttons, selected:-1});paintGrid(id);
 }
 function paintGrid(id, index) {
   const row = phase(id), grid = grids.get(id); if (!grid) return;
@@ -144,8 +164,8 @@ function showPhase(id) {
 }
 function restoreProject(id) {
   projectEvent(id,'reset');
-  for (const [index,result] of phase(id).rows) projectEvent(id,'unit',{name:phase(id).names[index], matched:id === 'match', seconds:result.seconds});
-  for (const index of phase(id).running) projectEvent(id,'progress',{name:phase(id).names[index]});
+  for (const [index,result] of phase(id).rows) projectEvent(id,'unit',{name:phase(id).sources?.[index]||phase(id).names[index], matched:id === 'match', seconds:result.seconds});
+  for (const index of phase(id).running) projectEvent(id,'progress',{name:phase(id).sources?.[index]||phase(id).names[index]});
 }
 function drawDownloads() {
   const fragment = document.createDocumentFragment();
@@ -182,7 +202,7 @@ function start(id, {rerun=false}={}) {
   if (rerun) invalidate(id);
   if (scenario === 'game') {
     comparisonInputs=new InputBroker();
-    const workers = Math.min(3,Math.max(1,Math.floor(Number($('worker-choice').value)/2)));
+    const workers = Math.min(4,Math.max(1,Math.floor(Number($('worker-choice').value)/2)));
     launch('game',{workers,barrier:true}); launch('game-clang',{workers,barrier:true,compiler:'clang'});
     showPhase(id);
   } else {launch(id,{workers:Number($('worker-choice').value)}); showPhase(id);}
@@ -191,7 +211,7 @@ function launch(id, args) {
   // Failed/cancelled attempts restart from clean inputs; completed rows are only
   // invalidated by the explicit rerun action.
   const row=phase(id); row.rows.clear(); row.running.clear(); row.state='active'; row.started=performance.now(); row.seconds=0; row.compileStarted=null; row.compileSeconds=0; row.result=null; row.peak=0;
-  const session=new BuildSession('./'+definitions[id].worker,{workers:args.workers,maximum:isGame(id)?3:8,inputBroker:comparisonInputs});
+  const session=new BuildSession('./'+definitions[id].worker,{workers:args.workers,maximum:8,inputBroker:comparisonInputs});
   const job={session,ready:false,deadline:setTimeout(()=>fail('This phase exceeded the 90-minute deadline.'),90*60000)};
   jobs.set(id,job); row.workers=session.count;
   window.lastWorkflowEvent={kind:'starting',phase:id};
@@ -212,7 +232,7 @@ function launch(id, args) {
     else if (id==='match') window.lastInceptionEvent=summary;
     if (data.kind==='loading') $('status').textContent=data.message;
     if (data.kind==='ready') {
-      row.names=id==='match'?[...data.sources,'Link cppgm']:[...data.sources];
+      row.names=id==='match'?[...data.sources,'Link cppgm']:[...data.sources];row.sources=data.unitSources||row.names;
       if (scenario==='game') makeGrid(id,$(id==='game-clang'?'units-clang':'units'));
       else if (visiblePhase===id) makeGrid(id,$('units'));
       $('worker-count').textContent=`${data.workerCount} workers${scenario==='game'?' each':''}`;
@@ -230,20 +250,16 @@ function launch(id, args) {
     }
     if (data.kind==='progress') {
       row.names[data.index]=data.name;row.running.add(data.index);paintGrid(id,data.index);
-      if(scenario!=='game'||visiblePhase===id)projectEvent(id,'progress',{name:data.name});$('status').textContent=data.name;
+      if(scenario!=='game'||visiblePhase===id)projectEvent(id,'progress',{name:data.source||data.name});$('status').textContent=data.name;
     }
     if (data.kind==='unit') {
       row.running.delete(data.index);row.rows.set(data.index,{seconds:data.seconds,bytes:data.bytes});paintGrid(id,data.index);
       row.peak=Math.max(row.peak||0,data.memoryBytes||0);$('memory').textContent=`${Math.ceil(row.peak/1048576)} MiB peak / worker`;
-      if(scenario!=='game'||visiblePhase===id)projectEvent(id,'unit',{name:data.name,matched:id==='match',seconds:data.seconds});updateTime();
+      if(scenario!=='game'||visiblePhase===id)projectEvent(id,'unit',{name:data.source||data.name,matched:id==='match',seconds:data.seconds});updateTime();
     }
     if (data.kind==='checking') $('status').textContent=`Checking ${data.name}…`;
     if (data.kind==='error') {fail(data.error);return;}
     if (data.kind==='complete') {
-      if(scenario==='game'){
-        const other=phase(id==='game'?'game-clang':'game').result;
-        if(other){data.assets=other.assets;data.runtime=other.runtime;}
-      }
       row.seconds=seconds(row);row.state='done';row.result=data;
       $('log').textContent+=`${id}: ${row.rows.size} outputs${id==='match'?', every byte matched':''} · ${row.seconds.toFixed(1)} s total${data.compileSeconds!==undefined?' · '+data.compileSeconds.toFixed(1)+' s build':''}\n`;
       terminate(id);drawFlow();drawDownloads();
@@ -253,12 +269,12 @@ function launch(id, args) {
           comparisonInputs?.close();comparisonInputs=null;
           const a=phase('game').result.compileSeconds,b=phase('game-clang').result.compileSeconds;
           $('status').textContent=`Built locally. cppgm ${a.toFixed(2)} s · clang ${b.toFixed(2)} s. Choose either Play button.`;
-          if(automatic){automatic=false;openGame('game');}
+          if(automatic){automatic=false;if(canPlay())openGame('game');else $('status').textContent='Built locally. This browser needs JSPI support to play Doom.';}
         }
       } else {
         $('status').textContent=id==='match'?'Every object and the compiler match. Ready to build.':isGame(id)?'Built here. Ready to play.':`${definitions[id].label} built. Ready for the next phase.`;
         if(automatic&&next)start(next);
-        else if(automatic&&isGame(id)){automatic=false;openGame(id);}
+        else if(automatic&&isGame(id)){automatic=false;if(canPlay())openGame(id);else $('status').textContent='Built locally. This browser needs JSPI support to play Doom.';}
       }
     }
   };
@@ -279,12 +295,12 @@ function chooseScenario(name) {
 for(const button of document.querySelectorAll('[data-journey]'))button.onclick=()=>chooseScenario(button.dataset.journey);
 $('build-target').onchange=()=>{
   if(busy())return;
-  target=$('build-target').value;closeGame();
+  target=$('build-target').value;window.activeBuildTarget=target;closeGame();
   const item=plan?.targets[target];
   for(const id of ['game','game-clang']){definitions[id].label=item?.label||target;definitions[id].detail=`Compile & link ${item?.name||target}`;}
-  $('target-note').textContent=item?.available?'':item?.reason||'Loading project information…';
+  targetNote();
   $('game-modal-title').textContent=`${item?.name||target} · built in your browser`;
-  chooseScenario(scenario);
+  updateRoutes();chooseScenario(scenario);
 };
 function closeGame(){if($('game-modal').open){$('game-modal').close();stopGame();}}
 function stopGame(){
@@ -296,23 +312,43 @@ $('game-modal').addEventListener('click',event=>{if(event.target===$('game-modal
 async function openGame(id='game'){
   if(phase(id).state!=='done'||playing||opening)return;
   selectedGame=id;const launch=++gameLaunch;opening=true;
-  $('game-modal').showModal();$('game-status').textContent='Opening the game you just built…';delete window.gameError;
+  $('game-modal-title').textContent=`${plan.targets[target].name} · built in your browser`;$('game-help').textContent=target==='godot'?'Create or open a project in the editor. Close to return to the build.':target==='doom'?'WASD to move · Mouse to aim and fire · Space to jump · Esc for menu. Touch controls are below the game.':'Arrow keys to move · Ctrl to act · Alt to jump · Esc for menu. Touch controls are below the game.';$('game-modal').showModal();$('game-status').textContent='Opening the game you just built…';delete window.gameError;
   try{
     const url=window.incpptionPlayerURL||document.querySelector('meta[name=player-url]').content;
     player=new PlayerSession($('game-surface'),{url,log:text=>{$('log').textContent+=text+'\n';}});
+    player.onprogress=({loaded,total})=>{$('game-status').textContent=`Downloading project data: ${size(loaded)} / ${size(total)}`;};
     const game=await player.start(phase(selectedGame).result);if(launch!==gameLaunch)return;
     window.openLaraGame=game;opening=false;playing=true;window.gamePlaying=true;$('game-status').textContent='Running locally.';
   }catch(error){if(launch!==gameLaunch)return;opening=false;$('game-status').textContent=String(error);window.gameError=String(error);}
 }
 window.addEventListener('project-index-ready',({detail:{projects}})=>{
   for(const project of projects){
-    if(project.id==='llvm')sourceNames.llvm=[...project.buildSources,'Link LLD','Link Clang'];
+    if(project.id==='llvm')sourceNames.llvm=[...project.buildSources,'Link LLD','Link clang'];
     if(project.id==='cppgm')sourceNames.match=sourceNames.clang=[...project.buildSources,'Link cppgm'];
-    if(project.id==='game')sourceNames.game=sourceNames['game-clang']=[...project.buildSources,'Link OpenLara'];
+    if(['lara','doom','godot'].includes(project.id))sourceNames[project.id]=project.buildUnits.map(row=>row.name);
   }
-  for(const workflows of state.workflows.values())for(const [key,row]of workflows)if(row.state==='waiting')row.names=key.includes(':')&&!key.endsWith(':lara')?[]:sourceNames[key.split(':')[0]]||[];
+  for(const workflows of state.workflows.values())for(const [key,row]of workflows)if(row.state==='waiting')row.names=sourceNames[key.includes(':')?key.split(':')[1]:key]||[];
   if(!busy())showPhase(visiblePhase);
 });
-fetch('./download-plan.json').then(response=>{if(!response.ok)throw Error('Download information unavailable');return response.json();}).then(value=>{plan=value;drawFlow();}).catch(error=>{$('status').textContent=String(error);});
-setInterval(updateTime,250);
+function updateRoutes(){
+  const project=plan?.targets[target]?.label||'Doom 3';
+  const routes={game:[['cppgm',project],['clang',project]],inception:[['cppgm','cppgm ✓',project]],roundtrip:[['cppgm','clang','cppgm','cppgm ✓',project]]};
+  for(const caption of document.querySelectorAll('[data-route]')){
+    const fragment=document.createDocumentFragment();
+    for(const [index,chain]of routes[caption.dataset.route].entries()){
+      const line=document.createElement('span');line.className='route-chain';
+      if(index){const vs=document.createElement('span');vs.className='route-vs';vs.textContent='vs';line.append(vs);}
+      const start=document.createElement('span');start.textContent=chain[0];line.append(start);
+      for(const name of chain.slice(1)){
+        const step=document.createElement('span');step.className='route-step';
+        const verb=document.createElement('span');verb.className='route-verb';verb.innerHTML='compile<span aria-hidden="true">→</span>';
+        const end=document.createElement('span');end.textContent=name;step.append(verb,end);line.append(step);
+      }
+      fragment.append(line);
+    }
+    caption.replaceChildren(fragment);
+  }
+}
+fetch('./download-plan.json').then(response=>{if(!response.ok)throw Error('Download information unavailable');return response.json();}).then(value=>{plan=value;$('build-target').value=target;for(const id of ['game','game-clang']){definitions[id].label=plan.targets[target].label;definitions[id].detail='Compile & link '+plan.targets[target].name;}targetNote();updateRoutes();showPhase(visiblePhase);}).catch(error=>{$('status').textContent=String(error);});
+updateRoutes();setInterval(updateTime,250);
 chooseScenario(['#inception','#roundtrip'].includes(location.hash)?location.hash.slice(1):'game');

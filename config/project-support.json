@@ -1,0 +1,45 @@
+{
+  "lara": [
+    {
+      "source": "system/lib/libc/musl/src/stdio/puts.c",
+      "member": "puts.o"
+    },
+    {
+      "source": "system/lib/libc/musl/src/stdio/putchar.c",
+      "member": "putchar.o"
+    },
+    {
+      "source": "system/lib/libc/musl/src/stdio/fputs.c",
+      "member": "fputs.o"
+    }
+  ],
+  "doom": [
+    {
+      "source": "system/lib/libc/musl/src/math/exp2f.c",
+      "member": "exp2f.o"
+    }
+  ],
+  "godot": [
+    {
+      "source": "system/lib/libc/musl/src/stdio/puts.c",
+      "member": "puts.o"
+    },
+    {
+      "source": "system/lib/libc/musl/src/stdio/putchar.c",
+      "member": "putchar.o"
+    },
+    {
+      "source": "system/lib/libc/musl/src/stdio/fputs.c",
+      "member": "fputs.o"
+    },
+    {
+      "site_source": "third_party/runtime/emscripten_sjlj.c",
+      "member": "emscripten_sjlj.o",
+      "archive": "libcompiler_rt-legacysjlj.a"
+    },
+    {
+      "source": "system/lib/libc/musl/src/math/exp2.c",
+      "member": "exp2.o"
+    }
+  ]
+}

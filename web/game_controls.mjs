@@ -1,6 +1,6 @@
 // Touch buttons use the same keyboard callback as a physical keyboard. Keep
 // each pointer independent so movement and an action can be held together.
-export function attachGameControls(canvas) {
+export function attachGameControls(canvas,{profile='lara'}={}) {
   const controls = document.createElement('div');
   controls.className = 'game-controls';
   controls.setAttribute('role', 'group');
@@ -21,8 +21,10 @@ export function attachGameControls(canvas) {
     ['menu', 'Menu', 'Open inventory or menu', 'Escape', 'Escape', 27],
     ['enter', 'Select', 'Select menu item', 'Enter', 'Enter', 13],
   ];
+  if(profile==='doom'){definitions[4]=['action','Fire','Fire','MouseLeft','MouseLeft',0];definitions[5]=['jump','Jump','Jump',' ','Space',32];definitions[6]=['walk','Crouch','Crouch','c','KeyC',67];definitions[7]=['weapon','Reload','Reload','r','KeyR',82];}
   function key(type, definition) {
     const [, , , value, code, keyCode] = definition;
+    if(code==='MouseLeft'){canvas.dispatchEvent(new MouseEvent(type==='keydown'?'mousedown':'mouseup',{button:0,bubbles:true,cancelable:true}));return;}
     canvas.dispatchEvent(new KeyboardEvent(type, {key: value, code, keyCode, which: keyCode,
       bubbles: true, cancelable: true}));
   }

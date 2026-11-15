@@ -24,15 +24,15 @@
 <main>
   <div class="hero">
     <h1 class="logo-title"><button type="button" class="wordmark" aria-label="cppgm inception. Replay logo animation"><span class="wordmark-cpp" aria-hidden="true">cpp</span><span class="wordmark-gm" aria-hidden="true">gm</span><span class="wordmark-name" aria-hidden="true">in<span class="wordmark-cep">cep</span>tion</span></button></h1>
-    <p class="intro">Meet cppgm, a C++ compiler built for fast compilation. Fast enough to compile itself in your browser.</p>
+    <p class="intro">Meet cppgm, a C++ compiler built to be fast. Fast enough to compile itself in your browser.</p>
     <p class="locality">Compiling, matching and playing happen here, on your device. Nothing runs on a server.</p>
   </div>
   <section id="workflow" aria-label="Browser build workflow">
-    <div class="target-toolbar"><label for="build-target">Build project <select id="build-target"><option value="lara">Lara</option><option value="doom">Doom 3</option><option value="godot">Godot</option></select></label><span id="target-note"></span></div>
+    <div class="target-toolbar"><label for="build-target">Build project <select id="build-target"><option value="doom">Doom 3 · First-person shooter</option><option value="lara">OpenLara · Tomb Raider game</option><option value="godot">Godot · Game editor</option></select></label><span id="target-note"></span></div>
     <nav class="journey-nav" aria-label="Choose a workflow">
-      <button data-journey="game" aria-current="step"><strong>compile</strong><small>cppgm vs clang</small><span class="download-badge" data-flow-size="game"></span></button>
-      <button data-journey="inception"><strong>inception</strong><small>cppgm compiles itself</small><span class="download-badge" data-flow-size="inception"></span></button>
-      <button data-journey="roundtrip"><strong>inception<sup>2</sup></strong><small>cppgm → clang → cppgm<br><span class="long-build">Long build</span></small><span class="download-badge" data-flow-size="roundtrip"></span></button>
+      <button data-journey="game" aria-current="step"><strong>compile</strong><small class="route-caption" data-route="game"></small><span class="download-badge" data-flow-size="game"></span></button>
+      <button data-journey="inception"><strong>inception</strong><small class="route-caption" data-route="inception"></small><span class="download-badge" data-flow-size="inception"></span></button>
+      <button data-journey="roundtrip"><strong>inception<sup>2</sup></strong><small class="route-caption" data-route="roundtrip"></small><span class="long-build">Long build</span><span class="download-badge" data-flow-size="roundtrip"></span></button>
     </nav>
     <div class="workflow-toolbar"><div><span class="metric-label">Workflow time</span><strong id="workflow-time">0:00</strong><span id="workflow-files"></span></div><div class="workflow-actions"><button id="run-workflow">Run workflow <span aria-hidden="true">→</span></button><button id="cancel" disabled>Cancel</button></div></div>
     <div id="flow-rows"><ol id="flow" class="flow" aria-label="cppgm compiler flow"></ol><ol id="flow-clang" class="flow" aria-label="Clang compiler flow" hidden></ol></div>
@@ -46,10 +46,10 @@
     <section id="clang-results" class="phase-grid" aria-label="Clang build results" hidden><div class="phase-heading"><strong>clang</strong><div><span id="completed-clang">0 files</span><span id="elapsed-clang">0:00</span></div></div><progress id="progress-clang" value="0" max="1" aria-label="Clang phase progress"></progress><div id="units-clang" class="units" aria-label="Clang source files"></div></section>
     <div class="grid-key"><span><i class="waiting"></i>Waiting <i class="active"></i>Building <i class="done"></i>Built <i class="matched"></i>Matched</span><span id="memory"></span></div>
     <p id="unit-detail">Select a square to view its source.</p>
-    <details class="build-details"><summary>Build details &amp; downloads</summary><label>Compile workers <select id="worker-choice"><option value="8">8</option><option value="4">4</option><option value="2">2</option><option value="1">1</option></select></label><p class="small">The starting compiler was compiled to WebAssembly by cppgm. Matching compares every object and the final compiler with the published build. SDK libraries and generated LLVM headers are supplied as build inputs. Download badges show compressed inputs on a first run; cached files may need no transfer. Build times in the comparison exclude loading; workflow time includes it. Completed results stay in this tab until you reload.</p><div id="downloads"></div><pre id="log"></pre></details>
+    <details class="build-details"><summary>Build details &amp; downloads</summary><label>Compile workers <select id="worker-choice"><option value="8">8</option><option value="4">4</option><option value="2">2</option><option value="1">1</option></select></label><p class="small">The starting compiler was compiled to WebAssembly by cppgm. Matching compares every object and the final compiler with the published build. Compiler SDK archives and generated clang headers are supplied. Project libraries are compiled here. Download badges show compressed inputs on a first run; cached files may need no transfer. Build times in the comparison exclude loading; workflow time includes it. Completed results stay in this tab until you reload.</p><div id="downloads"></div><pre id="log"></pre></details>
   </section>
   <section id="explorer" class="explorer" aria-labelledby="explore-title">
-    <div class="section-head"><div><h2 id="explore-title">Source &amp; generated code</h2></div><label class="project-choice">Project <select id="source-project"><option value="game">OpenLara</option><option value="cppgm">cppgm</option><option value="example">Editable example</option></select></label></div>
+    <div class="section-head"><div><h2 id="explore-title">Source &amp; generated code</h2></div><label class="project-choice">Project <select id="source-project"><option value="doom">Doom 3</option><option value="lara">OpenLara</option><option value="godot">Godot</option><option value="cppgm">cppgm</option><option value="example">Editable example</option></select></label></div>
     <p id="inspector-note">Choose a file to see its source and generated code.</p>
     <div class="explore-layout">
       <details class="project-files" open><summary>Project files <span id="file-count"></span></summary><label class="sr-only" for="file-filter">Find a source file</label><input id="file-filter" placeholder="Find a file" type="search"><label class="tree-options"><input id="show-inputs" type="checkbox"> Show header inputs</label><div id="source-files"></div></details>
@@ -67,7 +67,7 @@
   </section>
   <footer><span id="revision">Source revision appears after package verification.</span><span>Experimental · Chromium qualified · <a href="./credits.html">Credits</a></span></footer>
 </main>
-<dialog id="game-modal" aria-labelledby="game-modal-title"><div class="modal-header"><h2 id="game-modal-title">OpenLara · built in your browser</h2><button id="game-close" autofocus>Close <span aria-hidden="true">×</span></button></div><div id="game-surface"></div><p class="small">Click the game, then use arrow keys to move · Ctrl to act · Alt to jump · Esc for menu. On a phone, use the touch controls.</p><p id="game-status" role="status"></p></dialog>
+<dialog id="game-modal" aria-labelledby="game-modal-title"><div class="modal-header"><h2 id="game-modal-title">OpenLara · built in your browser</h2><button id="game-close" autofocus>Close <span aria-hidden="true">×</span></button></div><div id="game-surface"></div><p class="small" id="game-help">Click the game, then use arrow keys to move · Ctrl to act · Alt to jump · Esc for menu. On a phone, use the touch controls.</p><p id="game-status" role="status"></p></dialog>
 <script type="module" src="wasi_demo.mjs"></script>
 <script type="module" src="inspector.mjs"></script>
 <script type="module" src="site_actions.mjs"></script>

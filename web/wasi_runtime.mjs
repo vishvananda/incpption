@@ -1,3 +1,4 @@
+import {growingFileClass} from './file_buffers.mjs';
 import {WASI, File, OpenFile, ConsoleStdout, PreopenDirectory, Directory} from './shim/index.js';
 import {fetchBytes} from './transport_bytes.mjs';
 import {bundleLayers} from './bundle_layers.mjs';
@@ -30,11 +31,21 @@ export function lookup(root, path) {
   for (const part of path.split('/')) node = node?.contents?.get(part);
   return node;
 }
-export function invoke(module, root, args) {
+const OutputFile=growingFileClass(File,OpenFile);
+export function invoke(module, root, args, sourceDateEpoch) {
+  const index=args.lastIndexOf('-o');
+  if(index>=0)insert(root,args[index+1],new OutputFile());
   const log = [];
   const wasi = new WASI(['cppgm', ...args], [], [new OpenFile(new File([])),
     ConsoleStdout.lineBuffered(s => log.push(s)), ConsoleStdout.lineBuffered(s => log.push(s)),
     new PreopenDirectory('.', root.contents)], {debug: false});
+  if(sourceDateEpoch!==undefined){
+    const clock=wasi.wasiImport.clock_time_get;
+    wasi.wasiImport.clock_time_get=(id,precision,pointer)=>{
+      if(id!==0)return clock(id,precision,pointer);
+      new DataView(wasi.inst.exports.memory.buffer).setBigUint64(pointer,BigInt(sourceDateEpoch)*1000000000n,true);return 0;
+    };
+  }
   return WebAssembly.instantiate(module, {wasi_snapshot_preview1: wasi.wasiImport}).then(instance => {
     const status = wasi.start(instance);
     return {status, log, memoryBytes: instance.exports.memory.buffer.byteLength};
