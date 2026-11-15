@@ -1,4 +1,5 @@
 import {mountInputs} from './emscripten_inputs.mjs';
+import {errorText} from './error_text.mjs';
 // A fresh tool instance per invocation keeps Clang's process globals isolated.
 const factories = new Map();
 export async function invokeEmscripten({module, runtime, program, layers = [], files = [], args, output}) {
@@ -23,7 +24,7 @@ export async function invokeEmscripten({module, runtime, program, layers = [], f
   fs.chdir('/inputs');
   fs.mkdirTree(output.split('/').slice(0, -1).join('/') || '.');
   try {status = tool.callMain(args) || status;}
-  catch (error) {if (error.name === 'ExitStatus') status = error.status; else throw Error([...log, String(error)].join('\n'));}
+  catch (error) {if (error.name === 'ExitStatus') status = error.status; else throw Error([...log, errorText(error)].join('\n'));}
   if (status) throw Error(log.join('\n') || `${program} exited ${status}`);
   const node = fs.lookupPath(output).node;
   const bytes = node.contents.length===node.usedBytes?node.contents:node.contents.slice(0,node.usedBytes);
