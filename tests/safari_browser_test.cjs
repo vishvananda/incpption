@@ -45,7 +45,8 @@ const requests=[],server=http.createServer((req,res)=>{
    const frame=page.frameLocator('#game-frame');await frame.locator('#canvas').click();
    // Headless Linux may have no audio device. Verify startup and a resume
    // attempt during a trusted gesture, without requiring audio hardware.
-   await page.frames().find(f=>f.url().includes('game_frame.html')).waitForFunction(()=>window.testAudioContext?.state==='running'||window.testAudioGesture===true);
+   const gameFrame=await(await page.locator('#game-frame').elementHandle()).contentFrame();
+   await gameFrame.waitForFunction(()=>window.testAudioContext?.state==='running'||window.testAudioGesture===true);
    await page.screenshot({path:path.join(out,button+'.png'),fullPage:true});
    await page.locator('#game-close').click();assert.equal(await page.evaluate(()=>window.gamePlaying),false);
   }
