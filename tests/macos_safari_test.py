@@ -32,8 +32,6 @@ def command(method, path, data=None):
             value = json.load(response)['value']
     except urllib.error.HTTPError as error:
         raise RuntimeError(error.read().decode()) from error
-    if isinstance(value, dict) and 'error' in value:
-        raise RuntimeError(json.dumps(value))
     return value
 
 
