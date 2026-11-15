@@ -109,7 +109,7 @@ function drawFlow() {
   $('cancel').disabled = !busy(); $('worker-choice').disabled = busy(); $('build-target').disabled = busy();
   $('rerun-phase').disabled = busy() || !visiblePhase || phase(visiblePhase).state === 'waiting' || !canRun(visiblePhase);
   $('rerun-phase').title = comparison ? 'Rerun both compilers' : 'Rerun this stage and clear later results';
-  $('comparison-note').textContent = comparison ? 'Same source & SDK · O3 · equal workers · build times exclude loading' : '';
+  $('comparison-note').textContent = comparison ? 'Both compilers use the same source, SDK, O3 settings and worker count.' : '';
   for (const button of document.querySelectorAll('[data-journey]')) button.disabled = busy();
   updateTime(); updateBadges(); drawComparison(); drawGameData();
 }
@@ -242,7 +242,7 @@ function fail(message, cancelled=false) {
   }
   comparisonInputs?.close();comparisonInputs=null;
   stopGame();
-  automatic=false; drawFlow(); $('status').textContent=cancelled?'Cancelled. Use Rerun to try again.':'Build stopped. Open Diagnostics for the error.';
+  automatic=false; drawFlow(); $('status').classList.remove('sr-only'); $('status').textContent=cancelled?'Cancelled. Use Rerun to try again.':'Build stopped. Open Diagnostics for the error.';
   $('log').textContent+=message+'\n';
   if(!cancelled)document.querySelector('.diagnostics').open=true;
   window.lastWorkflowEvent={kind:cancelled?'cancelled':'error',error:message};
@@ -255,6 +255,7 @@ function start(id, {rerun=false,scroll=true}={}) {
   if (busy() || !canRun(id)) return;
   if (!rerun && phase(id).state === 'done') {showPhase(id); return;}
   closeGame();
+  $('status').classList.add('sr-only');
   if (rerun) invalidate(id);
   if (scenario === 'game') {
     comparisonInputs=new InputBroker();
@@ -349,6 +350,7 @@ $('run-workflow').onclick=()=>{
 };
 function chooseScenario(name) {
   if(busy())return;
+  $('status').classList.add('sr-only');
   closeGame();scenario=name;showJourney(name);
   showPhase(paths[name].find(id=>phase(id).state!=='done')||paths[name].at(-1));
   $('status').textContent=completed()?'Results from this tab. Select a stage to review, or use Rerun.':name==='roundtrip'?'Optional long build. cppgm → clang → cppgm → matching cppgm → project.':'Choose a box to build, or run the whole workflow.';

@@ -44,12 +44,11 @@
     <div id="workflow-panel" role="tabpanel" aria-labelledby="journey-game">
     <div class="workflow-toolbar"><div><span class="metric-label">Workflow time</span><strong id="workflow-time">0:00</strong><span id="workflow-files"></span></div><div class="workflow-actions"><button id="run-workflow">Run workflow <span aria-hidden="true">→</span></button><button id="cancel" disabled>Cancel</button></div></div>
     <div id="flow-rows"><ol id="flow" class="flow" aria-label="cppgm compiler flow"></ol><ol id="flow-clang" class="flow" aria-label="Clang compiler flow" hidden></ol></div>
-    <div id="game-data-download" hidden><span></span><progress aria-label="Game data download" value="0" max="1"></progress></div>
-    <p id="status" role="status">Choose a box to build, or run the whole workflow.</p>
-    <div class="results-toolbar"><span id="comparison-note"></span><button id="rerun-phase" type="button" disabled><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M20 7a9 9 0 0 0-15-2L2 8m0-6v6h6M4 17a9 9 0 0 0 15 2l3-3m0 6v-6h-6"/></svg> Rerun</button></div>
+    <p id="status" class="sr-only" role="status"></p>
+
     <div id="build-grids"><div id="comparison-result" role="status" hidden></div>
     <section class="phase-grid" aria-label="cppgm build results">
-    <div class="phase-heading"><div><strong id="phase-name">OpenLara</strong><span id="worker-count"></span></div><div><span id="completed">0 files</span><span id="elapsed">0:00</span></div></div>
+    <div class="phase-heading"><div><strong id="phase-name">OpenLara</strong><span id="worker-count"></span><button id="rerun-phase" type="button" aria-label="Rerun selected stage" disabled><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M20 7a9 9 0 0 0-15-2L2 8m0-6v6h6M4 17a9 9 0 0 0 15 2l3-3m0 6v-6h-6"/></svg> <span class="rerun-label">Rerun</span></button></div><div><span id="completed">0 files</span><span id="elapsed">0:00</span></div></div>
     <progress id="progress" value="0" max="1" aria-label="Current phase progress"></progress>
     <div id="units" class="units" aria-label="Current phase source files"></div>
     </section>
@@ -57,7 +56,7 @@
     </div>
     <div class="grid-key"><span><i class="waiting"></i>Waiting <i class="active"></i>Building <i class="done"></i>Built <i class="matched"></i>Matched</span><span id="memory"></span></div>
     <p id="unit-detail">Select a square to view its source.</p>
-    <details class="build-details"><summary>Build details &amp; downloads</summary><label>Compile workers <select id="worker-choice"><option value="8">8</option><option value="4">4</option><option value="2">2</option><option value="1">1</option></select></label><ul class="build-facts"><li>Both compilers use the same source and SDK at O3.</li><li>Build times exclude downloads. Workflow time includes them.</li><li>Inception compares every object and the final compiler, byte for byte.</li></ul><div id="downloads"></div></details><details class="build-details diagnostics"><summary>Diagnostics</summary><pre id="log"></pre></details>
+    <details class="build-details"><summary>Build details &amp; downloads</summary><label>Compile workers <select id="worker-choice"><option value="8">8</option><option value="4">4</option><option value="2">2</option><option value="1">1</option></select></label><div id="game-data-download" hidden><span></span><progress aria-label="Game data download" value="0" max="1"></progress></div><ul class="build-facts"><li id="comparison-note"></li><li>Build times exclude downloads. Workflow time includes them.</li><li>Inception compares every object and the final compiler, byte for byte.</li></ul><div id="downloads"></div></details><details class="build-details diagnostics"><summary>Diagnostics</summary><pre id="log"></pre></details>
     </div>
   </section>
   <section id="explorer" class="explorer" aria-labelledby="explore-title">
