@@ -1,0 +1,36 @@
+name: Real Safari
+on:
+  workflow_dispatch:
+    inputs:
+      origin:
+        description: Published site URL to test
+        type: string
+        default: https://incpption.com
+        required: true
+      workers:
+        description: Total compile workers
+        type: choice
+        options: ['8', '4', '2']
+        default: '8'
+permissions:
+  contents: read
+jobs:
+  safari:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: sudo /usr/bin/safaridriver --enable
+      - run: python3 tests/macos_safari_test.py
+        env:
+          SAFARI_TEST_ORIGIN: ${{ inputs.origin }}
+          SAFARI_TEST_WORKERS: ${{ inputs.workers }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macos-safari-results
+          path: build/macos-safari
+          retention-days: 7

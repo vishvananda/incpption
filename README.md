@@ -72,6 +72,10 @@ Serve `dist/` with the cross-origin isolation headers in `config/_headers`.
 These allow workers to share immutable inputs. Without isolation, each build
 uses one worker. The comparison still runs both compilers in separate workers.
 
+The **Real Safari** Actions workflow runs the published site in Apple Safari on
+a macOS runner. It checks both compilers, playback and the complete self-build.
+It accepts a deployment URL and worker count, so previous releases can be tested.
+
 See [build and artifact notes](docs/build-and-artifacts.md) for package
 preparation, the optional full clang round trip and Cloudflare Pages deployment.
 
