@@ -5,7 +5,11 @@ import {runtimeExports} from './game_exports.mjs';
 export async function playOpenLara(canvas, build, log = console.log, onProgress) {
   const inputs=await loadPlayerInputs(build.player,onProgress);build={...build,assets:inputs.assets};
   const audioContext = new AudioContext();
-  await audioContext.resume();
+  // Safari may leave resume() pending until a gesture inside this frame.
+  // Render immediately; a click or key enables sound when autoplay is blocked.
+  const resumeAudio=()=>{if(audioContext.state!=='running'&&audioContext.state!=='closed')audioContext.resume().catch(()=>{});};
+  for(const event of ['pointerdown','pointerup','keydown'])document.addEventListener(event,resumeAudio,{capture:true,passive:true});
+  resumeAudio();
   const runtimeURL=inputs.runtimeURL;
   const {default: OpenLara} = await import(runtimeURL);
   let draws = 0, processor;

@@ -117,6 +117,11 @@ can differ from the pinned public site package.
 
 Normal CI runs syntax, highlighting, transport, source-profile and state tests;
 a real cppgm self-build; the two-compiler comparison; and mobile/player checks.
+The WebKit check runs an actual comparison, both players and a matching self-build with a stale,
+unisolated shim response available. The deployed runtime imports a versioned
+shim directory so old cached headers cannot block worker startup.
+OpenLara starts rendering while Safari waits for audio permission. A click,
+touch or key inside the game enables sound without blocking startup.
 The comparison waits for both compilers and inputs before releasing either
 build. It gives each the same worker count and O3 source settings. Its build
 times exclude download/preparation; total workflow time includes them. Concurrent
@@ -132,6 +137,7 @@ node tests/highlight_test.mjs
 npm test
 npm run test:comparison
 npm run test:mobile
+npm run test:safari
 GAME_TEST_TOUCH=1 npm run test:game
 ```
 

@@ -270,7 +270,7 @@ function launch(id, args) {
   if (id==='match'&&scenario==='roundtrip') args.compilerBytes=phase('clang').result.module;
   if (isGame(id)&&scenario!=='game') args.compilerBytes=phase('match').result.module;
   projectEvent(id,'reset'); $('status').textContent=`Loading ${definitions[id].label} inputs…`;
-  session.onerror=event=>fail(event.message);
+  session.onerror=event=>fail(event.message||'The compiler could not start. Reload the page and try again.');
   session.onmessage=({data})=>{
     if (!jobs.has(id)) return;
     const {module,game,runtime,assets,...summary}=data;

@@ -57,6 +57,7 @@ npx playwright install chromium webkit
 npm test
 npm run test:comparison
 npm run test:mobile
+npm run test:safari
 ```
 
 The build fetches hash-pinned static packages from the URLs in `config/`.

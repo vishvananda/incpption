@@ -132,6 +132,13 @@ def main():
             target = output / path.relative_to(ROOT / 'web')
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(path, target)
+    # A cached shim from an older deployment can lack worker isolation headers.
+    # Give the dependency graph a fresh URL without changing its pinned bytes.
+    shim_identity = hashlib.sha256(json.dumps(manifest['shim_files'], sort_keys=True).encode() + (ROOT / 'config/_headers').read_bytes()).hexdigest()[:16]
+    shim_directory = 'runtime-shim.' + shim_identity
+    shutil.copytree(output / 'shim', output / shim_directory)
+    runtime = output / 'wasi_runtime.mjs'
+    runtime.write_text(runtime.read_text().replace("'./shim/index.js'", "'./" + shim_directory + "/index.js'"))
     # Pages gives CSS a four-hour browser cache lifetime. Give each version a
     # distinct URL so fresh HTML cannot pick up styling from an older release.
     project_index = prepare_projects(payload,output,json.loads((ROOT/'config/projects.json').read_text())) if complete_projects else prepare_sources(payload, output)
