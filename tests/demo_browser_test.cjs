@@ -57,6 +57,9 @@ const server = http.createServer((req, res) => {
     await page.evaluate(()=>Object.defineProperty(navigator,'share',{configurable:true,value:async data=>{window.shared=data;}}));
     await page.locator('#share').click();
     if(await page.evaluate(()=>window.shared.url)!=='https://incpption.com/')throw Error('Native share used the wrong URL');
+    if(!await page.evaluate(()=>window.shared.text===document.querySelector('.intro').textContent&&window.shared.text===document.querySelector('meta[property="og:description"]').content&&window.shared.text===document.querySelector('meta[name="twitter:description"]').content))throw Error('Page and sharing descriptions differ');
+    const release=JSON.parse(fs.readFileSync(path.resolve(__dirname,'../site.json'))).compiler_release;
+    if(await page.locator('.compiler-version').textContent()!==release.version||await page.locator('.compiler-version').getAttribute('href')!==release.url)throw Error('Compiler version badge differs from pinned release');
     await page.evaluate(()=>{
       Object.defineProperty(navigator,'share',{configurable:true,value:undefined});
       Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async value=>{window.copied=value;}}});

@@ -3,6 +3,7 @@
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
+import html
 import json
 from pathlib import Path
 import shutil
@@ -64,6 +65,9 @@ def main():
     # Original compiler and game manifests remain byte-identical. Website UI
     # updates have their own Git revision and never rebind compiler provenance.
     manifest = json.loads((payload / 'manifest.json').read_text())
+    release = config['compiler_release']
+    if manifest['revision'] != release['revision']:
+        raise RuntimeError('Compiler payload does not match the displayed release')
     seed = json.loads((payload / 'w1-complete.json').read_text())
     names = set(manifest['runner_files']) | set(manifest['shim_files'])
     names |= {'manifest.json', 'manifest.sha256', 'bundle.bin', 'w1-complete.json'}
@@ -141,6 +145,8 @@ def main():
     for path in output.glob('*.html'):
         content = path.read_text().replace('content="PROJECT_INDEX"', 'content="' + project_index + '"')
         content = content.replace('content="PLAYER_URL"', 'content="' + config['player_url'] + '"')
+        for marker, value in [('SITE_DESCRIPTION', config['description']), ('COMPILER_VERSION', release['version']), ('COMPILER_RELEASE_URL', release['url'])]:
+            content = content.replace(marker, html.escape(value, quote=True))
         for original, versioned in styles.items():
             content = content.replace(f'href="{original}"', f'href="{versioned}"')
         path.write_text(content)
@@ -172,7 +178,7 @@ def main():
                                      capture_output=True, text=True)
     revision = revision_result.stdout.strip() if revision_result.returncode == 0 else 'uncommitted'
     (output / 'site-release.json').write_text(json.dumps(dict(site=config['name'], domain=config['domain'],
-        git_revision=revision, artifact_url=lock['url'], artifact_lock_sha256=sha(lock_path),
+        git_revision=revision, compiler_version=release['version'], compiler_revision=manifest['revision'], artifact_url=lock['url'], artifact_lock_sha256=sha(lock_path),
         compiler_manifest_sha256=sha(payload / 'manifest.json'), compiler_sha256=seed['commands'][-1]['sha256']), indent=2) + '\n')
     files = [p for p in output.rglob('*') if p.is_file()]
     if len(files) > 20000 or any(p.stat().st_size > LIMIT for p in files):

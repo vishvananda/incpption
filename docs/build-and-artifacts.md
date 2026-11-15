@@ -68,8 +68,8 @@ assembly compilation, each archive's members and the final link. No precompiled
 project objects or SDK libraries are supplied to the browser. The native
 qualification uses the shipped cppgm binary and records output hashes. `tools/project_wasi.py` then builds the references with the actual shipped WASI
 compiler. Browser cppgm builds must reproduce each WASI object, archive and final
-module. Native hashes are retained separately: v0.9.0 has two known Doom files
-whose shared copy vectorization differs between native and WASI hosts. Compiler
+module. Native hashes are retained separately so host-specific output changes
+can be identified without weakening the browser checks. Compiler
 self-build matching remains strict against the published compiler export.
 
 Both compilers use the same source, ABI, SDK and O3 recipes. Supporting sources
@@ -95,12 +95,15 @@ the WASI compiler's address space without removing translations or changing
 editor implementation source. Both compilers consume the same encoded file.
 
 `tools/project_player.py` prepares the projects' Emscripten JavaScript hosts.
-It does not change the compiled Wasm bytes. Doom uses JSPI and loads its demo
-PK4 only on Play. Its known EM_ASM handlers are bound to the actual linked
+It does not change the compiled Wasm bytes. Doom uses JSPI and downloads its demo
+PK4 in the background during compilation. The player caches encoded chunks so
+Play can reuse them without holding another complete data buffer in memory. Its known EM_ASM handlers are bound to the actual linked
 addresses, so both linker layouts work without evaluating Wasm strings.
 Godot accepts the browser-built bytes through its Engine loader and starts the
 project manager. Game data and JavaScript hosts are static inputs.
 
+`tools/project_refresh.py` requalifies frozen project inputs after a compiler
+release, preserving the source, SDK and player files.
 `tools/project_clang.py` checks the shared recipes and runtime closure with native
 clang/LLD. `tools/llvm_refresh.py` requalifies the frozen clang profile after a
 compiler release. `tools/package_payload.py` assembles the static payload and
@@ -141,7 +144,9 @@ and checks both players. Godot coverage creates a project and opens its editor
 after the runtime restarts; the home directory is persisted in IndexedDB.
 `npm run test:players` rechecks saved browser outputs after host-only changes,
 verifies that compiler inputs are unchanged and checks closing a focused dialog.
-Deferred SDK focus callbacks are guarded after runtime shutdown. This longer check is also a manual CI lane. Normal CI
+Deferred SDK focus callbacks are guarded after runtime shutdown. For a cppgm-only release check, `GAME_TEST_CPPGM_ONLY=1` stops the other
+comparison build after cppgm completes and checks only the cppgm output.
+This longer check is also a manual CI lane. Normal CI
 uses OpenLara for the comparison and phone checks, plus a full cppgm self-build.
 
 ## Deploy

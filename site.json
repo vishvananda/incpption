@@ -1,6 +1,12 @@
 {
   "name": "cppgm inception",
   "domain": "incpption.com",
+  "description": "Meet cppgm, a C++ compiler built to be fast. cppgm compiles up to 4× faster than clang. Select a project below to see a live comparison.",
+  "compiler_release": {
+    "version": "v0.9.1",
+    "revision": "c9b05c4c0f7bb1294c717551c61145940b21125e",
+    "url": "https://github.com/vishvananda/cppgm/releases/tag/v0.9.1"
+  },
   "cloudflare_project": "cpp-inception",
   "artifact_lock": "config/artifact-lock.json",
   "player_url": "https://a24ad195.cpp-inception-player.pages.dev/game_frame.html"

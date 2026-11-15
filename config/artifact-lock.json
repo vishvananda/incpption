@@ -1,11 +1,11 @@
 {
   "schema": 1,
-  "url": "https://e282807d.cpp-inception.pages.dev",
+  "url": "https://85587688.cpp-inception.pages.dev",
   "files": [
     {
       "path": "chunks/bundle.0000.bin",
-      "size": 3093345,
-      "sha256": "f73ba077fe989137a90d3b9c00ba58c0686f996cf771742cf7c5f480c8eeecb2"
+      "size": 3111081,
+      "sha256": "7f25ac5df61986ac50fd890bdb53627075af66dd69a40d8c067efd17f1ab7fe5"
     },
     {
       "path": "chunks/bundle.0001.bin",
@@ -29,8 +29,8 @@
     },
     {
       "path": "chunks/bundle.0005.bin",
-      "size": 3844692,
-      "sha256": "2c0fd9fa82ad7bccc5309de685766e25ce2898a29e78b8dab2ae9eda26f926da"
+      "size": 3843071,
+      "sha256": "f96c06bc97f90b043b10dc9dbe2f7bae777576d49bac2ba8f455fc3f0028dbd1"
     },
     {
       "path": "chunks/bundle.0006.bin",
@@ -80,17 +80,17 @@
     {
       "path": "credits.html",
       "size": 1499,
-      "sha256": "13386f2f85a71ba8b108b20412795cb8c6ce17c6bb2d7899d76a4b424d0ad1cf"
+      "sha256": "451c50c35fd3003a8fe93c5f80e08903642c683a626586c51766708e03399770"
     },
     {
       "path": "inputs/w1/cppgm.wasm",
-      "size": 14639018,
-      "sha256": "04358de6c62cf51f13f97e336ee3af5f816dca93bac73a08525d1a4657a54c7a"
+      "size": 14737736,
+      "sha256": "dbc89d63f0334893a03d3b09a2f7f9a98c657955ed33bd78250bf7dae20b905b"
     },
     {
       "path": "inputs/w1/dev__cppgm.cpp.o",
-      "size": 285714,
-      "sha256": "5c606e93d8cb1d112059e54de439b068fa4036e16c3ccb26c5cd670617b6313b"
+      "size": 290311,
+      "sha256": "97bf0107e92e7eedebb9a02e3c63b5bd2d8b35a278deb8404f60d551ef46fc8b"
     },
     {
       "path": "inputs/w1/dev__src__abi__itanium__abi_encoder.cpp.o",
@@ -149,8 +149,8 @@
     },
     {
       "path": "inputs/w1/dev__src__asm__parser.cpp.o",
-      "size": 146013,
-      "sha256": "526a96c2f2021d4ad275652876c33be70a58d8a3ed95e21c344acc3cb01cff21"
+      "size": 145657,
+      "sha256": "de90d6a97ab49c5902d60deff6db16d9ba3ba2d2b88ccebbe5d7f80ae592d072"
     },
     {
       "path": "inputs/w1/dev__src__asm__registers.cpp.o",
@@ -159,18 +159,18 @@
     },
     {
       "path": "inputs/w1/dev__src__driver__host_environment.cpp.o",
-      "size": 64392,
-      "sha256": "14415afd7df68661c795ff2aff0d8ef6e5f7d7b7388dd9636c2ab3873fd5d9ee"
+      "size": 147887,
+      "sha256": "eef22ffabc3dc77c7b3dbe9efa9e034b13e280ba8756c2f85dafe0c1a3877f39"
     },
     {
       "path": "inputs/w1/dev__src__driver__toolchain.cpp.o",
-      "size": 291951,
-      "sha256": "667f45c63fe4660bd6f51c199ae59ba00c95d134ae7a4e545bd3dd29ed7bdf70"
+      "size": 294125,
+      "sha256": "a6aa8aff154d583e358cc3144fcd45901f1d335404d6468e1ca3a57a449b3f8a"
     },
     {
       "path": "inputs/w1/dev__src__driver__wasm_environment.cpp.o",
       "size": 22802,
-      "sha256": "722d919ba340704e0eea9848db2bafbbcad30199929f6403446f8c11c90e56a3"
+      "sha256": "0484512eb05d703e9c18689d6306aaacb227c6a3a1614e6b2ae9c9138e7b93a1"
     },
     {
       "path": "inputs/w1/dev__src__driver__wasm_link_options.cpp.o",
@@ -319,8 +319,8 @@
     },
     {
       "path": "inputs/w1/dev__src__lower__covariant_lowering.cpp.o",
-      "size": 16262,
-      "sha256": "744c063694cdc8fdbfc3f2f5534ae67d707ea16360f038e118ed5592edcc3f30"
+      "size": 16258,
+      "sha256": "9bfefe54338bb521ffd1707ebd22a6d9589d974b21d929f8c83ff93c9f450ade"
     },
     {
       "path": "inputs/w1/dev__src__lower__debug_info.cpp.o",
@@ -344,13 +344,13 @@
     },
     {
       "path": "inputs/w1/dev__src__lower__discard_lowering.cpp.o",
-      "size": 31615,
-      "sha256": "9934508cfa75a7d34ededb568ade2f4c1bbfa09a686a12ebc0125674be80a1df"
+      "size": 31621,
+      "sha256": "360e08f4f5bf90234c3fbbc958bb34422fe34f637845f5198fa246b9ef709583"
     },
     {
       "path": "inputs/w1/dev__src__lower__dispatch_lowering.cpp.o",
       "size": 23964,
-      "sha256": "bb6ee11ae003eab62e24d21ef8e8877296d01940fbf26b573e4794c2a795690f"
+      "sha256": "9a44fb6981402612d3b6e9d2d02f34d8db985abd4dad56ea8e9560ace03dd4dd"
     },
     {
       "path": "inputs/w1/dev__src__lower__dynamic_type_lowering.cpp.o",
@@ -364,8 +364,8 @@
     },
     {
       "path": "inputs/w1/dev__src__lower__expression_lowering.cpp.o",
-      "size": 186407,
-      "sha256": "fc44ce81232bdf8276e40107b749832b83789fc38ed794e1b597471155d85394"
+      "size": 186403,
+      "sha256": "2c06ecef02234d44ffd71e91d7700b2aa11c4e3a24f5b8b8744276f73613f645"
     },
     {
       "path": "inputs/w1/dev__src__lower__function_bindings.cpp.o",
@@ -379,8 +379,8 @@
     },
     {
       "path": "inputs/w1/dev__src__lower__global_lowering.cpp.o",
-      "size": 199272,
-      "sha256": "73163a35c6bd9b1cd5def455b07efaf82cd257b3075215179498b4412bd72099"
+      "size": 199258,
+      "sha256": "35eb22b970aaaa9b76bec502b014cb5fcc6463e72d818bd971c85bddee93206c"
     },
     {
       "path": "inputs/w1/dev__src__lower__initializer_list_lowering.cpp.o",
@@ -469,8 +469,8 @@
     },
     {
       "path": "inputs/w1/dev__src__lower__source_inlining.cpp.o",
-      "size": 64818,
-      "sha256": "b533354877c4a9047c72c63061d11199205888fd287af9dad5979fa7ec2ea634"
+      "size": 64498,
+      "sha256": "30488eacab0e8ebaa0d50bd603138bf4921b71ed4d9f15ad9dfca458a1ca1051"
     },
     {
       "path": "inputs/w1/dev__src__lower__source_vectors.cpp.o",
@@ -494,8 +494,8 @@
     },
     {
       "path": "inputs/w1/dev__src__lower__statement_lowering.cpp.o",
-      "size": 130004,
-      "sha256": "492e1cc9e2e59a9e7e1a87a39744f6deec020c9385a3cadc6e32c8e82fef24ec"
+      "size": 130012,
+      "sha256": "c5a4239f51734430f51b3140332f8d88dd5a461391d59b6a59bbd505c3f31bdf"
     },
     {
       "path": "inputs/w1/dev__src__lower__symbol_lowering.cpp.o",
@@ -525,7 +525,7 @@
     {
       "path": "inputs/w1/dev__src__lower__vector_lowering.cpp.o",
       "size": 79642,
-      "sha256": "0ca0ced1e6f4bef84e547e8de2d3296f0f10adb08316c032abf259bdd8dd0cd7"
+      "sha256": "83146aa0a4627ae4f9fda233625ed2c579bdd2679af35d98b28e209537a035b1"
     },
     {
       "path": "inputs/w1/dev__src__lower__virtual_base_lowering.cpp.o",
@@ -544,8 +544,8 @@
     },
     {
       "path": "inputs/w1/dev__src__lowir__argument_facts.cpp.o",
-      "size": 15167,
-      "sha256": "6c57e829db789fac4f1900ca0d4d7253c04bf09e22f46b70437cba643f4973ea"
+      "size": 15557,
+      "sha256": "99ffb7421bab1b1218927e674f2914abcf35c3edcfdc560a0d639cd27de516c5"
     },
     {
       "path": "inputs/w1/dev__src__lowir__assembly_builder.cpp.o",
@@ -583,6 +583,11 @@
       "sha256": "6e81e4545fa75de5bc4942407ca504f415a6f257b9e4e93e05394f14d5922be1"
     },
     {
+      "path": "inputs/w1/dev__src__lowir__debug_validation.cpp.o",
+      "size": 13327,
+      "sha256": "1a5c262ecc85ff23af3692904a499e2a5ef3dbf40d83af827914b58d067b9ed4"
+    },
+    {
       "path": "inputs/w1/dev__src__lowir__literals.cpp.o",
       "size": 18345,
       "sha256": "d98924b41c8114b83beeadb708f5f747d2ebd5e14c51b70013c63c08fb4f73ee"
@@ -614,28 +619,28 @@
     },
     {
       "path": "inputs/w1/dev__src__lowir__text_parser.cpp.o",
-      "size": 198971,
-      "sha256": "093a3d35dd330c30f3b63a846e970ebf7be57e188bd37c3844ed5b75fd34783a"
+      "size": 202807,
+      "sha256": "cf8207453653d3ff58b5062637dc49c96f8b9b4a4a5643e5d8833f308c173540"
     },
     {
       "path": "inputs/w1/dev__src__lowir__text_parser_assembly.cpp.o",
-      "size": 80141,
-      "sha256": "f07c304526bbc7277439f37884f21d578a0ff0f959d2b01f453f015da117fe48"
+      "size": 81362,
+      "sha256": "37eff16828b696c25e28092fedb0d5ed53ba58f241e63b85ff571ae8d300cb75"
     },
     {
       "path": "inputs/w1/dev__src__lowir__text_parser_body.cpp.o",
-      "size": 95608,
-      "sha256": "0efb70fc28a28cdecb7ef0b7213608ff9ab3b6ff19d3673f287d97b11cd5a47e"
+      "size": 95650,
+      "sha256": "55f6406a6df8425d95c65cd1425bf9b4debfb9e1656dd9993ba0903e9b33c544"
     },
     {
       "path": "inputs/w1/dev__src__lowir__text_parser_debug.cpp.o",
-      "size": 30920,
-      "sha256": "8356ea773179e12743cfb12468639e48caa234371b138d96acb88db6d04e3d53"
+      "size": 26026,
+      "sha256": "a98e4e745d97e0a084f254dee4ef89452f2cd571c473325c8a678ebbe79e9ce5"
     },
     {
       "path": "inputs/w1/dev__src__lowir__text_parser_debug_scopes.cpp.o",
-      "size": 18181,
-      "sha256": "6059774bb0245a9ebd9665ba2488ca6ef5df8c13c3fa8044f70ea4ce75ca1e1e"
+      "size": 14100,
+      "sha256": "bfb7d79291d0889aa4eb15400abe0acba1aa2bc831326952e51b6a31062e2289"
     },
     {
       "path": "inputs/w1/dev__src__lowir__text_reader.cpp.o",
@@ -644,8 +649,8 @@
     },
     {
       "path": "inputs/w1/dev__src__lowir__text_writer.cpp.o",
-      "size": 118942,
-      "sha256": "60eb112ae2ef322da5cdd2f8fc5fe814e5e9adcac4da92d55edd3d95ca26b672"
+      "size": 118944,
+      "sha256": "c7f09b15986fa62e753692c95e8479c7d71c4473f88fd43d544f4bfa732ea355"
     },
     {
       "path": "inputs/w1/dev__src__lowir__validator.cpp.o",
@@ -659,8 +664,8 @@
     },
     {
       "path": "inputs/w1/dev__src__machine__exception_regions.cpp.o",
-      "size": 50051,
-      "sha256": "3ffdf5629a9e4455597e58bb42025ed2a5e61dbd562c8a6e325d8691263844e9"
+      "size": 49887,
+      "sha256": "a274ee85a73ec8ef209ee713992798be75992d1be8a123b968f520a1ab278a67"
     },
     {
       "path": "inputs/w1/dev__src__machine__exception_tables.cpp.o",
@@ -764,18 +769,18 @@
     },
     {
       "path": "inputs/w1/dev__src__native__asm__module_symbols.cpp.o",
-      "size": 38489,
-      "sha256": "603e57037d982b9917d5b7e31dfb27e5465dab5b66f7a052904f2dbb82360014"
+      "size": 37924,
+      "sha256": "65d3c31bdac7162a98619e17a314269876dbe87374f80d2ce625fecf6b28ca8a"
     },
     {
       "path": "inputs/w1/dev__src__native__asm__module_unwind.cpp.o",
-      "size": 46211,
-      "sha256": "d164c4443296d183e8743649d08053ede5850b348a244bd2cefed037c0b3d665"
+      "size": 46027,
+      "sha256": "20859ce1ef30d60d9fa914a1a3fb4da2b64a313b58c12cfb3be461bebb96c25f"
     },
     {
       "path": "inputs/w1/dev__src__native__asm__operands.cpp.o",
-      "size": 17094,
-      "sha256": "b1b7d70b5b36621b62f8d2efb472aacd49055c35da75c69fafe979c45a47ddb1"
+      "size": 16895,
+      "sha256": "3d88cba13e6cbc5883ee43bc21510023e70af4f996386eabc8746913deb7df4e"
     },
     {
       "path": "inputs/w1/dev__src__native__asm__unwind_parser.cpp.o",
@@ -784,8 +789,8 @@
     },
     {
       "path": "inputs/w1/dev__src__native__asm__unwind_rules.cpp.o",
-      "size": 19137,
-      "sha256": "675da4bfeefc412db156953f589e2d890a52c807c87de9dff909fa6de691a56e"
+      "size": 18362,
+      "sha256": "a640a7c3585a4bd46b38bf8164cd88d90ebabb74332478154d3dd4d0780caf40"
     },
     {
       "path": "inputs/w1/dev__src__native__asm__vector_operands.cpp.o",
@@ -804,8 +809,8 @@
     },
     {
       "path": "inputs/w1/dev__src__native__image__image.cpp.o",
-      "size": 32998,
-      "sha256": "379063e01b33d87045db7b514c93fe6ff0624bedc348d562bc1478bc50473994"
+      "size": 32989,
+      "sha256": "e9db89430730b36b876f7e49c361d16bc34da96984c03a86a676d203cd170224"
     },
     {
       "path": "inputs/w1/dev__src__native__image__macho_executable.cpp.o",
@@ -924,8 +929,8 @@
     },
     {
       "path": "inputs/w1/dev__src__native__select__allocation.cpp.o",
-      "size": 129542,
-      "sha256": "d5e60fed21cfd1935de7504cb7e05fb9edc6e1c9252ce8f7cfb08a216b5adf54"
+      "size": 129005,
+      "sha256": "1a97a822e7c37c0e61693d5eec1e80bb3d218ea19c92cfdbfd76e51cebc53c95"
     },
     {
       "path": "inputs/w1/dev__src__native__select__analysis.cpp.o",
@@ -975,17 +980,17 @@
     {
       "path": "inputs/w1/dev__src__native__select__emit_calls.cpp.o",
       "size": 129030,
-      "sha256": "25a2fa90b78405e59fc1cc106235510ab016680ddbd680bc80c8d4e92a4afe46"
+      "sha256": "d1de1dcfdfaeec75300e158a44fa6eca3abe990bb51b68922d118a43a0faaa37"
     },
     {
       "path": "inputs/w1/dev__src__native__select__emit_control.cpp.o",
-      "size": 103165,
-      "sha256": "b4d1b72f502c8b7c5e9d408725a35d9c444f8772c5786d48a870844d2f6fcd16"
+      "size": 103161,
+      "sha256": "e3351cdad590051cb6a6028ec9bc3edc72c48a06a6d43a5c1189a13d3271946f"
     },
     {
       "path": "inputs/w1/dev__src__native__select__emit_convert.cpp.o",
-      "size": 19077,
-      "sha256": "96e91e04c4474009608c011fcd25a0a13e94f160b409dea14d2a8cde06e179c2"
+      "size": 19069,
+      "sha256": "a0f35b44c1895913b5ffec40bdbbd2a7dcbc4a72e83cc29cf8bfe807688e0a96"
     },
     {
       "path": "inputs/w1/dev__src__native__select__emit_divide.cpp.o",
@@ -999,8 +1004,8 @@
     },
     {
       "path": "inputs/w1/dev__src__native__select__emit_values.cpp.o",
-      "size": 77572,
-      "sha256": "3aba634907536576c580fb4ce3f25979164f7d29b399a258da6fb823b926613b"
+      "size": 76871,
+      "sha256": "ced97d5ee4c73dc64deaca3665758e47d18fcff6558c23795b927462899a69ae"
     },
     {
       "path": "inputs/w1/dev__src__native__select__emit_vector.cpp.o",
@@ -1055,12 +1060,12 @@
     {
       "path": "inputs/w1/dev__src__native__select__operands.cpp.o",
       "size": 100286,
-      "sha256": "563b315b316bd959d4c22364f83c83f82460f5ce8879629c9582ce6dd68bf765"
+      "sha256": "d4780deb63836c7274fa2d99841919d145f1a85af8250e5c5a833938875e2ca2"
     },
     {
       "path": "inputs/w1/dev__src__native__select__register_allocation.cpp.o",
       "size": 329958,
-      "sha256": "b7e5a254645a1f3bf8001a59486159f447727a7e97cd1f5d70541056c5b05614"
+      "sha256": "2ba9699f804a970781b8faf91758d25412f0a851e3b98567de171eee4b4dba62"
     },
     {
       "path": "inputs/w1/dev__src__native__select__selector.cpp.o",
@@ -1100,7 +1105,7 @@
     {
       "path": "inputs/w1/dev__src__native__x86__emitter_memory.cpp.o",
       "size": 44319,
-      "sha256": "d46971936258109a95315056ad4271884dca8134d3ecb9a21ba4c909102e99c6"
+      "sha256": "269bb5c03a3558dcaeb14e4c9b6ff1114fef20e13f2e48d51b13d3a428a43009"
     },
     {
       "path": "inputs/w1/dev__src__native__x86__emitter_vector.cpp.o",
@@ -1119,8 +1124,8 @@
     },
     {
       "path": "inputs/w1/dev__src__opt__aggregate_slots.cpp.o",
-      "size": 209452,
-      "sha256": "1d0baf90a7728a7994fb2a7eb55b853178a3ef92eee14fc9b4fe2cbd3b06ce9f"
+      "size": 216310,
+      "sha256": "96c5a3002e42dcbc6234be983aaec95deccabeb759886cf827588c778e78a301"
     },
     {
       "path": "inputs/w1/dev__src__opt__allocation_origins.cpp.o",
@@ -1165,7 +1170,7 @@
     {
       "path": "inputs/w1/dev__src__opt__counter_ranges.cpp.o",
       "size": 32329,
-      "sha256": "be5d11ef58810f02ebe91ee69f49f9cd55264e874f637bfc2c30a4893837f4cd"
+      "sha256": "b32a2a3d068a42790e662a344ceba5598f610ad5311e163af054a23368362b49"
     },
     {
       "path": "inputs/w1/dev__src__opt__counter_widening.cpp.o",
@@ -1199,13 +1204,13 @@
     },
     {
       "path": "inputs/w1/dev__src__opt__inliner.cpp.o",
-      "size": 199724,
-      "sha256": "8335a77b6b5fb01694b1f5f7ae42897eb16a8d52a9f943fc3d7f0a90427bff71"
+      "size": 200123,
+      "sha256": "56a1f1dbdd16ade65e392a8d8657e6c05f5f5623e7acc0408e986ca469455515"
     },
     {
       "path": "inputs/w1/dev__src__opt__integer_patterns.cpp.o",
       "size": 53643,
-      "sha256": "e838e2119f25ac9e0cf2eefe91ad7051fb4d8ec1beb145603cbf48c872200aee"
+      "sha256": "33d3511f41181078b5843466c171cf6ab5d3a9c71520fb4fb751da50a928cd5a"
     },
     {
       "path": "inputs/w1/dev__src__opt__interprocedural.cpp.o",
@@ -1245,17 +1250,17 @@
     {
       "path": "inputs/w1/dev__src__opt__loop_passes.cpp.o",
       "size": 305630,
-      "sha256": "e1ae9a4eb55f5177f0ecb81b852cbee4ee61ffabb465b3036be41fef73282975"
+      "sha256": "ce002d022343b29a3c03bbd1729b45425d70d54f5fca0f881fd91b8e22bf18b0"
     },
     {
       "path": "inputs/w1/dev__src__opt__loop_rotation.cpp.o",
       "size": 63336,
-      "sha256": "c8bcb96c2bded103174964bac6a16ddb4af48a5a67db06e3016d025b597fb197"
+      "sha256": "f540b2472831f16d9796daa1e429a50d1faf2cc561d0ac9b2081c39709490323"
     },
     {
       "path": "inputs/w1/dev__src__opt__loop_unrolling.cpp.o",
       "size": 108840,
-      "sha256": "72ec4ec8f9f900790880ec352043ada95dd71f229858d80da8d004dafbe30430"
+      "sha256": "65ed28beb97c1135493600160b79f7a26a8bf02ad46c29e41ef9be2c35737352"
     },
     {
       "path": "inputs/w1/dev__src__opt__loop_unswitch.cpp.o",
@@ -1294,8 +1299,8 @@
     },
     {
       "path": "inputs/w1/dev__src__opt__optimizer.cpp.o",
-      "size": 128129,
-      "sha256": "2762325581218c382c565d404e7d473a4c909938056b71fe13940a222a2dea7f"
+      "size": 130581,
+      "sha256": "6865b1907a6f5081d3f293f02e4b7f3ddca020bdeef1dde742fad19538c3ad59"
     },
     {
       "path": "inputs/w1/dev__src__opt__packed_loads.cpp.o",
@@ -1305,7 +1310,7 @@
     {
       "path": "inputs/w1/dev__src__opt__phi_equivalence.cpp.o",
       "size": 50665,
-      "sha256": "dbac6829b4a62e59d3af62b27990dad3dc4e75847b96ae93ad5d4abcbc718cf9"
+      "sha256": "a262124221dc25e28a4c8d19f76fe65c664ff8c4805ef2ebd4e7ca0faf587d51"
     },
     {
       "path": "inputs/w1/dev__src__opt__private_allocations.cpp.o",
@@ -1314,13 +1319,13 @@
     },
     {
       "path": "inputs/w1/dev__src__opt__return_tables.cpp.o",
-      "size": 91189,
-      "sha256": "ff64b85aabe295dcbe99e22eac956cea0b0fe03bae6a9d2765853d6e8ffacab5"
+      "size": 91190,
+      "sha256": "f99310315c22b9daa2ede3bc992fd3f97bfbc4046adb9878890b896ef462fcde"
     },
     {
       "path": "inputs/w1/dev__src__opt__scalar_fold.cpp.o",
-      "size": 30388,
-      "sha256": "aa94016b25daf26f42f9af6cc8f526cdf165614219eddfb5a0aa9304a021e543"
+      "size": 30384,
+      "sha256": "4a028b0f2006d72dadac0bbb3e8956929ce9a5d583b1ef40d615d36a847552e5"
     },
     {
       "path": "inputs/w1/dev__src__opt__select_formation.cpp.o",
@@ -1335,7 +1340,7 @@
     {
       "path": "inputs/w1/dev__src__opt__static_init.cpp.o",
       "size": 52269,
-      "sha256": "16b9c4542911b4daeff0c68fb1df8f637c753926f628d743bec5af74cb298def"
+      "sha256": "aa4c5e697e2da295bdb659bacc9cb637cbf7454cb0869142bf1848b36ad306f3"
     },
     {
       "path": "inputs/w1/dev__src__opt__store_motion.cpp.o",
@@ -1365,12 +1370,12 @@
     {
       "path": "inputs/w1/dev__src__opt__test_merging.cpp.o",
       "size": 67946,
-      "sha256": "d3566e4c1286a6a95d686e0b891fb9d26cfae0d6409f64177086b71934ef5df1"
+      "sha256": "11cf3fcd5a3e487f7c6a17bafda25137ac23477802361156c7e679332f32433d"
     },
     {
       "path": "inputs/w1/dev__src__opt__unsigned_ranges.cpp.o",
       "size": 19095,
-      "sha256": "272138ceebff75b4df341b7c5234f0ba3aed55e0f9a1b073c75ed7d8edd6fbf5"
+      "sha256": "49ec9e72bc4c7366c744d11f2e99d4489f1d3c6b74ecaa4abd2f8ab1ee855c62"
     },
     {
       "path": "inputs/w1/dev__src__opt__value_reads.cpp.o",
@@ -1380,12 +1385,17 @@
     {
       "path": "inputs/w1/dev__src__opt__value_simplify.cpp.o",
       "size": 179533,
-      "sha256": "35da91ccd74c7baf44d0af75592e71ca1850c244b50e2094560800dc4933a587"
+      "sha256": "746df0a3dc5945a2b8b6a193817985ffa54d93b4426edd28fed53c44ad5350ed"
     },
     {
       "path": "inputs/w1/dev__src__opt__vector_lanes.cpp.o",
       "size": 5934,
       "sha256": "4ef0c0ea83b65789acb413a172b2f36fd3c86cbf8828f3c98a6abb57e7df3a26"
+    },
+    {
+      "path": "inputs/w1/dev__src__opt__vector_literals.cpp.o",
+      "size": 22631,
+      "sha256": "2456a05b92a881c7a83148f0806e832c8b0133b3c5b3783585d427a5c887d1d9"
     },
     {
       "path": "inputs/w1/dev__src__opt__virtual_calls.cpp.o",
@@ -1394,8 +1404,8 @@
     },
     {
       "path": "inputs/w1/dev__src__opt__wide_integers.cpp.o",
-      "size": 79325,
-      "sha256": "5e004aac8d6a84283e9aab54e758804229403fb100d9394c6822b89db11c9f52"
+      "size": 79694,
+      "sha256": "8e76acb0614de68587b428bde12d371008435b8101cb5836be8ebcdabae4af8d"
     },
     {
       "path": "inputs/w1/dev__src__preprocess__expr__controlling_expression.cpp.o",
@@ -1414,13 +1424,13 @@
     },
     {
       "path": "inputs/w1/dev__src__preprocess__lexer__pp_lexer.cpp.o",
-      "size": 40856,
-      "sha256": "6b0deb418707e2b0f5e837fa23bd98a32773d542a80f50535aaad0749191927a"
+      "size": 40691,
+      "sha256": "bc7fc14cf15c4fef3fab1b9766cc03708a68a0cfce829e9b3e65f255c17359bf"
     },
     {
       "path": "inputs/w1/dev__src__preprocess__lexer__pp_lexer_literals.cpp.o",
-      "size": 24946,
-      "sha256": "10eac5633c06b5dfe6586cb004e3e0fa31f3b9d554a0680a3bb312588f1ecf33"
+      "size": 24984,
+      "sha256": "42087a55d1988181b3a7029ddf7e125570e41ee04c6767d40f2f2f780917e95d"
     },
     {
       "path": "inputs/w1/dev__src__preprocess__lexer__pp_lexer_punctuators.cpp.o",
@@ -1449,13 +1459,13 @@
     },
     {
       "path": "inputs/w1/dev__src__preprocess__preprocessor.cpp.o",
-      "size": 113072,
-      "sha256": "eff4997bc42ee606da776a694b6d70fa81306c7ece8dc7b3dccc9ee94c8ff149"
+      "size": 113956,
+      "sha256": "c406750b56ac8c95b4337dc405e19e33d922c637dd44478681044c5d36208fa6"
     },
     {
       "path": "inputs/w1/dev__src__preprocess__preprocessor_directives.cpp.o",
-      "size": 69512,
-      "sha256": "fd04daf0b5ce596290f144189f4be5e6c4f0f61cfb3e98b89a38285ddbc1df83"
+      "size": 70880,
+      "sha256": "36bdbb2e7d0826334997712dfe390fce3f7e47c74b93e12a1b276690e51d9d00"
     },
     {
       "path": "inputs/w1/dev__src__preprocess__preprocessor_names.cpp.o",
@@ -1469,8 +1479,8 @@
     },
     {
       "path": "inputs/w1/dev__src__preprocess__source__source_files.cpp.o",
-      "size": 42627,
-      "sha256": "581b197724c991b986a579cdf9450c4bcf0072d83b42e7ca789501e44e6b104f"
+      "size": 42621,
+      "sha256": "ff04241a96d55eceb46645856801690a19dfaa440cb9917449c9a6e3d6e42463"
     },
     {
       "path": "inputs/w1/dev__src__preprocess__source__source_stack.cpp.o",
@@ -1479,8 +1489,8 @@
     },
     {
       "path": "inputs/w1/dev__src__preprocess__source__translation_reader.cpp.o",
-      "size": 9488,
-      "sha256": "7ed32a5221d02b2c614f2bc798ec04480b014b76342b58211d45d2b32af2fa85"
+      "size": 9194,
+      "sha256": "6678c293b534f6a064b6af8d667292ec9f01b8eb975dc26afa21f4cfd606ed4a"
     },
     {
       "path": "inputs/w1/dev__src__sema__abbreviated_functions.cpp.o",
@@ -1534,8 +1544,8 @@
     },
     {
       "path": "inputs/w1/dev__src__sema__analyzer_classes.cpp.o",
-      "size": 77835,
-      "sha256": "72600d913146dbf1c85270d32ecf6557d05a07238ca27806b1c9fc13dbcfaf56"
+      "size": 77816,
+      "sha256": "7db24fadeb30ca7c7ad9ceae85960911d452f24d0c4c5bb1d4c007f19f1d731a"
     },
     {
       "path": "inputs/w1/dev__src__sema__analyzer_constexpr.cpp.o",
@@ -1559,8 +1569,8 @@
     },
     {
       "path": "inputs/w1/dev__src__sema__analyzer_declarations.cpp.o",
-      "size": 167440,
-      "sha256": "55d887d0103ef4689ebb3821005749686f4aa02d6d455259f20d1edd0c38149d"
+      "size": 167432,
+      "sha256": "8e82675e660cd6af099491f3a8deddb591035a10216e747ec75ce42d40d79d04"
     },
     {
       "path": "inputs/w1/dev__src__sema__analyzer_exception_sets.cpp.o",
@@ -1574,8 +1584,8 @@
     },
     {
       "path": "inputs/w1/dev__src__sema__analyzer_expressions.cpp.o",
-      "size": 128788,
-      "sha256": "b907b980033b016ab3e35f3fd94bc80eda2ebef65f4f472db71602a026486834"
+      "size": 128775,
+      "sha256": "1aa15d8564afe672365697a2bd6049248254fb75dc202412578a75b93a52c060"
     },
     {
       "path": "inputs/w1/dev__src__sema__analyzer_handlers.cpp.o",
@@ -1614,8 +1624,8 @@
     },
     {
       "path": "inputs/w1/dev__src__sema__analyzer_range_for.cpp.o",
-      "size": 39709,
-      "sha256": "a1861a106a0c1544b7694d89fdf9f87f29610f18008258d89863e1c1c0126087"
+      "size": 39726,
+      "sha256": "b2e08d87de424d6c3d1b2f6eb4f3e49778329bfe31dea184560973315da9da9b"
     },
     {
       "path": "inputs/w1/dev__src__sema__analyzer_rtti.cpp.o",
@@ -1629,8 +1639,8 @@
     },
     {
       "path": "inputs/w1/dev__src__sema__analyzer_types.cpp.o",
-      "size": 77055,
-      "sha256": "e8c444cf0f8384eb4a956e738d7c3368fb2734a5463fda922b48981074c3b6a3"
+      "size": 77041,
+      "sha256": "5a917a4d0694e990096e31aaa33b98c7a11de81068cf773bd68782867c5c732f"
     },
     {
       "path": "inputs/w1/dev__src__sema__analyzer_virtual.cpp.o",
@@ -1659,8 +1669,8 @@
     },
     {
       "path": "inputs/w1/dev__src__sema__class_templates.cpp.o",
-      "size": 217941,
-      "sha256": "4b5c3c2fb8a1090a2e6c831f4c35d091b01e7dbc66be2ed920fa2a3b1612e6e0"
+      "size": 217939,
+      "sha256": "d9af4bf67c978f9fc175498c01a08afadf447186dc99a6e365b6de3f31f64a68"
     },
     {
       "path": "inputs/w1/dev__src__sema__comparison_operators.cpp.o",
@@ -1770,7 +1780,7 @@
     {
       "path": "inputs/w1/dev__src__sema__floating__binary128.cpp.o",
       "size": 7929,
-      "sha256": "43d5bff19d329593083ab4a566898d4384dc4aff904a294e23bda55c193bd9fa"
+      "sha256": "0a963a10d7a9655989024f0bc68f1992c830bbb42eaf80c01c8c5f93869d7e18"
     },
     {
       "path": "inputs/w1/dev__src__sema__floating__binary128_host.cpp.o",
@@ -1909,8 +1919,8 @@
     },
     {
       "path": "inputs/w1/dev__src__sema__template_specializations.cpp.o",
-      "size": 93519,
-      "sha256": "bdcf7037724b36f5d3b8a6ca91536664349260bfde893549d749018de1f8c720"
+      "size": 93691,
+      "sha256": "a4ab32db70391fe187792245596fad9f59c533df1f8f879394a272251068a66c"
     },
     {
       "path": "inputs/w1/dev__src__sema__three_way_comparisons.cpp.o",
@@ -1950,7 +1960,7 @@
     {
       "path": "inputs/w1/dev__src__syntax__ast_clone.cpp.o",
       "size": 152964,
-      "sha256": "cc47f8ec5e7dc451fb281af09b55381b9ec33a45b2ab31f835e23d7efddd098e"
+      "sha256": "a0e91e33859107ed92a31b8f40c6e13445dcbaae4f11517e920528a497c53a61"
     },
     {
       "path": "inputs/w1/dev__src__syntax__ast_clone_lambdas.cpp.o",
@@ -2019,13 +2029,13 @@
     },
     {
       "path": "inputs/w1/dev__src__syntax__parser_names.cpp.o",
-      "size": 78683,
-      "sha256": "8c9823be6b89089e0fbeb185bcfcf2dddb4d96550aaa5e68732fd6497a8d0f03"
+      "size": 83085,
+      "sha256": "52d9f0b4e8f4fa9de929500cfafbaa77900d4a3d99dff2ed513732e05bd07e3e"
     },
     {
       "path": "inputs/w1/dev__src__syntax__parser_specifiers.cpp.o",
       "size": 105211,
-      "sha256": "8bff65bcd576473084d9caebd12654a84c552a7304fef1a40f33bb605a180649"
+      "sha256": "3a30cac0ea7f24880dcfc13684e6d4150cba468b58ae77be307ebc11c629c551"
     },
     {
       "path": "inputs/w1/dev__src__syntax__parser_state.cpp.o",
@@ -2039,8 +2049,8 @@
     },
     {
       "path": "inputs/w1/dev__src__syntax__syntax_unit.cpp.o",
-      "size": 19071,
-      "sha256": "463ef4c2b4ff3c111c03bfb182b03dc0ab9eb4d8d848e235fb8ecbdad5032ab8"
+      "size": 19073,
+      "sha256": "c6d1a5bbf3d7a08beaffffe0ebeb9248ec77bac30e2b4965a633b83502143684"
     },
     {
       "path": "inputs/w1/dev__src__target__target.cpp.o",
@@ -2054,43 +2064,43 @@
     },
     {
       "path": "inputs/w1/dev__src__wasm__abi.cpp.o",
-      "size": 14616,
-      "sha256": "18703ffbbc691d7a4b591df32964a1499dc7b6b6017e7ccb353b5877a7dc2b81"
+      "size": 14375,
+      "sha256": "6ccae84dd9e73fb25c58eac4417c2161903269ec3205c2e35987c6340da73dd7"
     },
     {
       "path": "inputs/w1/dev__src__wasm__archive.cpp.o",
-      "size": 75905,
-      "sha256": "ef896a11061154871f5f1560efcc1a1fe3aab8dd532f0d98563b31e015ad93fa"
+      "size": 76271,
+      "sha256": "301e4ef124b1736811da89d6ad4da959cd78cca642aef55e55539d001c6a9fbb"
     },
     {
       "path": "inputs/w1/dev__src__wasm__assembly_instructions.cpp.o",
-      "size": 59343,
-      "sha256": "d7d866154e52c5017bffeedbbd19bd2649be43df865cfe523ae0934748339149"
+      "size": 59220,
+      "sha256": "23c213ef915d5970c61878d59fa906690f5b48c105bfd9f98336dbaa42b675b2"
     },
     {
       "path": "inputs/w1/dev__src__wasm__assembly_object.cpp.o",
-      "size": 79472,
-      "sha256": "0275e6b77e91e2912d993e04b481b9184cc8670a393ad6e5d17573c0f621cf16"
+      "size": 79344,
+      "sha256": "4389b3af7bd40e2479e342a6ff744d19d600500ca7c101539c08b31af37b64f1"
     },
     {
       "path": "inputs/w1/dev__src__wasm__assembly_parser.cpp.o",
-      "size": 65094,
-      "sha256": "9de7449f3cd78c10ab0b5e5478b0b5018c22b62cb8aaf105ee43303b49a7a923"
+      "size": 65266,
+      "sha256": "a4fdf2a02a4d256adb32e839252a4792c876388e51d904e576d38f2ce7b43d76"
     },
     {
       "path": "inputs/w1/dev__src__wasm__assembly_tokens.cpp.o",
-      "size": 30284,
-      "sha256": "72c842b4109c79bb32abedfce281f17a0320d6c869d61def5377284e98737f3c"
+      "size": 30249,
+      "sha256": "61b5458f86dd634007d534a915cead6fc558fe7e93290919ae0703a68e119925"
     },
     {
       "path": "inputs/w1/dev__src__wasm__backend.cpp.o",
-      "size": 41939,
-      "sha256": "1b287ae7dcd5cc80aac45c61c87d2151e5548af536bb84f77c3cf5a496df9483"
+      "size": 41592,
+      "sha256": "c523e655af1d84361decc311082cc872b8ca35b1672e715ac60d0b88f03c8a95"
     },
     {
       "path": "inputs/w1/dev__src__wasm__bytes.cpp.o",
-      "size": 22306,
-      "sha256": "33c9babe1307431ef9d755c77807355919cd4695301e20b1c7844c682ee04046"
+      "size": 22073,
+      "sha256": "f990bcf10da582b5ebf22a8d733590effaaf290e1f68e8b541bc6576de17f6ba"
     },
     {
       "path": "inputs/w1/dev__src__wasm__control.cpp.o",
@@ -2109,58 +2119,58 @@
     },
     {
       "path": "inputs/w1/dev__src__wasm__encoder.cpp.o",
-      "size": 39196,
-      "sha256": "38124d9d2e862e2e3d13b5f07baa441b44d88731a990e7a4d9e5386c5f1966c4"
+      "size": 38959,
+      "sha256": "1643a5c8bee27bd5001ee1d21a6ce09eb6c7a5f3e3bab0b07d47f3ffd623747f"
     },
     {
       "path": "inputs/w1/dev__src__wasm__exception_payload.cpp.o",
-      "size": 20778,
-      "sha256": "b0f239456f11a7e18668884c7ea52e4b70657a0191ff6d791c3f638ec1b32054"
+      "size": 20564,
+      "sha256": "a7714eb4604cb70bc64f7061a86560feeef727dd041d7140ce5fe7bbb312149c"
     },
     {
       "path": "inputs/w1/dev__src__wasm__exception_plan.cpp.o",
-      "size": 53517,
-      "sha256": "5679f8b1e1b2d506d0136474e0ebb99832c6dc1bf1da49359686555b6245722c"
+      "size": 53583,
+      "sha256": "f77b5658b93d22591e21fd645904753e266d630fff37b5e45b8284f7dc2b6b0f"
     },
     {
       "path": "inputs/w1/dev__src__wasm__exception_runtime.cpp.o",
-      "size": 15247,
-      "sha256": "a8a08f64da116daf1db633a28e1a794ee8285aad7c92002348b05c76e8afe46f"
+      "size": 14979,
+      "sha256": "d510e280797c8ccb9bb3a8c2c662bd290fa8df3e22d1bb906387b6e31061fc42"
     },
     {
       "path": "inputs/w1/dev__src__wasm__finalization.cpp.o",
-      "size": 22666,
-      "sha256": "00126c0c8930e449dcb59069f05d2713894a213c05441d40342d50e2904d9bf6"
+      "size": 22479,
+      "sha256": "d703eab260080fa895fd8122ca596d0a168931205a2e36e32f789619bdc2f2ec"
     },
     {
       "path": "inputs/w1/dev__src__wasm__frame.cpp.o",
-      "size": 53106,
-      "sha256": "0654f572e3ec54471e58a069114e37b62584f5008cf41cf4981edc2a6e0c8bfc"
+      "size": 52983,
+      "sha256": "a13f9cbb7f1099b91ec8af88a44113a75f19c064fb13d1598cef94b0ab6856dd"
     },
     {
       "path": "inputs/w1/dev__src__wasm__link_data_exports.cpp.o",
-      "size": 29023,
-      "sha256": "dd819d97b5bfd9595f8cb03bfff8ee914e91ca6ab18401d31901dd509112037c"
+      "size": 28767,
+      "sha256": "48aee5e34aaab0f5288b9940cba634f8782b7de821a8b4105e6bafc856ae6b07"
     },
     {
       "path": "inputs/w1/dev__src__wasm__link_globals.cpp.o",
-      "size": 61572,
-      "sha256": "501e28ddab59724887f2a302b22880b85d0542c609b3a58177c5aea81359a058"
+      "size": 61342,
+      "sha256": "48e6753759d48ca8a08a7ea6c7f63cbd7d216b714f54559280a516da19bdcca7"
     },
     {
       "path": "inputs/w1/dev__src__wasm__link_output.cpp.o",
-      "size": 73595,
-      "sha256": "01a8be837462a7ccce6d8ae66ba3e0536be06fe39fe3228d23800c1c656c5950"
+      "size": 73265,
+      "sha256": "17d9aa928ca91a9675ee2622a1b32c5e54c9e03afa493b4ee919b79aa87bd93b"
     },
     {
       "path": "inputs/w1/dev__src__wasm__link_relocations.cpp.o",
-      "size": 33705,
-      "sha256": "f49396addc0d534be20199c670679278c39988a38f9f3ea812c5f13f4aff8070"
+      "size": 33635,
+      "sha256": "571c70d42aca9efa004d0433cabcbdfaa9822d6c2c5acc3c98ab37a7c56ff51f"
     },
     {
       "path": "inputs/w1/dev__src__wasm__linker.cpp.o",
-      "size": 105034,
-      "sha256": "f27cab61fe6e2b0d02134715d773fbdb938a004d0b4888b32cced4cba9a12bda"
+      "size": 105164,
+      "sha256": "5dc869aeddfb981a3e5d03113867ffb22ae986c0ab48fbda41d7e3b4c9669bc6"
     },
     {
       "path": "inputs/w1/dev__src__wasm__local_cleanup.cpp.o",
@@ -2179,58 +2189,58 @@
     },
     {
       "path": "inputs/w1/dev__src__wasm__module.cpp.o",
-      "size": 58409,
-      "sha256": "0f78d7eb7a6b39ce46b4305732c8c46d109c40b8341ba42f08307fcd6a518d50"
+      "size": 57687,
+      "sha256": "d8c6bba314ed11a2e9ed84bcab5cc9f1326fcb8944b8c32339f0be2d2c42db3a"
     },
     {
       "path": "inputs/w1/dev__src__wasm__nonlocal_jumps.cpp.o",
-      "size": 53596,
-      "sha256": "0915ffe0918cf69eaf641aa8cd093f1e96a287e5c9fe9e4972202b4a02adcb7c"
+      "size": 53403,
+      "sha256": "3b362b2906a52736fafc6b9029ec419681e0fd3b253fad6b3afdbafc9ca06d1c"
     },
     {
       "path": "inputs/w1/dev__src__wasm__object_aliases.cpp.o",
-      "size": 18208,
-      "sha256": "a2b76f78eed1c57687441d61af5e29957befe76e1d30e7ab682f46715fb58633"
+      "size": 17940,
+      "sha256": "53c8dd1875735522fa7f8da5196069a103bc71455460eadcf4c1b253ffc697cb"
     },
     {
       "path": "inputs/w1/dev__src__wasm__object_code.cpp.o",
-      "size": 123760,
-      "sha256": "292262a6736ab0b4a2977d33edeee9ecb756ea72a9fa9f74311e577b106ba26a"
+      "size": 124363,
+      "sha256": "f50561ead154145073997e17b450b284edff10d656316b7403184706f04e1175"
     },
     {
       "path": "inputs/w1/dev__src__wasm__object_constants.cpp.o",
-      "size": 30546,
-      "sha256": "139434bdc9c1fd4a77dd48bf703092a614eab957a6bf1f4bdff1ea3f9df7794f"
+      "size": 30798,
+      "sha256": "0071c9366496155d1e25be12a9ecd8d811a186436ee0c69dcb4afb5d66a0348d"
     },
     {
       "path": "inputs/w1/dev__src__wasm__object_customs.cpp.o",
-      "size": 25023,
-      "sha256": "1b1ca5e0b67695bc34955998bd9a807735d32d86d20da7d0f2281fb6429eb156"
+      "size": 24999,
+      "sha256": "ac96f1ccb1daa28097cfde46320f2f442515d3291a71958a4d04463e618530fa"
     },
     {
       "path": "inputs/w1/dev__src__wasm__object_elements.cpp.o",
-      "size": 34764,
-      "sha256": "424d4c23ccd777c6d3e221a42f35d172cf148d0463f6e17e1dbe415c96bcc081"
+      "size": 34981,
+      "sha256": "662287e4ec27d0e8416543a6ccdd92c9677d857ec9c1d12de9bd43f60bca4b01"
     },
     {
       "path": "inputs/w1/dev__src__wasm__object_expression_validation.cpp.o",
-      "size": 13392,
-      "sha256": "8e97b1cc75ba0fcf283743f3db7800f5d1deac19e3a024f1781fc6734a7bdba4"
+      "size": 13097,
+      "sha256": "33944b383ee44c3650fea49204c08a35a5b36f62d31c4f1b678b872a49c97fbc"
     },
     {
       "path": "inputs/w1/dev__src__wasm__object_features.cpp.o",
-      "size": 21783,
-      "sha256": "9b1add2204a9cfd0d9d6e2f5ecc9de33136306aa9a961a5af03227d8b5638863"
+      "size": 21417,
+      "sha256": "e43c8f1d6c7bfe6a5684c6301863bd99e86f8f120e7a20c0d4f47a95d8b98472"
     },
     {
       "path": "inputs/w1/dev__src__wasm__object_lowering.cpp.o",
-      "size": 110936,
-      "sha256": "76671fbcb8f973036c919e2d91bf04cd675d5e637e0a8e30829d031d4d896200"
+      "size": 111120,
+      "sha256": "737fe3f6793f83c41a1902e19d0b40805025cb60fc2c23aabcea5f76556e2497"
     },
     {
       "path": "inputs/w1/dev__src__wasm__object_metadata.cpp.o",
-      "size": 57210,
-      "sha256": "e2769dbc341e4f79de0e0d9a02a32713f82310bf1ba0f2cb6786d5e1a9d59dae"
+      "size": 57610,
+      "sha256": "86c5786f5bf7ea7ed0ed522bdefde8189763c6770f975a893e27a074c8d268f0"
     },
     {
       "path": "inputs/w1/dev__src__wasm__object_places.cpp.o",
@@ -2239,18 +2249,18 @@
     },
     {
       "path": "inputs/w1/dev__src__wasm__object_reader.cpp.o",
-      "size": 114383,
-      "sha256": "53d966bc857db732e0d9d45edcb0d3643e2bba9c8dd4b8e182e474d5923780b2"
+      "size": 115683,
+      "sha256": "0cb62ff00d2a4ded8f49d4f8a3262d0d7bf90fc8c6dcb73dba1019476f437f94"
     },
     {
       "path": "inputs/w1/dev__src__wasm__object_startup.cpp.o",
-      "size": 34060,
-      "sha256": "91582c11a53c69f867e87434e5f4b84966f42feef6ea82191d8d17a9353b2a95"
+      "size": 33544,
+      "sha256": "37a99c8474445fa3a34df1f8e33dfcd7288211bdee3e0048fd26e62f96d77fe4"
     },
     {
       "path": "inputs/w1/dev__src__wasm__object_validation.cpp.o",
-      "size": 79580,
-      "sha256": "0a770e5af5934cef3c5e1a45cd5c5a8337bd54bf933c0cfda46e96e5f06a733b"
+      "size": 79955,
+      "sha256": "b7f6fd799f986edbab2e3dff40b3cbc2ad7a592d7bd705b50d39ed34fdadd387"
     },
     {
       "path": "inputs/w1/dev__src__wasm__object_writer.cpp.o",
@@ -2259,28 +2269,28 @@
     },
     {
       "path": "inputs/w1/dev__src__wasm__runtime_inputs.cpp.o",
-      "size": 18474,
-      "sha256": "f025ab133f7ff8506fcb7ca49b4206cf0b66655c772d6756c3ab51301af812a7"
+      "size": 18206,
+      "sha256": "12a64820063d4862761f5d096ad089924512ecd13c8099ff0cb2b03d4ea7df4f"
     },
     {
       "path": "inputs/w1/dev__src__wasm__select_arithmetic.cpp.o",
-      "size": 25602,
-      "sha256": "7283dd3ade667c741d75c9626dcb830b92dbc1aa73a6cea6e0e5bb4856275ef1"
+      "size": 25361,
+      "sha256": "07ae004dec1d30145c58c5463a98f2d8986620e52e92fde436ab36ddfcdcad33"
     },
     {
       "path": "inputs/w1/dev__src__wasm__select_atomics.cpp.o",
-      "size": 25991,
-      "sha256": "7d6171d5aa1b87909c6531afcb94b8e136d1892f480c3d855f0be594cca82a81"
+      "size": 25258,
+      "sha256": "2dc1b47a6f90993cb7115e7d957d877b92ad99c7565336d1055b4e5fc63bbe0b"
     },
     {
       "path": "inputs/w1/dev__src__wasm__select_builtins.cpp.o",
-      "size": 21134,
-      "sha256": "c2f673135f5ceab476b92be74a9d12876ad29c706d1c37ce1e221ceece8ac87d"
+      "size": 21060,
+      "sha256": "c57cfe6d274fa555d1a0c3119a2043c8bc92fb6ea29ab433995d5a05d3effa1b"
     },
     {
       "path": "inputs/w1/dev__src__wasm__select_calls.cpp.o",
-      "size": 24099,
-      "sha256": "cfe2ff9958a7fe2b29e01c92baf0498816b27abacc649335e95dc6c4f86e3d47"
+      "size": 23600,
+      "sha256": "0ecd6886b821a8f963afdb0b5c029c3d935b2609d9950697b7841a5b6deb7ecd"
     },
     {
       "path": "inputs/w1/dev__src__wasm__select_exceptions.cpp.o",
@@ -2289,8 +2299,8 @@
     },
     {
       "path": "inputs/w1/dev__src__wasm__select_instructions.cpp.o",
-      "size": 37121,
-      "sha256": "27a9c71dfe69d7525591e5344a5d22920f1c148329ff895c9919144f5b612544"
+      "size": 36635,
+      "sha256": "83888dcf3723e2c26d59093865e16dcecb1b9722cdaf817bef23411eda8efe5f"
     },
     {
       "path": "inputs/w1/dev__src__wasm__select_objects.cpp.o",
@@ -2304,23 +2314,23 @@
     },
     {
       "path": "inputs/w1/dev__src__wasm__select_varargs.cpp.o",
-      "size": 26809,
-      "sha256": "12750eaa98183eb75d4c23281b86d4076a9847ad2add0c56d51d930123b84d59"
+      "size": 26514,
+      "sha256": "0a25136279a89fdfd4587721bffdfcedf2b313271302d54b6cdc4e927f97204a"
     },
     {
       "path": "inputs/w1/dev__src__wasm__select_vectors.cpp.o",
-      "size": 35287,
-      "sha256": "8857101219b513de95e69b7527531147d307fcb41be57f0caab6d84ca913c487"
+      "size": 34787,
+      "sha256": "64935e4e44a9011f71706d975c241cbf804e319f1be1b948dd488c734d424635"
     },
     {
       "path": "inputs/w1/dev__src__wasm__select_wide.cpp.o",
-      "size": 22827,
-      "sha256": "aef355e42ecaa0842fc809e373d2de57d2046aa916def1b83324d542feb850fe"
+      "size": 22532,
+      "sha256": "54885d047a48cb7c19bce375c5eb4c1e01378df63e32414df4e8c31216d5c8e2"
     },
     {
       "path": "inputs/w1/dev__src__wasm__select_wide_arithmetic.cpp.o",
-      "size": 18903,
-      "sha256": "d6ede0ab307fb332ff32fb0edaa2e6a7f09d364eb55e447270095d5a0daf2846"
+      "size": 18635,
+      "sha256": "fecc25eb39e3e37421cfe1dd56cc927349848b1de8da2123bbc80d5c253af3b5"
     },
     {
       "path": "inputs/w1/dev__src__wasm__select_wide_shift.cpp.o",
@@ -2329,13 +2339,13 @@
     },
     {
       "path": "inputs/w1/dev__src__wasm__selector.cpp.o",
-      "size": 49424,
-      "sha256": "a29e3226294e5554796916de90779db6fcf873185683ca778bf66f477e6d7a8e"
+      "size": 49038,
+      "sha256": "c170f9f43e5019560bd458d7160040c4441c36ced433fb91432d7e192738a7fe"
     },
     {
       "path": "inputs/w1/dev__src__wasm__validation.cpp.o",
-      "size": 117396,
-      "sha256": "cabde76b725bb15e885d9aaf8ec024a30847c51814a59ede38b391cc6fef5639"
+      "size": 120906,
+      "sha256": "ab518eb361af00285c7fe96b61b847ab23270adf88ed8207e58d6e081b84433e"
     },
     {
       "path": "inputs/w1/dev__src__wasm__vector_carryless.cpp.o",
@@ -2354,8 +2364,8 @@
     },
     {
       "path": "inputs/w1/dev__src__wasm__vector_float.cpp.o",
-      "size": 30737,
-      "sha256": "3d2a54e3d412771afe7fff60001eb4315d0407c79d34dd50491c56d25fa1c002"
+      "size": 30209,
+      "sha256": "501c7d464eb4d2f8ff41f2fc4f7a8a16f677fa06a9d4ab0c7596175e26c1c7e8"
     },
     {
       "path": "inputs/w1/dev__src__wasm__vector_horizontal.cpp.o",
@@ -2369,8 +2379,8 @@
     },
     {
       "path": "inputs/w1/dev__src__wasm__vector_permute.cpp.o",
-      "size": 23980,
-      "sha256": "25b9575df59b9d9c78c40bf19a2f453233c0a366a9a55b0a5aebea02e88546fa"
+      "size": 23690,
+      "sha256": "9dbb2e4c3da5191365cce1d0b96402481fb88f40b586865fbd3bedd943d87df9"
     },
     {
       "path": "inputs/w1/dev__src__wasm__vector_reciprocal.cpp.o",
@@ -2389,8 +2399,8 @@
     },
     {
       "path": "inputs/w1/dev__src__wasm__wide_helpers.cpp.o",
-      "size": 28640,
-      "sha256": "4fcd414aa72e8b22f29acc8e21e63f80fdd0079580ff38c35dfd7c763de28bf9"
+      "size": 28281,
+      "sha256": "f809327efed6ac0a261e9e865cea6443ecfc8765a367bc8a58e3d3d077c197d7"
     },
     {
       "path": "inputs/w1/dev__src__wasm__wide_locals.cpp.o",
@@ -2730,12 +2740,12 @@
     {
       "path": "llvm/manifest.json",
       "size": 5559009,
-      "sha256": "bf0d07d127fa37e16ed36bd5e884569a61746dc3cc6fefe3afc1f614f80ad09d"
+      "sha256": "24e07b2adcdc33eb9f115a77f5875624238c51d446fc035b6f9d8c6ebdabc538"
     },
     {
       "path": "llvm/manifest.sha256",
       "size": 65,
-      "sha256": "8685b37110fab4c1bb1b3566a0303064f607824554a62886299f138c4c11daa7"
+      "sha256": "fb3044ef1413b6c54bddf981ce8b4391968c613b292b0024312fc11c6ef15589"
     },
     {
       "path": "llvm/transport.json",
@@ -2744,13 +2754,13 @@
     },
     {
       "path": "manifest.json",
-      "size": 3700832,
-      "sha256": "0bb68b93fca962344c981e2ae52fbb889af9bff224ee5b83700fa601f0054a3c"
+      "size": 3702463,
+      "sha256": "16316afd6e095fa98bddbd724c22b72755b220b3dd6c373f1e4e766dc54934cc"
     },
     {
       "path": "manifest.sha256",
       "size": 65,
-      "sha256": "df7137936a168cbb50c58487d6c4fa5c8f59b01eca587a854f52d3b687557147"
+      "sha256": "442e85617ac76133838f4e0b8ede1f760726628cb4ffb8cf8d59318f9439b07e"
     },
     {
       "path": "projects/doom/assets/demo00/part.0000.bin",
@@ -2924,13 +2934,13 @@
     },
     {
       "path": "projects/doom/manifest.json",
-      "size": 2912622,
-      "sha256": "24d6957613544343b2af9b4a78651c9be736ed3ef555a3262d518dbcd048a99b"
+      "size": 2910006,
+      "sha256": "7c1660b3767f102e2f058a7f4628ec0e93c97e9e82c819d3cfde1d7496761ea9"
     },
     {
       "path": "projects/doom/manifest.sha256",
       "size": 65,
-      "sha256": "3a3681e35659a16bf3ec1ac6124a075103c100f7c539d4abdf1a4f7cdcd89fda"
+      "sha256": "c9944aaa2cea82b603d0208eb280ac97b4f8dfe50a8271fb46ba98bdbebaa5e4"
     },
     {
       "path": "projects/doom/player/factory.a054d4a29e1bc39c.mjs",
@@ -3084,13 +3094,13 @@
     },
     {
       "path": "projects/godot/manifest.json",
-      "size": 10704733,
-      "sha256": "59b6370afb192ddbce294a65ced01dc332d1338196fc535e1790e8de8729709d"
+      "size": 10691388,
+      "sha256": "39af0c309e76ae989cdffe3aaf80676f00d5e8703f8d758d707f02d86f6b3969"
     },
     {
       "path": "projects/godot/manifest.sha256",
       "size": 65,
-      "sha256": "05350017179d15dd6d8c6edc983b325388bbf42da76d9edafd7c64fecaf82960"
+      "sha256": "50ea2ebed94b15e58c3378867d6c89cb3a04e3b46589531272cb6e36104103ea"
     },
     {
       "path": "projects/godot/player/engine.d51d7230ff6a9cb6.mjs",
@@ -3169,13 +3179,13 @@
     },
     {
       "path": "projects/lara/manifest.json",
-      "size": 1648721,
-      "sha256": "ec54b5d3002e18325439153882f4f11d987b25214d42ca889c23296dbce05b88"
+      "size": 1674320,
+      "sha256": "a807b6db97f7b07810da3fb0925f6b775a3a84f9ed7eb89e4cc83b9fdafa3e03"
     },
     {
       "path": "projects/lara/manifest.sha256",
       "size": 65,
-      "sha256": "f8b7470308a322bd47ab26d5da1296fd19542fdc568f207b5a597b9abdca975c"
+      "sha256": "951b5fbd30bcfab9a64dc5e7a17a6216f2e565cdde0510270e652d6c54f5b372"
     },
     {
       "path": "projects/lara/player/runtime.6a66792ded444ca9.mjs",
@@ -3190,7 +3200,7 @@
     {
       "path": "release-origin.json",
       "size": 366,
-      "sha256": "13fc5a89a3bfac6f9b751954172633c42ca2293e7c33440737e824d1f4c9ee21"
+      "sha256": "075dfb2adb1b413eee1181bc943dd3205a86bb46cc5d33b4cec8b43070256d54"
     },
     {
       "path": "shim/LICENSE-APACHE",
@@ -3255,7 +3265,7 @@
     {
       "path": "transport.json",
       "size": 2930,
-      "sha256": "4fce4dd1ec4c03b3106595616aa9d6df6cf7225bf3cda19d3e8dbb1861a3d1ea"
+      "sha256": "4b972608cb146cb736fdd2d82148466f3e270f0640155649ca942b447d4afbbb"
     },
     {
       "path": "transport_bytes.mjs",
@@ -3264,8 +3274,8 @@
     },
     {
       "path": "w1-complete.json",
-      "size": 377150,
-      "sha256": "2fafa7d13c396c1ed43b3f844e79cb47614b30d29a820550d3c7159fbb02e6bd"
+      "size": 378719,
+      "sha256": "c0634ac58882de3375e68148d0721e912920b1f471fde54366ea05c8b6b0b0ab"
     },
     {
       "path": "wasi_browser.html",

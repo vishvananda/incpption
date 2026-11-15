@@ -68,3 +68,5 @@ header,main{width:calc(100% - 32px)}header{grid-template-columns:1fr auto;gap:8p
 
 .journey-nav .download-badge{display:grid;grid-template-columns:auto 1fr;gap:0 4px}.download-badge:before{grid-column:1;grid-row:1}.download-total{grid-column:2;grid-row:1}.download-data{grid-column:2;grid-row:2;font-size:9px;white-space:normal;color:var(--muted)}
 @media(max-width:700px){.download-data{font-size:8px;max-width:120px}.journey-nav .download-badge{max-width:140px}}
+.header-brand{display:flex;align-items:center;flex-wrap:wrap;gap:4px 14px;min-width:0}.compiler-version{color:var(--muted);font:11px/1.4 monospace;text-decoration:none;border:1px solid var(--line);border-radius:4px;padding:3px 6px;white-space:nowrap}.compiler-version:hover{color:var(--green);border-color:var(--green)}
+@media(max-width:700px){.header-brand{gap:8px}.compiler-version{font-size:9px;padding:3px 4px}}

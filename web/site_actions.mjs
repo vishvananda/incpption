@@ -7,7 +7,7 @@ share.onclick = async () => {
   document.getElementById('share-link').hidden = true;
   if (navigator.share) {
     try {
-      await navigator.share({title: 'cppgm inception', text: 'Watch a self-built C++ compiler rebuild itself in your browser, then build and play a game.', url});
+      await navigator.share({title: document.title, text: document.querySelector('meta[name="description"]').content, url});
       return;
     } catch (error) {if (error.name === 'AbortError') return;}
   }
