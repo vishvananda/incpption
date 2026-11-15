@@ -18,6 +18,7 @@ def prepare_download_plan(output: Path):
         chunks = [r['path'] for r in transport['chunks'] if any(r['offset'] <= f['offset'] < r['offset'] + r['size'] for f in wanted)]
         meta = ['manifest.json', 'manifest.sha256', 'transport.json']
         meta += list(manifest.get('runner_files', {})) + list(manifest.get('shim_files', {}))
+        meta += [runtime['path'] for runtime in manifest.get('runtime', {}).values()]
         return [directory + '/' + name for name in [*meta, *chunks]]
 
     seed = package('compiler', 'wasm')
@@ -25,8 +26,9 @@ def prepare_download_plan(output: Path):
     base += ['compiler/w1-complete.json', 'compiler/inputs/w1/cppgm.wasm']
     game = package('game')
     references = [p.relative_to(output).as_posix() for p in (output / 'compiler/inputs/w1').glob('*') if p.is_file()]
+    clang_runtime = 'llvm/' + json.loads((output / 'llvm/manifest.json').read_text())['runtime']['clang']['path']
     stages = dict(match=sorted(set(base + seed + references)), llvm=sorted(set(base + package('llvm'))),
-                  clang=sorted(set(base + seed)), game=sorted(set(base + game)),
+                  clang=sorted(set(base + seed + [clang_runtime])), game=sorted(set(base + game)),
                   **{'game-clang': sorted(set(base + game + seeds()))})
     sizes = {name: (output / name).stat().st_size for names in stages.values() for name in names}
     targets = json.loads((Path(__file__).resolve().parents[1] / 'config/projects.json').read_text())

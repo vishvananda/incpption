@@ -225,6 +225,12 @@ const server = http.createServer((req, res) => {
         if(await page.locator('[data-phase=match] time').textContent()!==phaseTime)throw Error('Grid reset also reset the completed phase time');
         await page.waitForFunction(()=>['complete','error'].includes(window.lastGameBuild?.kind),null,{timeout:300000});
         report.game=await page.evaluate(()=>window.lastGameBuild);if(report.game.kind!=='complete')throw Error(report.game.error);
+        const gameTime=await page.locator('[data-phase=game] time').textContent();
+        await page.locator('[data-phase=match]').click();
+        if(await page.locator('#cancel').isEnabled())throw Error('Reviewing the matched compiler started a rebuild');
+        if(await page.locator('.unit.matched').count()!==report.inception.stages[0].commands.length)throw Error('Matched compiler results were not retained');
+        await page.locator('[data-phase=game]').click();
+        if(await page.locator('#cancel').isEnabled() || await page.locator('[data-phase=game] time').textContent()!==gameTime)throw Error('Reviewing the game started a rebuild');
         await page.locator('#game-play').click();
         await page.locator('#game-close').click();
         if(await page.evaluate(()=>window.gamePlaying))throw Error('Closing during startup left the game running');

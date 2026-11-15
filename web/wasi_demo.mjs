@@ -19,7 +19,15 @@ const size = bytes => `${(bytes/1048576).toFixed(1)} MiB`;
 const busy = () => jobs.size > 0;
 const phase = id => state.phase(scenario, target, id, isGame(id) && target !== 'lara' ? [] : sourceNames[id] || []);
 const seconds = row => row.state === 'active' ? (performance.now()-row.started)/1000 : row.seconds;
-const buildTime = row => row.result?.compileSeconds ?? (row.compileStarted ? row.state === 'active' ? (performance.now()-row.compileStarted)/1000 : row.compileSeconds : seconds(row));
+function buildTime(row) {
+  if(row.result?.compileSeconds!==undefined)return row.result.compileSeconds;
+  if(!row.compileStarted)return 0;
+  return row.state==='active'?(performance.now()-row.compileStarted)/1000:row.compileSeconds||0;
+}
+function phaseClock(row) {
+  if(scenario!=='game')return clock(seconds(row));
+  return row.state==='active'&&!row.compileStarted?'loading':clock(buildTime(row));
+}
 const completed = () => state.completed(scenario, target);
 const projectEvent = (id, kind, detail = {}) => window.dispatchEvent(new CustomEvent('project-build', {detail:{project:definitions[id].project, kind, ...detail}}));
 function selectProject(id) {
@@ -51,7 +59,7 @@ function addFlow(list, ids, compiler) {
     node.className = `flow-node ${row.state}${visiblePhase === id ? ' selected' : ''}`;
     const button = document.createElement('button'); button.type = 'button'; button.dataset.phase = id;
     button.disabled = row.state !== 'done' && !canRun(id) || busy() && row.state === 'waiting';
-    button.innerHTML = `<span class="node-name">${definition.label}<span class="node-check">${row.state === 'done' ? id === 'match' ? '✓ matches' : '✓' : ''}</span></span><span class="node-description">${definition.detail}</span><span class="node-stats"><span>${row.rows.size} / ${row.names.length || '…'}</span><time>${clock(scenario === 'game' ? buildTime(row) : seconds(row))}</time></span><span class="node-download">↓ ${isGame(id) && plan && !plan.targets[target]?.available ? 'Package pending' : size(downloadSize([id]))}</span>`;
+    button.innerHTML = `<span class="node-name">${definition.label}<span class="node-check">${row.state === 'done' ? id === 'match' ? '✓ matches' : '✓' : ''}</span></span><span class="node-description">${definition.detail}</span><span class="node-stats"><span>${row.rows.size} / ${row.names.length || '…'}</span><time>${phaseClock(row)}</time></span><span class="node-download" title="Cold stage download; shared inputs are counted once in the workflow badge.">↓ ${isGame(id) && plan && !plan.targets[target]?.available ? 'Package pending' : size(downloadSize([id]))}</span>`;
     button.setAttribute('aria-label', `${definition.label}: ${row.state === 'done' ? id === 'match' ? 'matches, view results' : 'built, view results' : row.state === 'active' ? 'building, view progress' : 'build phase'}`);
     button.onclick = () => {
       if (row.state === 'done' || row.state === 'active') {showPhase(id); return;}
@@ -88,11 +96,11 @@ function updateTime() {
   $('workflow-files').textContent = total ? `${count.toLocaleString()} / ${total.toLocaleString()} files & links` : '';
   for (const button of document.querySelectorAll('[data-phase]')) {
     const id = button.dataset.phase, row = phase(id);
-    button.querySelector('time').textContent = clock(scenario === 'game' ? buildTime(row) : seconds(row));
+    button.querySelector('time').textContent = phaseClock(row);
     button.querySelector('.node-stats span').textContent = `${row.rows.size} / ${row.names.length || '…'}`;
   }
-  if (visiblePhase) $('elapsed').textContent = clock(scenario === 'game' ? buildTime(phase('game')) : seconds(phase(visiblePhase)));
-  if (scenario === 'game') $('elapsed-clang').textContent = clock(buildTime(phase('game-clang')));
+  if (visiblePhase) $('elapsed').textContent = phaseClock(phase(scenario==='game'?'game':visiblePhase));
+  if (scenario === 'game') $('elapsed-clang').textContent = phaseClock(phase('game-clang'));
 }
 function makeGrid(id, element) {
   const row = phase(id), buttons = [], fragment = document.createDocumentFragment();
@@ -182,7 +190,7 @@ function start(id, {rerun=false}={}) {
 function launch(id, args) {
   // Failed/cancelled attempts restart from clean inputs; completed rows are only
   // invalidated by the explicit rerun action.
-  const row=phase(id); row.rows.clear(); row.running.clear(); row.state='active'; row.started=performance.now(); row.seconds=0; row.compileStarted=null;
+  const row=phase(id); row.rows.clear(); row.running.clear(); row.state='active'; row.started=performance.now(); row.seconds=0; row.compileStarted=null; row.compileSeconds=0; row.result=null; row.peak=0;
   const session=new BuildSession('./'+definitions[id].worker,{workers:args.workers,maximum:isGame(id)?3:8,inputBroker:comparisonInputs});
   const job={session,ready:false,deadline:setTimeout(()=>fail('This phase exceeded the 90-minute deadline.'),90*60000)};
   jobs.set(id,job); row.workers=session.count;
