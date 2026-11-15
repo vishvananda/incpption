@@ -137,7 +137,8 @@ longer. Run it locally with `npm run test:roundtrip`, or select `clang_roundtrip
 when starting the Browser demo workflow. No source or build results are sent to a build server.
 
 `npm run test:projects` compiles all three projects with both browser compilers
-and checks both players. This longer check is also a manual CI lane. Normal CI
+and checks both players. Godot coverage creates a project and opens its editor
+after the runtime restarts; the home directory is persisted in IndexedDB. This longer check is also a manual CI lane. Normal CI
 uses OpenLara for the comparison and phone checks, plus a full cppgm self-build.
 
 ## Deploy

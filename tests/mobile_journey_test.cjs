@@ -61,7 +61,7 @@ const server=http.createServer((req,res)=>{
         if(await page.evaluate(()=>window.gamePlaying))throw Error('Leaving the game did not stop it');
       }
       if(errors.length)throw Error(errors.join('\n'));
-      console.log(`PASS: ${name} phone layout and ${name==='chromium'?'real game with multi-touch':'source browser'}`);
+      console.log(`PASS: ${name} phone layout and ${name==='chromium'&&!process.env.MOBILE_TEST_LAYOUT_ONLY?'real game with multi-touch':'source browser'}`);
     }finally{await browser.close();}
   }
 })().catch(error=>{console.error(error);process.exitCode=1;}).finally(()=>server.close());
