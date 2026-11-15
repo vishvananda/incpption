@@ -30,7 +30,7 @@ const requests=[],server=http.createServer((req,res)=>{
   await page.goto((origin||`http://127.0.0.1:${server.address().port}`)+'/index.html');
   await page.waitForFunction(()=>!document.getElementById('run-workflow').disabled&&window.lastProjectEvent?.kind==='source');
   assert.equal(await page.evaluate(()=>crossOriginIsolated),true,'page is not isolated with the deployed header rules');
-  await page.locator('#worker-choice').selectOption(process.env.SAFARI_TEST_WORKERS||'8');
+  await page.locator('#worker-choice').selectOption(process.env.SAFARI_TEST_WORKERS||'8',{force:true});
   await page.locator('#build-target').selectOption('lara');
   await page.locator('[data-phase=game]').click();
   const timer=setInterval(async()=>{try{console.log(JSON.stringify(await page.evaluate(()=>({status:document.getElementById('status').textContent,cppgm:document.getElementById('completed').textContent,clang:document.getElementById('completed-clang').textContent}))));}catch{}},15000);
