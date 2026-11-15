@@ -1,6 +1,7 @@
 import {playOpenLara} from './openlara_play.mjs';
 import {playDoom} from './doom_play.mjs';
 import {playGodot} from './godot_play.mjs';
+import {preloadAssets} from './asset_cache.mjs';
 let draws=0;
 for(const type of [globalThis.WebGLRenderingContext,globalThis.WebGL2RenderingContext])if(type)for(const name of ['drawArrays','drawElements','drawArraysInstanced','drawElementsInstanced']){const original=type.prototype[name];if(original)type.prototype[name]=function(...args){draws++;return Reflect.apply(original,this,args);};}
 let game, token, origin, starting = false, timer;
@@ -9,6 +10,14 @@ const size = () => {if (origin) send({kind:'size',height:document.documentElemen
 window.addEventListener('message', async event => {
   if (event.source !== parent || event.data?.channel !== 'cpp-inception-game') return;
   const data = event.data;
+  if(data.kind==='preload'&&!starting){
+    token=data.token;origin=event.origin;
+    try{
+      await preloadAssets(data.player,(loaded,total)=>send({kind:'preload-progress',loaded,total}));
+      send({kind:'preload-complete'});
+    }catch(error){send({kind:'preload-error',error:String(error)});}
+    return;
+  }
   if (data.kind === 'start' && !starting) {
     starting = true; token = data.token; origin = event.origin;
     try {

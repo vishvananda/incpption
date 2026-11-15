@@ -14,14 +14,15 @@ const definitions = {
 const state = new WorkflowState(), jobs = new Map(), sourceNames = {}, grids = new Map(), downloads = new Map();
 const requestedProject=new URLSearchParams(location.search).get('project');
 let scenario, target = ['doom','lara','godot'].includes(requestedProject)?requestedProject:'doom', visiblePhase, automatic = false, player, playing = false, opening = false, gameLaunch = 0;
-let selectedGame = 'game', plan, comparisonInputs;
+let selectedGame = 'game', plan, comparisonInputs, preloadTarget;
+const gameData=new Map();
 const clock = seconds => `${Math.floor(seconds/60)}:${String(Math.floor(seconds%60)).padStart(2,'0')}`;
 const size = bytes => `${(bytes/1048576).toFixed(1)} MiB`;
 const busy = () => jobs.size > 0;
 const canPlay=()=>target!=='doom'||typeof WebAssembly.promising==='function'&&typeof WebAssembly.Suspending==='function';
 function targetNote(){
  const item=plan?.targets[target];
- $('target-note').textContent=!item?.available?item?.reason||'Loading project information…':!canPlay()?'Doom play needs JSPI support. Use Chrome or choose another project.':'';
+ $('target-note').textContent=!item?.available?item?.reason||'Loading project information…':!canPlay()?'Doom play needs JSPI support. Use Chrome or choose another project.':item?.longBuild?'Long build':'';
 }
 const phase = id => state.phase(scenario,target,id,sourceNames[isGame(id)?target:id]||[]);
 const projectId=id=>isGame(id)?target:definitions[id].project;
@@ -50,6 +51,7 @@ function canRun(id) {
 }
 function downloadFiles(ids) {return new Set(ids.flatMap(id => (isGame(id)?plan?.targets[target]?.stages?.[id]:plan?.stages[id]) || []));}
 function downloadSize(ids) {return [...downloadFiles(ids)].reduce((total,name) => total + (plan?.files[name] || 0), 0);}
+const fileSize=files=>(files||[]).reduce((total,name)=>total+(plan?.files[name]||0),0);
 function updateBadges() {
   for (const badge of document.querySelectorAll('[data-flow-size]')) {
     const bytes = [...new Set([...downloadFiles(paths[badge.dataset.flowSize]),...(plan?.targets[target]?.playFiles||[])])].reduce((n,path)=>n+(plan?.files[path]||0),0);
@@ -60,14 +62,14 @@ function updateBadges() {
 function addFlow(list, ids, compiler) {
   const fragment = document.createDocumentFragment(), seed = document.createElement('li');
   seed.className = 'endpoint seed';
-  seed.innerHTML = `<span class="dot" aria-hidden="true"></span><strong>${compiler} seed</strong><small>${compiler === 'cppgm' ? 'Self-compiled Wasm' : 'Wasm · clang 22'}</small>`;
+  seed.innerHTML = `<span class="dot" aria-hidden="true"></span><strong>${compiler} seed</strong><small>${compiler === 'cppgm' ? 'Self-compiled Wasm' : 'Wasm · clang 22'}</small><small class="setup-download" title="Compiler setup downloads before compilation starts. Clang includes LLD; both lanes use the same project inputs.">Setup ↓ ${size(fileSize(plan?.setup?.[compiler]))}</small>`;
   fragment.append(seed);
   for (const id of ids) {
     const row = phase(id), definition = definitions[id], node = document.createElement('li');
     node.className = `flow-node ${row.state}${visiblePhase === id ? ' selected' : ''}`;
     const button = document.createElement('button'); button.type = 'button'; button.dataset.phase = id;
     button.disabled = row.state !== 'done' && !canRun(id) || busy() && row.state === 'waiting';
-    button.innerHTML = `<span class="node-name">${definition.label}<span class="node-check">${row.state === 'done' ? id === 'match' ? '✓ matches' : '✓' : ''}</span></span><span class="node-description">${definition.detail}</span><span class="node-stats"><span>${row.rows.size} / ${row.names.length || '…'}</span><time>${phaseClock(row)}</time></span><span class="node-download" title="Cold stage download; shared inputs are counted once in the workflow badge.">↓ ${isGame(id) && plan && !plan.targets[target]?.available ? 'Package pending' : size(downloadSize([id]))}</span>`;
+    button.innerHTML = `<span class="node-name">${definition.label}<span class="node-check">${row.state === 'done' ? id === 'match' ? '✓ matches' : '✓' : ''}</span></span><span class="node-description">${definition.detail}</span><span class="node-stats"><span>${row.rows.size} / ${row.names.length || '…'}</span><time>${phaseClock(row)}</time></span><span class="node-download" title="${isGame(id)?'Identical source, headers and SDK in both lanes; downloaded once, before compilation.':'Cold stage download; shared inputs counted once in the workflow badge.'}">${isGame(id)?'Shared inputs':'Inputs'} ↓ ${isGame(id) && plan && !plan.targets[target]?.available ? 'Package pending' : size(isGame(id)?fileSize(plan?.targets[target]?.inputs):downloadSize([id]))}</span>`;
     button.setAttribute('aria-label', `${definition.label}: ${row.state === 'done' ? id === 'match' ? 'matches, view results' : 'built, view results' : row.state === 'active' ? 'building, view progress' : 'build phase'}`);
     button.onclick = () => {
       if (row.state === 'done' || row.state === 'active') {showPhase(id); return;}
@@ -98,7 +100,47 @@ function drawFlow() {
   $('rerun-phase').title = comparison ? 'Rerun both compilers' : 'Rerun this stage and clear later results';
   $('comparison-note').textContent = comparison ? 'Same source & SDK · O3 · equal workers · build times exclude loading' : '';
   for (const button of document.querySelectorAll('[data-journey]')) button.disabled = busy();
-  updateTime(); updateBadges();
+  updateTime(); updateBadges(); drawComparison(); drawGameData();
+}
+function drawComparison(){
+  const result=$('comparison-result'),a=phase('game'),b=phase('game-clang');
+  result.hidden=scenario!=='game'||a.state!=='done'||b.state!=='done';
+  if(result.hidden){result.replaceChildren();return;}
+  const cppgm=a.result.compileSeconds,clang=b.result.compileSeconds;
+  if(!(cppgm>0&&clang>0)){result.hidden=true;return;}
+  const winner=cppgm<=clang?'cppgm':'clang',ratio=Math.max(cppgm,clang)/Math.min(cppgm,clang);
+  result.innerHTML=`<strong>${ratio.toFixed(2)}×</strong><span>${cppgm===clang?'Equal build times':winner+' faster'}<span class="comparison-times">cppgm ${cppgm.toFixed(2)} s · clang ${clang.toFixed(2)} s</span></span>`;
+}
+function drawGameData(){
+  const element=$('game-data-download'),row=gameData.get(target);
+  element.hidden=!row;
+  if(!row)return;
+  element.querySelector('span').textContent=row.error?'Game data will download when you open the game.':row.done?`Game data ready · ${size(row.total)} cached`:`Game data ↓ ${size(row.loaded)} / ${size(row.total)} · ${row.paused?'paused':'downloading in background'}`;
+  const progress=element.querySelector('progress');progress.hidden=!!row.error;progress.max=row.total||1;progress.value=row.loaded;
+}
+function ensurePlayer(){
+  if(!player){
+    const url=window.incpptionPlayerURL||document.querySelector('meta[name=player-url]').content;
+    player=new PlayerSession($('game-surface'),{url,log:text=>{$('log').textContent+=text+'\n';}});
+    player.onprogress=({loaded,total})=>{$('game-status').textContent=`Loading project data: ${size(loaded)} / ${size(total)}`;};
+  }
+  return player;
+}
+function preloadGameData(){
+  const descriptor=plan?.targets[target]?.player;
+  if(!canPlay()||!descriptor?.assets.length||preloadTarget===target)return;
+  const project=target;preloadTarget=project;
+  const session=ensurePlayer();
+  const update=data=>{
+    const row=gameData.get(project)||{loaded:0,total:descriptor.assets.reduce((n,a)=>n+a.chunks.reduce((n,c)=>n+(c.encoded_bytes||c.size),0),0)};
+    if(data.kind==='preload-progress')Object.assign(row,{loaded:data.loaded,total:data.total,done:false,error:null,paused:false});
+    if(data.kind==='preload-complete')row.done=true;
+    if(data.kind==='preload-error')row.error=data.error;
+    gameData.set(project,row);window.lastGameDataDownload={project,...row};drawGameData();
+  };
+  session.onpreload=update;
+  update({kind:'preload-progress',loaded:0,total:descriptor.assets.reduce((n,a)=>n+a.chunks.reduce((n,c)=>n+(c.encoded_bytes||c.size),0),0)});
+  session.preload({...descriptor,baseURL:new URL(descriptor.baseURL,location.href).href}).catch(error=>update({kind:'preload-error',error:String(error)}));
 }
 function updateTime() {
   $('workflow-time').textContent = clock(state.totalSeconds(scenario, target, seconds));
@@ -187,6 +229,7 @@ function fail(message, cancelled=false) {
     projectEvent(id,cancelled?'cancel':'error'); terminate(id); paintGrid(id);
   }
   comparisonInputs?.close();comparisonInputs=null;
+  stopGame();
   automatic=false; drawFlow(); $('status').textContent=cancelled?'Cancelled. Use Rerun to try again.':'Build stopped. Open build details for the error.';
   $('log').textContent+=message+'\n';
   window.lastWorkflowEvent={kind:cancelled?'cancelled':'error',error:message};
@@ -246,9 +289,11 @@ function launch(id, args) {
         const now=performance.now();
         for (const [id,job] of jobs) {phase(id).compileStarted=now;job.session.coordinator.postMessage({kind:'start'});}
         $('status').textContent='Both compilers ready. Building the same files.';
+        preloadGameData();
       } else $('status').textContent='Waiting for both compiler seeds before starting the comparison…';
     }
     if (data.kind==='progress') {
+      preloadGameData();
       row.names[data.index]=data.name;row.running.add(data.index);paintGrid(id,data.index);
       if(scenario!=='game'||visiblePhase===id)projectEvent(id,'progress',{name:data.source||data.name});$('status').textContent=data.name;
     }
@@ -295,7 +340,7 @@ function chooseScenario(name) {
 for(const button of document.querySelectorAll('[data-journey]'))button.onclick=()=>chooseScenario(button.dataset.journey);
 $('build-target').onchange=()=>{
   if(busy())return;
-  target=$('build-target').value;window.activeBuildTarget=target;closeGame();
+  closeGame();stopGame();target=$('build-target').value;window.activeBuildTarget=target;
   const item=plan?.targets[target];
   for(const id of ['game','game-clang']){definitions[id].label=item?.label||target;definitions[id].detail=`Compile & link ${item?.name||target}`;}
   targetNote();
@@ -305,7 +350,9 @@ $('build-target').onchange=()=>{
 function closeGame(){if($('game-modal').open){$('game-modal').close();stopGame();}}
 function stopGame(){
   if(!playing&&!opening&&!player)return;
-  gameLaunch++;opening=false;player?.close();player=null;playing=false;window.gamePlaying=false;window.openLaraGame=null;
+  const download=gameData.get(preloadTarget);if(download&&!download.done)download.paused=true;
+  gameLaunch++;opening=false;player?.close();player=null;preloadTarget=null;playing=false;window.gamePlaying=false;window.openLaraGame=null;
+  drawGameData();
 }
 $('game-close').onclick=closeGame;$('game-modal').addEventListener('close',stopGame);
 $('game-modal').addEventListener('click',event=>{if(event.target===$('game-modal')){const r=$('game-modal').getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)closeGame();}});
@@ -314,9 +361,7 @@ async function openGame(id='game'){
   selectedGame=id;const launch=++gameLaunch;opening=true;
   $('game-modal-title').textContent=`${plan.targets[target].name} · built in your browser`;$('game-help').textContent=target==='godot'?'Create or open a project in the editor. Close to return to the build.':target==='doom'?'WASD to move · Mouse to aim and fire · Space to jump · Esc for menu. Touch controls are below the game.':'Arrow keys to move · Ctrl to act · Alt to jump · Esc for menu. Touch controls are below the game.';$('game-modal').showModal();$('game-status').textContent='Opening the game you just built…';delete window.gameError;
   try{
-    const url=window.incpptionPlayerURL||document.querySelector('meta[name=player-url]').content;
-    player=new PlayerSession($('game-surface'),{url,log:text=>{$('log').textContent+=text+'\n';}});
-    player.onprogress=({loaded,total})=>{$('game-status').textContent=`Downloading project data: ${size(loaded)} / ${size(total)}`;};
+    ensurePlayer();
     const game=await player.start(phase(selectedGame).result);if(launch!==gameLaunch)return;
     window.openLaraGame=game;opening=false;playing=true;window.gamePlaying=true;$('game-status').textContent='Running locally.';
   }catch(error){if(launch!==gameLaunch)return;opening=false;$('game-status').textContent=String(error);window.gameError=String(error);}
@@ -335,9 +380,8 @@ function updateRoutes(){
   const routes={game:[['cppgm',project],['clang',project]],inception:[['cppgm','cppgm ✓',project]],roundtrip:[['cppgm','clang','cppgm','cppgm ✓',project]]};
   for(const caption of document.querySelectorAll('[data-route]')){
     const fragment=document.createDocumentFragment();
-    for(const [index,chain]of routes[caption.dataset.route].entries()){
+    for(const chain of routes[caption.dataset.route]){
       const line=document.createElement('span');line.className='route-chain';
-      if(index){const vs=document.createElement('span');vs.className='route-vs';vs.textContent='vs';line.append(vs);}
       const start=document.createElement('span');start.textContent=chain[0];line.append(start);
       for(const name of chain.slice(1)){
         const step=document.createElement('span');step.className='route-step';

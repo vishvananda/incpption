@@ -1,0 +1,27 @@
+import assert from 'node:assert/strict';
+import {gzipSync} from 'node:zlib';
+import {assetBytes,preloadAssets,discardAsset} from '../web/asset_cache.mjs';
+const entries=new Map(),requests=[],bytes=new Uint8Array([1,2,3]);
+const store={match:async key=>entries.get(key)?.clone(),put:async(key,response)=>{entries.set(key,new Response(await response.arrayBuffer()));},delete:async key=>entries.delete(key)};
+globalThis.caches={open:async()=>store};
+let release;
+globalThis.fetch=async url=>{requests.push(url);if(url.includes('first'))await new Promise(resolve=>release=resolve);return new Response(gzipSync(bytes));};
+const baseURL='https://site.test/projects/doom/',url=baseURL+'assets/demo/first.bin';
+const player={baseURL,assets:[{name:'demo',chunks:[{path:'first.bin',size:3,encoded_bytes:23,sha256:'a'},{path:'second.bin',size:3,encoded_bytes:23,sha256:'b'}]}]},progress=[];
+const preload=preloadAssets(player,(loaded,total)=>progress.push([loaded,total]));
+while(!release)await new Promise(resolve=>setTimeout(resolve,0));
+const foreground=assetBytes(url,'a');release();
+await preload;assert.deepEqual(await foreground,bytes);
+assert.equal(requests.length,2,'Play duplicated an in-flight preload');
+assert.deepEqual(await assetBytes(url,'a'),bytes);assert.equal(requests.length,2,'cached replay downloaded again');
+assert.deepEqual(progress,[[0,46],[23,46],[46,46]]);
+await discardAsset(url,'a');assert.equal(entries.size,1,'a bad chunk was not evicted');
+// The digest is part of the key, so a later release cannot reuse stale data.
+globalThis.fetch=async url=>{requests.push(url);return new Response(bytes);};
+assert.deepEqual(await assetBytes(url,'new-digest'),bytes);assert.equal(requests.length,3);
+globalThis.caches={open:async()=>{throw Error('Storage unavailable');}};
+await assert.rejects(preloadAssets(player),/storage unavailable/i);
+assert.deepEqual(await assetBytes(url,'a'),bytes,'Play failed without browser storage');
+globalThis.caches={open:async()=>({...store,match:async()=>undefined,put:async()=>{throw Error('Quota exceeded');}})};
+assert.deepEqual(await assetBytes(url,'a'),bytes,'Play failed after a cache write error');
+console.log('PASS: encoded asset preload, in-flight reuse, cached replay, digest isolation, eviction and storage fallback');

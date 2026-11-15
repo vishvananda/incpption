@@ -21,11 +21,13 @@ def prepare_download_plan(output):
     for key,target in targets.items():
         prefix='projects/'+key
         if not(output/prefix/'manifest.json').exists():target['available']=False;continue
+        target['inputs']=sorted(set(package(prefix)))
+        target['player']={**json.loads((output/prefix/'manifest.json').read_text())['player'],'baseURL':prefix+'/'}
         target['stages']={'game':sorted(set(base+package(prefix))),'game-clang':sorted(set(base+package(prefix)+seeds))}
         target['playFiles']=[p.relative_to(output).as_posix()for directory in ['player','assets']for p in(output/prefix/directory).rglob('*')if p.is_file()]
     names=set(name for group in stages.values()for name in group)
     for target in targets.values():
         names.update(target.get('playFiles',[]))
         for group in target.get('stages',{}).values():names.update(group)
-    plan=dict(schema=1,files={name:(output/name).stat().st_size for name in sorted(names)},stages=stages,targets=targets)
+    plan=dict(schema=1,setup={'cppgm':sorted(set(base)),'clang':sorted(set(base+seeds))},files={name:(output/name).stat().st_size for name in sorted(names)},stages=stages,targets=targets)
     (output/'download-plan.json').write_text(json.dumps(plan,separators=(',',':'))+'\n');return plan

@@ -24,6 +24,7 @@
     "kind": "editor",
     "project": "godot",
     "package": "projects/godot/",
-    "description": "Game editor"
+    "description": "Game editor · Long build",
+    "longBuild": true
   }
 }

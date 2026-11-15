@@ -19,6 +19,9 @@ export async function fetchBytes(path, {signal}={}) {
   });
   const response = await fetch(path, {cache: 'no-cache', signal});
   if (!response.ok) throw Error(`${path}: HTTP ${response.status}`);
+  return decodeBytes(response);
+}
+export async function decodeBytes(response) {
   const bytes = new Uint8Array(await response.arrayBuffer());
   if (bytes[0] !== 0x1f || bytes[1] !== 0x8b) return bytes;
   const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'));

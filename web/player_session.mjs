@@ -13,6 +13,7 @@ export class PlayerSession {
       if (data.token !== this.token) return;
       if (data.kind === 'log') this.log(data.message);
       if(data.kind==='progress')this.onprogress?.(data);
+      if(data.kind?.startsWith('preload-'))this.onpreload?.(data);
       if (data.kind === 'draws') this.draws = data.count;
       if (data.kind === 'size') this.frame.style.height = Math.max(240, Math.min(1200, data.height)) + 'px';
       if (data.kind === 'playing') {this.draws = data.count; this.frame.focus(); this.startResolve?.(this);}
@@ -32,6 +33,10 @@ export class PlayerSession {
     if (this.closed) throw Error('Player closed');
     this.post({kind:'start', build:{game:build.game, player:build.player, project:build.project}});
     try {return await result;} finally {clearTimeout(this.timeout);}
+  }
+  async preload(player) {
+    await this.ready;
+    this.post({kind:'preload',player});
   }
   post(data) {if (!this.closed) this.frame.contentWindow.postMessage({channel:'cpp-inception-game',token:this.token,...data}, this.origin);}
   command(kind) {

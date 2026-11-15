@@ -20,6 +20,10 @@ const methods=[],requests=[],server=http.createServer((req,res)=>{
     await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);
     await page.waitForFunction(()=>window.lastProjectEvent?.kind==='source'&&!document.getElementById('run-workflow').disabled);
     assert.equal(await page.title(),'cppgm inception');
+    assert.equal(await page.locator('[data-journey=game] strong').textContent(),'compilation');
+    assert.equal(await page.locator('.route-vs').count(),0);
+    assert.equal(await page.locator('#flow .node-download').textContent(),await page.locator('#flow-clang .node-download').textContent(),'project inputs must be identical');
+    assert.notEqual(await page.locator('#flow .setup-download').textContent(),await page.locator('#flow-clang .setup-download').textContent(),'compiler setup belongs at the seed');
     assert.equal(await page.locator('.header-actions a').getAttribute('href'),'https://github.com/vishvananda/incpption');
     assert.equal(await page.locator('[data-flow-size=game]').textContent(),(()=>{const p=JSON.parse(fs.readFileSync(path.join(root,'download-plan.json')));return([...new Set([...p.targets.doom.stages.game,...p.targets.doom.stages['game-clang'],...p.targets.doom.playFiles])].reduce((n,f)=>n+p.files[f],0)/1048576).toFixed(1)+' MiB';})());
     for(const width of [320,390,768,1440]){
@@ -37,15 +41,24 @@ const methods=[],requests=[],server=http.createServer((req,res)=>{
       await page.locator('#build-target').selectOption(target);
       assert.equal(await page.locator('[data-phase=game] .node-name').textContent(),target==='doom'?'Doom 3':target==='godot'?'Godot':'Lara');
       assert.equal(await page.locator('#run-workflow').isEnabled(),true);
+      if(target==='godot')assert.match(await page.locator('#target-note').textContent(),/Long build/);
     }
     const m=JSON.parse(fs.readFileSync(path.join(root,'projects/lara/manifest.json'))),units=m.commands.length+m.archives.length+1;
     await page.locator('[data-phase=game]').click();
     assert.equal(await page.locator('#cancel').isEnabled(),true);
     assert.equal(await page.locator('#flow-rows .flow-node.active').count(),2);
+    await page.waitForFunction(()=>window.lastGameDataDownload?.project==='lara'&&window.lastGameDataDownload.loaded>0);
+    assert.equal(await page.locator('#cancel').isEnabled(),true,'game data did not preload during compilation');
     await page.waitForFunction(()=>window.lastGameBuild?.kind==='error'||window.lastWorkflowEvent?.kind==='error'||window.lastGameBuild?.kind==='complete'&&window.lastClangGameBuild?.kind==='complete',null,{timeout:600000});
     const report=await page.evaluate(()=>({cppgm:window.lastGameBuild,clang:window.lastClangGameBuild,error:window.lastWorkflowEvent?.kind==='error'?window.lastWorkflowEvent.error:null}));
     assert.equal(report.error,null);assert.equal(report.cppgm.kind,'complete');assert.equal(report.clang.kind,'complete');
     assert.equal(report.cppgm.workerCount,report.clang.workerCount);
+    assert.equal(await page.locator('#comparison-result').isVisible(),true);
+    const ratio=Math.max(report.cppgm.compileSeconds,report.clang.compileSeconds)/Math.min(report.cppgm.compileSeconds,report.clang.compileSeconds);
+    assert.equal(await page.locator('#comparison-result>strong').textContent(),ratio.toFixed(2)+'×');
+    await page.waitForFunction(()=>window.lastGameDataDownload?.done);
+    const assetRequests=requests.filter(url=>url.includes('/projects/lara/assets/'));
+    assert.equal(assetRequests.length,m.player.assets.reduce((n,a)=>n+a.chunks.length,0),'preload did not fetch each game chunk once');
     assert.equal(await page.locator('#units .done').count(),units);assert.equal(await page.locator('#units-clang .done').count(),units);
     for(const id of ['game','game-clang']){
       const before=await page.locator(`[data-phase="${id}"] time`).textContent();
@@ -53,7 +66,10 @@ const methods=[],requests=[],server=http.createServer((req,res)=>{
       assert.equal(await page.locator(`[data-phase="${id}"] time`).textContent(),before);
       assert.equal(await page.locator('#cancel').isEnabled(),false,'reviewing a result started a build');
     }
-    await page.locator('.journey-nav [data-journey=inception]').click();await page.locator('.journey-nav [data-journey=game]').click();
+    await page.locator('.journey-nav [data-journey=inception]').click();
+    assert.equal(await page.locator('#comparison-result').isVisible(),false,'another workflow showed the comparison result');
+    await page.locator('.journey-nav [data-journey=game]').click();
+    assert.equal(await page.locator('#comparison-result').isVisible(),true,'cached comparison lost its speedup');
     assert.equal(await page.locator('#units .done').count(),units,'changing workflows lost results');
     await page.locator('#build-target').selectOption('godot');await page.locator('#build-target').selectOption('lara');
     assert.equal(await page.locator('#units .done').count(),units,'changing targets lost results');
@@ -72,8 +88,15 @@ const methods=[],requests=[],server=http.createServer((req,res)=>{
       await page.waitForFunction(()=>window.openLaraGame?.drawCalls>100,null,{timeout:90000});
       await page.locator('#game-close').click();assert.equal(await page.evaluate(()=>window.gamePlaying),false);
     }
+    assert.equal(requests.filter(url=>url.includes('/projects/lara/assets/')).length,assetRequests.length,'Play downloaded preloaded game data again');
     await page.screenshot({path:path.join(out,'comparison-built.png'),fullPage:true});
+    for(const width of [320,390,768,1440]){
+      await page.setViewportSize({width,height:1000});
+      assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`completed comparison overflow at ${width}`);
+      await page.screenshot({path:path.join(out,`built-${width}.png`),fullPage:true});
+    }
     await page.locator('#rerun-phase').click();assert.equal(await page.locator('#cancel').isEnabled(),true);
+    assert.equal(await page.locator('#comparison-result').isVisible(),false,'rerun kept a stale speedup');
     await page.locator('#cancel').click();
     await page.waitForFunction(()=>document.getElementById('cancel').disabled);
     for(let n=0;workers.size&&n<100;n++)await page.waitForTimeout(100);

@@ -13,7 +13,7 @@ Choose a project and a workflow:
 
 | Workflow | What runs in your browser |
 | --- | --- |
-| compile | cppgm and Clang compile the same source at O3, with the same SDK and equal worker counts. Both start together. Each uses its own linker. |
+| compilation | cppgm and Clang compile the same source at O3, with the same SDK and equal worker counts. Both start together. Each uses its own linker. |
 | inception | cppgm builds itself. Every object and the final compiler must match the published bytes. That rebuilt compiler then builds the project. |
 | inception² | cppgm builds clang, clang builds cppgm, and that compiler rebuilds a matching cppgm. The matching compiler then builds the project. This is a long build. |
 
@@ -29,13 +29,18 @@ Use **Rerun** to build again and clear later results. Download badges estimate
 cold, compressed input downloads, counting shared files once per workflow. The comparison downloads shared
 inputs once and shares their memory between the two compiler pools.
 Comparison build times exclude seed loading. Workflow time includes loading.
+Compiler setup downloads appear at the start of each lane. Both lanes share
+the same source, headers and SDK. The result shows their measured build-time
+ratio. Game data downloads in the background during compilation and is cached
+on the player origin for Play and later runs. If browser storage is unavailable,
+Play downloads the data directly.
 This is a comparison on your device, not a general compiler benchmark.
 
 Source browsing loads small source shards. The compiler and SDK load only when
 you compile. The code viewer shows source, LowIR, WebAssembly or x86 assembly.
 Generated headers, JavaScript runtime glue and game assets are supplied inputs.
-Project SDK libraries are built from source. Doom loads its demo data when you
-choose Play; it requires a browser with WebAssembly JSPI support. A byte match checks reproduction of the pinned build, not correctness
+Project SDK libraries are built from source. Doom downloads its demo data during
+compilation; playing it requires a browser with WebAssembly JSPI support. A byte match checks reproduction of the pinned build, not correctness
 of every possible program.
 
 ## Run locally

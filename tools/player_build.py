@@ -9,7 +9,7 @@ parser.add_argument('--site', type=Path, required=True)
 parser.add_argument('--output', type=Path, required=True)
 args = parser.parse_args()
 args.output.mkdir(parents=True, exist_ok=False)
-for name in ['game_frame.html', 'game_frame.mjs', 'openlara_play.mjs', 'doom_play.mjs', 'godot_play.mjs', 'blob_parts.mjs', 'transport_bytes.mjs', 'game_exports.mjs', 'game_controls.mjs', 'game_controls.css', '_headers']:
+for name in ['game_frame.html', 'game_frame.mjs', 'openlara_play.mjs', 'doom_play.mjs', 'godot_play.mjs', 'blob_parts.mjs', 'asset_cache.mjs', 'transport_bytes.mjs', 'game_exports.mjs', 'game_controls.mjs', 'game_controls.css', '_headers']:
     shutil.copyfile(args.site / name, args.output / name)
 shutil.copytree(args.site / 'assets', args.output / 'assets',
                 ignore=lambda directory, names: [name for name in names if not name.startswith('game_controls.')])
