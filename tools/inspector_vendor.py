@@ -13,6 +13,11 @@ def prepare_vendor(destination):
     for name, version in [("iced-x86", "1.22.0"), ("wabt", "1.0.39"), ("prismjs", "1.30.0")]:
         if json.loads((modules / name / "package.json").read_text())["version"] != version:
             raise RuntimeError(f"expected {name} {version}; run npm ci in {HERE}")
+    if json.loads((modules / '@noble/hashes/package.json').read_text())['version'] != '2.4.0':
+        raise RuntimeError('expected @noble/hashes 2.4.0; run npm ci')
+    hashes = destination / 'noble'; hashes.mkdir()
+    for name in ['sha2.js', '_md.js', '_u64.js', 'utils.js', 'LICENSE']:
+        shutil.copyfile(modules / '@noble/hashes' / name, hashes / name)
     iced = (modules / "iced-x86/iced_x86.js").read_text()
     # The pinned npm entry is CommonJS. Keep the generated bindings intact and
     # replace only their export spelling and synchronous Node-only Wasm loader.

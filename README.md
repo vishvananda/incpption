@@ -33,15 +33,17 @@ inputs once and shares their memory between the two compiler pools.
 Comparison build times exclude seed loading. Workflow time includes loading.
 Compiler setup downloads appear at the start of each lane. Both lanes share
 the same source, headers and SDK. The result shows their measured build-time
-ratio. Game data downloads in the background during compilation and is cached
+ratio. Desktop game data downloads in the background during compilation and is cached
 on the player origin for Play and later runs. If browser storage is unavailable,
-Play downloads the data directly.
+Play downloads the data directly. Phones wait until compilation finishes before
+caching large game data, so Doom’s download does not overlap the compiler heaps.
 This is a comparison on your device, not a general compiler benchmark.
 
 Phones and Safari default to two compile workers, one in each comparison lane.
 Phones load the linker in a fresh worker after compilation. Releases with the optional WASI host helpers reuse one compiler
 instance per worker: its data, heap and stack are reset between files while
-its reserved memory and browser execution state stay warm. Clang also reuses
+its reserved memory and browser execution state stay warm. Clang’s executable is hashed and compiled as a stream. On phones its single
+compiler worker loads it directly, without another coordinator module. Clang also reuses
 its Wasm instance, with fresh JavaScript runtime and filesystem state for each
 file. Both optimizations apply on phones and desktops. Older cppgm releases
 release each phone worker after a file.

@@ -1,17 +1,12 @@
 import {growingFileClass} from './file_buffers.mjs';
 import {WASI, File, OpenFile, ConsoleStdout, PreopenDirectory, Directory} from './shim/index.js';
-import {fetchBytes} from './transport_bytes.mjs';
+import {fetchBytes, hash} from './transport_bytes.mjs';
 import {bundleLayers} from './bundle_layers.mjs';
 import {errorText} from './error_text.mjs';
 import {runWasiProcess} from './wasi_process.mjs';
-export {fetchBytes};
+export {fetchBytes, hash};
 
 export const encoder = new TextEncoder();
-const hex = bytes => Array.from(bytes, n => n.toString(16).padStart(2, '0')).join('');
-export const hash = async bytes => {
-  if(typeof SharedArrayBuffer !== 'undefined' && bytes.buffer instanceof SharedArrayBuffer)bytes=new Uint8Array(bytes);
-  return hex(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)));
-};
 export function equal(a, b, name) {
   const end = Math.min(a.length, b.length);
   let offset = 0;
@@ -76,7 +71,7 @@ export function shareBytes(bytes) {
   return shared;
 }
 
-export async function loadCompiler(prefix = '', {shareInputs = false, inputProfile = 'wasm', compileModule = true} = {}) {
+export async function loadCompiler(prefix = '', {shareInputs = false, inputProfile = 'wasm', compileModule = true, loadSeedBytes = true} = {}) {
     const manifestBytes = await fetchBytes(prefix + 'manifest.json');
     const expectedManifest = new TextDecoder().decode(await fetchBytes(prefix + 'manifest.sha256')).trim();
     if (await hash(manifestBytes) !== expectedManifest) throw Error('manifest hash mismatch');
@@ -88,11 +83,14 @@ export async function loadCompiler(prefix = '', {shareInputs = false, inputProfi
       if (await hash(await fetchBytes(prefix + path)) !== expected) throw Error(`runner changed: ${path}`);
     const layers = [];
     const root = mountLayers(layers);
-    const seedRecord = JSON.parse(new TextDecoder().decode(await fetchBytes(prefix + 'w1-complete.json')));
-    if (seedRecord.manifest !== expectedManifest) throw Error('seed used a different input manifest');
-    const seedBytes = await fetchBytes(prefix + 'inputs/w1/cppgm.wasm');
-    if (await hash(seedBytes) !== seedRecord.commands.at(-1).sha256) throw Error('seed hash mismatch');
-    const module = compileModule ? await WebAssembly.compile(seedBytes) : null;
+    let seedBytes = null, module = null;
+    if (loadSeedBytes) {
+      const seedRecord = JSON.parse(new TextDecoder().decode(await fetchBytes(prefix + 'w1-complete.json')));
+      if (seedRecord.manifest !== expectedManifest) throw Error('seed used a different input manifest');
+      seedBytes = await fetchBytes(prefix + 'inputs/w1/cppgm.wasm');
+      if (await hash(seedBytes) !== seedRecord.commands.at(-1).sha256) throw Error('seed hash mismatch');
+      module = compileModule ? await WebAssembly.compile(seedBytes) : null;
+    } else if (compileModule) throw Error('Compiler module requires seed bytes');
     const compiler = {manifest, expectedManifest, root, seedBytes, module, layers};
     const loaded = new Set(), cache = new Map();
     compiler.ensureInputs = async (profile = 'wasm') => {

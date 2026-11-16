@@ -1,3 +1,4 @@
+import {memoryImage, restoreMemory} from './memory_image.mjs';
 // Qualified, single-threaded compiler commands have a static function table and
 // only the host stack pointer changes outside linear memory. The source-built
 // host helpers expose that pointer without changing the compiler entry point.
@@ -20,8 +21,7 @@ export async function runWasiProcess(module, wasi) {
       // A command starts with its original data/BSS image and zeroed heap.
       // Keep the physical capacity and WebKit's per-instance execution state.
       const memory = new Uint8Array(state.instance.exports.memory.buffer);
-      memory.set(state.initial);
-      memory.fill(0, state.initial.length, state.usedBytes);
+      restoreMemory(memory, state.initial, state.usedBytes);
       state.instance.exports[restoreStack](state.stack);
     } else if (supportsProcessReuse(module)) {
       state = {active: wasi};
@@ -35,7 +35,7 @@ export async function runWasiProcess(module, wasi) {
       // allocator at the enlarged physical memory end on every invocation.
       if ((exports[heapBreak]() >>> 0) !== exports.memory.buffer.byteLength)
         throw Error('Reusable compiler has an invalid initial heap break');
-      state.initial = new Uint8Array(exports.memory.buffer).slice();
+      state.initial = memoryImage(new Uint8Array(exports.memory.buffer));
       state.stack = exports[stackPointer]();
       processes.set(module, state);
     } else {
@@ -44,7 +44,7 @@ export async function runWasiProcess(module, wasi) {
     const status = wasi.start(state.instance);
     if (state.initial) {
       state.usedBytes = state.instance.exports[heapBreak]() >>> 0;
-      if (state.usedBytes < state.initial.length || state.usedBytes > state.instance.exports.memory.buffer.byteLength)
+      if (state.usedBytes < state.initial.capacity || state.usedBytes > state.instance.exports.memory.buffer.byteLength)
         throw Error('Reusable compiler has an invalid heap break');
     }
     return {status, memoryBytes: state.instance.exports.memory.buffer.byteLength};

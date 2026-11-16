@@ -159,6 +159,8 @@ def main():
         path.write_text(content)
     shutil.copyfile(output / 'wasi_demo.html', output / 'index.html')
     prepare_vendor(output / 'vendor')
+    seed_loader = output / 'seed_package.mjs'
+    seed_loader.write_text(seed_loader.read_text().replace("'@noble/hashes/sha2.js'", "'./vendor/noble/sha2.js'"))
     shutil.copyfile(ROOT / 'config/_headers', output / '_headers')
     credits = (payload / 'credits.html').read_text().replace('href="manifest.json"', 'href="compiler/manifest.json"')
     credits = credits.replace('href="openlara/manifest.json"', 'href="game/manifest.json"')

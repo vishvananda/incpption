@@ -37,3 +37,8 @@ export async function fetchJoined(parts,size,sha256,{shared=false}={}) {
   for(const part of parts){const chunk=await fetchBytes(part.path);if(chunk.length!==part.size)throw Error('Large source chunk size differs');bytes.set(chunk,part.offset);}
   return bytes;
 }
+
+export async function hash(bytes) {
+  if (typeof SharedArrayBuffer !== 'undefined' && bytes.buffer instanceof SharedArrayBuffer) bytes = new Uint8Array(bytes);
+  return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), n => n.toString(16).padStart(2, '0')).join('');
+}

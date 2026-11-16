@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {buildPolicy} from '../web/build_policy.mjs';
+import {buildPolicy, backgroundDataAllowed} from '../web/build_policy.mjs';
 import {errorText} from '../web/error_text.mjs';
 const desktop={userAgent:'Macintosh',platform:'MacIntel',maxTouchPoints:0,hardwareConcurrency:12};
 assert.equal(buildPolicy(desktop).defaultWorkers,8);
@@ -24,3 +24,9 @@ assert.match(errorText(safari),/Out of memory/);assert.match(errorText(safari),/
 const chrome=Error('compile failed');assert.equal(errorText(chrome),chrome.stack);
 assert.equal(errorText('plain failure'),'plain failure');assert.equal(errorText(null),'null');
 console.log('PASS: phone/iPad/desktop worker budgets and Safari exception messages');
+
+assert.equal(backgroundDataAllowed({lowMemory:true,activeBuilds:2,bytes:480*1048576}),false);
+assert.equal(backgroundDataAllowed({lowMemory:true,activeBuilds:1,bytes:480*1048576}),false);
+assert.equal(backgroundDataAllowed({lowMemory:true,activeBuilds:2,bytes:5*1048576}),true);
+assert.equal(backgroundDataAllowed({lowMemory:false,activeBuilds:2,bytes:480*1048576}),true);
+assert.equal(backgroundDataAllowed({lowMemory:true,activeBuilds:0,bytes:480*1048576}),true);

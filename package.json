@@ -4,6 +4,7 @@
   "description": "Watch cppgm and Clang compile locally in a browser.",
   "dependencies": {
     "@bjorn3/browser_wasi_shim": "0.4.2",
+    "@noble/hashes": "2.4.0",
     "iced-x86": "1.22.0",
     "playwright": "1.63.0",
     "prismjs": "1.30.0",
@@ -23,7 +24,7 @@
     "test:transport": "python3 tests/transport_test.py && node tests/bundle_layers_test.mjs",
     "test:safari": "node tests/safari_browser_test.cjs dist",
     "test:comparison": "node tests/comparison_browser_test.cjs dist build/comparison-results",
-    "test:workflow": "node tests/build_policy_test.mjs && node tests/workflow_state_test.mjs && node tests/input_broker_test.mjs && node tests/file_buffers_test.mjs && node tests/asset_cache_test.mjs && node tests/wasi_process_test.mjs && node tests/emscripten_process_test.mjs",
+    "test:workflow": "node tests/build_policy_test.mjs && node tests/workflow_state_test.mjs && node tests/input_broker_test.mjs && node tests/file_buffers_test.mjs && node tests/asset_cache_test.mjs && node tests/wasi_process_test.mjs && node tests/emscripten_process_test.mjs && node tests/seed_stream_test.mjs && node tests/memory_image_test.mjs && node tests/build_journal_test.mjs",
     "test:projects": "node tests/projects_browser_test.cjs dist all build/project-results",
     "test:players": "node tests/project_players_test.cjs dist godot build/project-results"
   },

@@ -31,6 +31,13 @@ const requests=[],server=http.createServer((req,res)=>{
   await page.goto((origin||`http://127.0.0.1:${server.address().port}`)+'/index.html');
   await page.waitForFunction(()=>!document.getElementById('run-workflow').disabled&&window.lastProjectEvent?.kind==='source');
   assert.equal(await page.evaluate(()=>crossOriginIsolated),true,'page is not isolated with the deployed header rules');
+  await page.evaluate(async()=>{const {BuildJournal}=await import('./build_journal.mjs');new BuildJournal().update('game-clang',{project:'doom',label:'Doom 3',step:'doom/neo/idlib/math/Matrix.cpp'},true);});
+  await page.reload();
+  await page.waitForFunction(()=>window.lastProjectEvent?.kind==='source'&&!document.getElementById('run-workflow').disabled);
+  assert.equal(await page.evaluate(()=>window.lastInterruptedBuild?.phases[0].step),'doom/neo/idlib/math/Matrix.cpp');
+  assert.equal(await page.locator('.diagnostics').evaluate(e=>e.open),true);
+  assert.match(await page.locator('#log').textContent(),/interrupted by a page reload/);
+
   const diagnostic=await page.evaluate(async()=>{
     // An invalid module tests the actual worker's Safari error reporting.
     const worker=new Worker('./compile_worker.mjs',{type:'module'}),channel=new MessageChannel();
@@ -92,6 +99,25 @@ const requests=[],server=http.createServer((req,res)=>{
   await page.waitForFunction(()=>window.gamePlaying||window.gameError,null,{timeout:180000});
   assert.equal(await page.evaluate(()=>window.gameError),undefined);
   await page.locator('#game-close').click();
+  if(mobile){
+    await page.locator('#build-target').selectOption('doom');
+    await page.locator('[data-journey=game]').click();
+    await page.locator('[data-phase=game]').click();
+    await page.waitForFunction(()=>window.lastGameBuild?.kind==='progress'||window.lastWorkflowEvent?.kind==='error',null,{timeout:180000});
+    assert.notEqual(await page.evaluate(()=>window.lastWorkflowEvent?.kind),'error');
+    assert.equal(await page.locator('#game-frame').count(),0,'large game preloading created a player while phone compilers were live');
+    assert.match(await page.locator('#game-data-download').textContent(),/after compilation/);
+    const doomProgress=setInterval(()=>page.evaluate(()=>({cppgm:document.getElementById('completed').textContent,clang:document.getElementById('completed-clang').textContent,error:window.lastWorkflowEvent?.error})).then(row=>console.log('doom',JSON.stringify(row))).catch(()=>{}),15000);
+    try{await page.waitForFunction(()=>window.lastWorkflowEvent?.kind==='error'||window.lastGameBuild?.kind==='complete'&&window.lastClangGameBuild?.kind==='complete',null,{timeout:1200000});}
+    finally{clearInterval(doomProgress);}
+    report.doom=await page.evaluate(()=>({cppgm:window.lastGameBuild,clang:window.lastClangGameBuild,error:window.lastWorkflowEvent?.error}));
+    assert.equal(report.doom.error,undefined);assert.equal(report.doom.cppgm.kind,'complete');assert.equal(report.doom.clang.kind,'complete');
+    const expected=JSON.parse(fs.readFileSync(path.join(root,'projects/doom/manifest.json')));
+    assert.equal(report.doom.cppgm.sha256,expected.link.sha256);
+    assert.equal(report.doom.cppgm.workerCount,1);assert.equal(report.doom.clang.workerCount,1);
+    if(reusable)assert.equal(report.doom.cppgm.retiredWorkers,1);
+    assert.equal(report.doom.clang.retiredWorkers,1);
+  }
   assert.deepEqual(errors,[]);
   fs.writeFileSync(path.join(out,'report.json'),JSON.stringify({...report,passed:true},null,2));
   console.log('PASS: WebKit compiles and links with both compilers, plays both outputs, cancels and reproduces the self-built compiler');

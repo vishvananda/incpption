@@ -1,30 +1,48 @@
-import {fetchBytes, hash} from './wasi_runtime.mjs';
-// Large executables are split independently of filesystem input bundles. Keep
-// just one final buffer and at most two decoded chunks in flight.
+import {fetchBytes, hash} from './transport_bytes.mjs';
+import {sha256} from '@noble/hashes/sha2.js';
+
+// Validate and compile one decoded chunk at a time. No complete executable or
+// whole-file WebCrypto input copy is retained alongside the compiled module.
+export async function compileSeed(tool, prefix = 'clang-seed/') {
+  let offset = 0;
+  if (!Number.isSafeInteger(tool.bytes) || tool.bytes <= 0 || tool.bytes > 512*1048576 || !Array.isArray(tool.chunks))
+    throw Error('Invalid compiler seed');
+  for (const row of tool.chunks) {
+    if (!/^[\w.-]+\.bin$/.test(row.path) || !Number.isSafeInteger(row.size) || row.size <= 0 || row.size > tool.bytes-offset)
+      throw Error('Invalid compiler seed chunk');
+    offset += row.size;
+  }
+  if (offset !== tool.bytes) throw Error('Incomplete compiler seed');
+  const digest = sha256.create(), abort = new AbortController();
+  let next = 0, cancelled = false;
+  const stream = new ReadableStream({
+    async pull(controller) {
+      try {
+        if (next === tool.chunks.length) {
+          const actual = Array.from(digest.digest(), n => n.toString(16).padStart(2, '0')).join('');
+          if (actual !== tool.sha256) throw Error('Compiler seed changed');
+          controller.close(); return;
+        }
+        const row = tool.chunks[next++], part = await fetchBytes(prefix + row.path, {signal: abort.signal});
+        if (part.length !== row.size || await hash(part) !== row.sha256) throw Error('Compiler seed chunk changed');
+        digest.update(part); controller.enqueue(part);
+      } catch (error) {if (!cancelled) controller.error(error);}
+    },
+    cancel() {cancelled = true; abort.abort(); digest.destroy();},
+  }, {highWaterMark: 0});
+  try {
+    return await WebAssembly.compileStreaming(new Response(stream, {headers: {'Content-Type': 'application/wasm'}}));
+  } finally {abort.abort(); digest.destroy();}
+}
+
 export async function loadSeed(name) {
   const bytes = await fetchBytes('clang-seed/manifest.json');
   const expected = new TextDecoder().decode(await fetchBytes('clang-seed/manifest.sha256')).trim();
   if (await hash(bytes) !== expected) throw Error('Clang seed manifest changed');
   const manifest = JSON.parse(new TextDecoder().decode(bytes)), tool = manifest.tools?.[name];
-  if (manifest.schema !== 1 || !tool || !Number.isSafeInteger(tool.bytes) || tool.bytes <= 0 || tool.bytes > 512*1048576)
+  if (manifest.schema !== 1 || !tool || !/^[\w.-]+\.mjs$/.test(tool.runtime?.path))
     throw Error('Invalid compiler seed');
-  const result = new Uint8Array(tool.bytes);
-  let offset = 0, next = 0;
-  const chunks = tool.chunks.map(row => {
-    if (!/^[\w.-]+\.bin$/.test(row.path) || !Number.isSafeInteger(row.size) || row.size <= 0 || row.size > tool.bytes-offset)
-      throw Error('Invalid compiler seed chunk');
-    const item = {...row, offset}; offset += row.size; return item;
-  });
-  if (offset !== tool.bytes || !/^[\w.-]+\.mjs$/.test(tool.runtime.path)) throw Error('Incomplete compiler seed');
-  await Promise.all(Array.from({length: Math.min(2, chunks.length)}, async () => {
-    while (next < chunks.length) {
-      const row = chunks[next++], part = await fetchBytes('clang-seed/' + row.path);
-      if (part.length !== row.size || await hash(part) !== row.sha256) throw Error('Compiler seed chunk changed');
-      result.set(part, row.offset);
-    }
-  }));
-  if (await hash(result) !== tool.sha256) throw Error('Compiler seed changed');
   const runtime = await fetchBytes('clang-seed/' + tool.runtime.path);
   if (await hash(runtime) !== tool.runtime.sha256) throw Error('Compiler seed runtime changed');
-  return {module: await WebAssembly.compile(result), runtime: new URL('clang-seed/' + tool.runtime.path, self.location).href};
+  return {module: await compileSeed(tool), runtime: new URL('clang-seed/' + tool.runtime.path, self.location).href};
 }

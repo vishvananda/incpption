@@ -12,18 +12,19 @@ self.onmessage=async({data})=>{
   const started=performance.now(),pool=new CompilePool(data.ports, data);
   try{
     postMessage({kind:'loading',message:'Checking compiler, project and supporting source'});
-    const compiler=await loadCompiler('compiler/',{shareInputs:true,inputProfile:'none',compileModule:data.compiler!=='clang'});
+    const compiler=await loadCompiler('compiler/',{shareInputs:true,inputProfile:'none',compileModule:data.compiler!=='clang',loadSeedBytes:data.compiler!=='clang'});
     const {root,layers,seedBytes,expectedManifest}=compiler;
     let module=compiler.module;
     if(data.compilerBytes){equal(seedBytes,data.compilerBytes,'rebuilt compiler');module=await WebAssembly.compile(data.compilerBytes);}
     const {manifest,expected}=await loadGamePackage(compiler,{shared:true,prefix:data.package||'projects/lara/'});
     if(manifest.schema!==2)throw Error('A complete project package is required');
     root.contents.set('build',new Directory([]));
-    const clang=data.compiler==='clang'?await loadSeed('clang'):null,lld=clang&&!data.lowMemory?await loadSeed('lld'):null;
+    const childSeed=data.compiler==='clang'&&data.lowMemory&&data.workerCount===1;
+    const clang=data.compiler==='clang'?(childSeed?{seed:'clang'}:await loadSeed('clang')):null,lld=clang&&!data.lowMemory?await loadSeed('lld'):null;
     const units=[...manifest.commands,...manifest.archives,manifest.link];
     postMessage({kind:'ready',sources:units.map(row=>row.name),unitSources:units.map(row=>row.source||null),
       categories:units.map(row=>row.category||'link'),workerCount:data.workerCount,revision:compiler.manifest.revision});
-    await pool.initialize(clang?.module||module,layers,clang?{runtime:clang.runtime,program:'clang++'}:null);
+    await pool.initialize(clang?.module||module,layers,clang?{runtime:clang.runtime,seed:clang.seed,program:'clang++'}:null);
     if(data.barrier){const ready=new Promise(resolve=>{release=resolve;});postMessage({kind:'prepared'});await ready;release=null;}
     const compileStarted=performance.now();
     const tasks=manifest.commands.map((row,index)=>({...row,sourceDateEpoch:manifest.source_date_epoch,args:clang?clangCompileArgs(row.args,row.language,manifest.source_date_epoch,manifest.id==='godot'):row.args,

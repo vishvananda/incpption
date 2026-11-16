@@ -20,3 +20,6 @@ manifests and the deployed Credits page identify these inputs and licenses.
 third_party/runtime/emscripten_sjlj.c adapts Emscripten's compiler-rt
 setjmp support, copyright 2020 The Emscripten Authors, under its MIT and
 University of Illinois/NCSA licenses. See third_party/emscripten-LICENSE and the frozen SDK notices.
+
+Incremental SHA-256 uses @noble/hashes, copyright Paul Miller, under the MIT
+license. See the deployed vendor/noble/LICENSE.

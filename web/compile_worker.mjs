@@ -2,6 +2,9 @@ import {mountLayers, insert, lookup, fileView, invoke} from './wasi_runtime.mjs'
 import {invokeEmscripten} from './emscripten_host.mjs';
 import {errorText} from './error_text.mjs';
 import {clangAssemblyArgs} from './clang_arguments.mjs';
+import {loadSeed} from './seed_package.mjs';
+import {supportsEmscriptenProcessReuse} from './emscripten_process.mjs';
+import {supportsProcessReuse} from './wasi_process.mjs';
 let root, module, layers, host;
 self.onmessage = ({data: {port}}) => {
   port.onmessage = async ({data}) => {
@@ -10,7 +13,8 @@ self.onmessage = ({data: {port}}) => {
         layers = data.layers; host = data.host;
         root = host ? null : mountLayers(layers);
         module = data.module;
-        port.postMessage({kind: 'ready'});
+        if(host?.seed){const loaded=await loadSeed(host.seed);module=loaded.module;host={...host,runtime:loaded.runtime};}
+        port.postMessage({kind: 'ready',reuseProcess:host?supportsEmscriptenProcessReuse(module,host.program):supportsProcessReuse(module)});
         return;
       }
       if (data.kind !== 'compile' || (!root && !host) || !module) throw Error('Compiler worker is not initialized');

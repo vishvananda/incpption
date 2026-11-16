@@ -12,3 +12,9 @@ export function buildPolicy(device = navigator, media = globalThis.matchMedia) {
     defaultWorkers: [8, 4, 2, 1].find(n => n <= Math.min(lowMemory || webkit ? 2 : maximum, cores)),
     recycleEvery: lowMemory ? 1 : 0};
 }
+
+// Keep large game-data caching out of the peak with two phone compilers live.
+// Desktop downloads still overlap compilation; phone caches wait for both lanes.
+export function backgroundDataAllowed({lowMemory, activeBuilds, bytes}) {
+  return !lowMemory || activeBuilds === 0 || bytes <= 32 * 1048576;
+}

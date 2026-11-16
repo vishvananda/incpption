@@ -1,9 +1,5 @@
-import {fetchBytes,fetchJoined} from './transport_bytes.mjs';
+import {fetchBytes,fetchJoined,hash} from './transport_bytes.mjs';
 
-async function hash(bytes) {
-  if (typeof SharedArrayBuffer !== 'undefined' && bytes.buffer instanceof SharedArrayBuffer) bytes = new Uint8Array(bytes);
-  return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), n => n.toString(16).padStart(2, '0')).join('');
-}
 function share(bytes, enabled) {
   if (!enabled || !globalThis.crossOriginIsolated || typeof SharedArrayBuffer === 'undefined' || bytes.buffer instanceof SharedArrayBuffer) return bytes;
   const result = new Uint8Array(new SharedArrayBuffer(bytes.length)); result.set(bytes); return result;

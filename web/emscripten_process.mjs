@@ -1,3 +1,4 @@
+import {memoryImage, restoreMemory} from './memory_image.mjs';
 // The pinned single-threaded Clang has a fixed function table and function-only
 // imports. Keep its Wasm instance warm, but give every invocation a fresh JS
 // runtime/FS and restore the memory image from before constructors ran.
@@ -17,8 +18,7 @@ export function emscriptenInstance(module, imports, program) {
   if (state) {
     state.active = imports;
     const memory = new Uint8Array(state.instance.exports.memory.buffer);
-    memory.set(state.initial);
-    memory.fill(0, state.initial.length);
+    restoreMemory(memory, state.initial);
     state.instance.exports._emscripten_stack_restore(state.stack);
   } else {
     state = {active: imports};
@@ -31,11 +31,7 @@ export function emscriptenInstance(module, imports, program) {
     const memory = new Uint8Array(state.instance.exports.memory.buffer);
     if (typeof SharedArrayBuffer !== 'undefined' && memory.buffer instanceof SharedArrayBuffer)
       throw Error('Reusable Clang processes require unshared memory');
-    // The 64 MiB initial memory includes a mostly zero stack and heap. Store
-    // only its initialized prefix; reset the rest to zero on subsequent calls.
-    let end = memory.length;
-    while (end && memory[end - 1] === 0) --end;
-    state.initial = memory.slice(0, end);
+    state.initial = memoryImage(memory);
     state.stack = state.instance.exports.emscripten_stack_get_current();
     processes.set(module, state);
   }

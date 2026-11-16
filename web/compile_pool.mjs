@@ -39,14 +39,16 @@ export class CompilePool {
   async initialize(module, layers, host = null, count = this.slots.length) {
     if (!Number.isInteger(count) || count < 1 || count > this.slots.length) throw Error('Invalid active worker count');
     this.activeSlots = this.slots.slice(0, count);
-    this.reuseProcess = host ? supportsEmscriptenProcessReuse(module, host.program) : supportsProcessReuse(module);
+    this.reuseProcess = module ? (host ? supportsEmscriptenProcessReuse(module, host.program) : supportsProcessReuse(module)) : false;
     this.recycleEvery = this.reuseProcess ? 0 : this.defaultRecycleEvery;
     this.init = {kind: 'init', module, layers, host};
-    await Promise.all(this.activeSlots.map(async slot => {
+    const ready = await Promise.all(this.activeSlots.map(async slot => {
       if (!slot.port) this.attach(slot, await this.request('replace', slot.index));
       slot.uses = 0;
-      await this.send(slot, this.init);
+      return await this.send(slot, this.init);
     }));
+    this.reuseProcess = ready.every(row=>row.reuseProcess??this.reuseProcess);
+    this.recycleEvery = this.reuseProcess ? 0 : this.defaultRecycleEvery;
   }
   async retire(slot) {
     if (!slot.port || !this.control) return;

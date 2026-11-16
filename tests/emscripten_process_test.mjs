@@ -43,5 +43,10 @@ const port = {postMessage() {queueMicrotask(() => port.onmessage({data: {kind: '
 const pool = new CompilePool([port], {recycleEvery: 1});
 await pool.initialize(module, [], {program: 'clang++'}); assert.equal(pool.recycleEvery, 0);
 await pool.initialize(module, [], {program: 'wasm-ld'}); assert.equal(pool.recycleEvery, 1);
+await pool.initialize(null, [], {program: 'clang++', seed: 'clang'}); assert.equal(pool.recycleEvery, 1);
+const negotiated = {postMessage() {queueMicrotask(() => negotiated.onmessage({data: {kind: 'ready', reuseProcess: true}}));}, close() {}};
+const child = new CompilePool([negotiated], {recycleEvery: 1});
+await child.initialize(null, [], {program: 'clang++', seed: 'clang'}); assert.equal(child.recycleEvery, 0, 'worker-loaded seeds lost process reuse');
+child.close();
 pool.close();
 console.log('PASS: Clang reuses Wasm memory and execution state with fresh imports, stack and heap; failures retire processes');
