@@ -17,6 +17,11 @@ on:
         type: choice
         options: ['worker', 'main-thread-probe']
         default: worker
+      mode:
+        description: Full journey or comparison timing only
+        type: choice
+        options: ['full', 'comparison']
+        default: full
 permissions:
   contents: read
 jobs:
@@ -34,6 +39,7 @@ jobs:
           SAFARI_TEST_ORIGIN: ${{ inputs.origin }}
           SAFARI_TEST_WORKERS: ${{ inputs.workers }}
           SAFARI_TEST_EXECUTION: ${{ inputs.execution }}
+          SAFARI_TEST_MODE: ${{ inputs.mode }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

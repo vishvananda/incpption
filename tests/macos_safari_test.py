@@ -14,10 +14,11 @@ import urllib.request
 ORIGIN = os.environ.get('SAFARI_TEST_ORIGIN', 'https://incpption.com').rstrip('/')
 WORKERS = os.environ.get('SAFARI_TEST_WORKERS', '8')
 EXECUTION = os.environ.get('SAFARI_TEST_EXECUTION', 'worker')
+MODE = os.environ.get('SAFARI_TEST_MODE', 'full')
 OUT = Path(os.environ.get('SAFARI_TEST_OUTPUT', 'build/macos-safari'))
 OUT.mkdir(parents=True, exist_ok=True)
 SESSION = ''
-REPORT = {'origin': ORIGIN, 'workers': int(WORKERS), 'execution': EXECUTION, 'system': platform.platform()}
+REPORT = {'origin': ORIGIN, 'workers': int(WORKERS), 'execution': EXECUTION, 'mode': MODE, 'system': platform.platform()}
 
 with socket.socket() as listener:
     listener.bind(('127.0.0.1', 0))
@@ -137,6 +138,8 @@ with (OUT / 'safaridriver.log').open('w') as log:
                 postMessage(data,transfers=[]){if(this.closed)return;if(this.ready)this.frame.contentWindow.postMessage(data,location.origin,transfers);else this.queue.push([data,transfers]);}
                 terminate(){this.closed=true;this.queue=[];this.frame.remove();}
               };""")
+        if EXECUTION == 'worker':
+            js(Path(__file__).with_name('compile_events.js').read_text())
         js('''window.safariTestErrors=[];addEventListener('error',e=>safariTestErrors.push(e.message));
           addEventListener('unhandledrejection',e=>safariTestErrors.push(String(e.reason)));
           const target=document.getElementById('build-target');target.value='lara';target.dispatchEvent(new Event('change'));
@@ -146,22 +149,24 @@ with (OUT / 'safaridriver.log').open('w') as log:
         check_error()
         REPORT['cppgm'] = summary('lastGameBuild')
         REPORT['clang'] = summary('lastClangGameBuild')
-        for button in ['game-play', 'game-play-clang']:
-            play(button)
-        click('[data-journey=inception]')
-        click('[data-phase=match]')
-        wait('["complete","error"].includes(window.lastInceptionEvent?.kind)')
-        check_error()
-        REPORT['inception'] = summary('lastInceptionEvent')
-        assert REPORT['inception']['kind'] == 'complete', REPORT['inception']
-        click('[data-phase=game]')
-        wait('window.lastWorkflowEvent?.kind === "error" || window.lastGameBuild?.kind === "complete"')
-        check_error()
-        REPORT['rebuiltGame'] = summary('lastGameBuild')
-        play('game-play')
+        REPORT['compileEvents'] = js('return window.compileEvents || []')
+        if MODE != 'comparison':
+            for button in ['game-play', 'game-play-clang']:
+                play(button)
+            click('[data-journey=inception]')
+            click('[data-phase=match]')
+            wait('["complete","error"].includes(window.lastInceptionEvent?.kind)')
+            check_error()
+            REPORT['inception'] = summary('lastInceptionEvent')
+            assert REPORT['inception']['kind'] == 'complete', REPORT['inception']
+            click('[data-phase=game]')
+            wait('window.lastWorkflowEvent?.kind === "error" || window.lastGameBuild?.kind === "complete"')
+            check_error()
+            REPORT['rebuiltGame'] = summary('lastGameBuild')
+            play('game-play')
         assert not js('return window.safariTestErrors'), 'Safari raised a page error'
         REPORT['passed'] = True
-        print('PASS: real Safari comparison, both games, strict self-build and rebuilt-compiler game', flush=True)
+        print('PASS: real Safari ' + ('comparison timing' if MODE == 'comparison' else 'comparison, both games, strict self-build and rebuilt-compiler game'), flush=True)
     except Exception as error:
         REPORT['passed'] = False
         REPORT['error'] = str(error)
@@ -174,7 +179,7 @@ with (OUT / 'safaridriver.log').open('w') as log:
         raise
     finally:
         (OUT / 'report.json').write_text(json.dumps(REPORT, indent=2) + '\n')
-        print(json.dumps({key: value for key, value in REPORT.items() if key != 'inception'}), flush=True)
+        print(json.dumps({key: value for key, value in REPORT.items() if key not in ('inception', 'compileEvents')}), flush=True)
         if SESSION:
             try:
                 command('DELETE', f'/session/{SESSION}')
