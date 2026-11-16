@@ -3,3 +3,5 @@
 .opportunity-table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:13px;margin:18px 0}.opportunity-table caption{text-align:left;color:var(--muted);font-size:12px;margin-bottom:10px}.opportunity-table th,.opportunity-table td{padding:10px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;overflow-wrap:anywhere}.opportunity-table thead th{font-size:12px;color:var(--muted)}.opportunity-table th:first-child{width:46%}.opportunity-table th:nth-child(2){width:29%}.opportunity-table th:nth-child(3){width:25%}.opportunity-table tbody th{font-weight:400}.opportunity-table td:last-child{font-weight:600;color:var(--green)}
 
 .improvement-group{margin-top:30px}.improvement-group+ .improvement-group{padding-top:24px;border-top:1px solid var(--line)}.improvement-group h3{font-size:21px;margin-bottom:12px}.improvement-group p{font-size:14px}
+
+.intro h1{max-width:18ch}.scope>p:last-child{margin-bottom:0}

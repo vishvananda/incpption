@@ -39,6 +39,7 @@ jobs:
       - run: npx playwright install --with-deps chromium webkit
       - run: npm run check
       - run: node tests/highlight_test.mjs
+      - run: npm run test:report-source
       - run: npm run test:workflow
       - run: npm run test:transport
       - run: python3 tests/seed_transport_test.py

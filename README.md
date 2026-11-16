@@ -65,6 +65,24 @@ Project SDK libraries are built from source. Doom downloads its demo data during
 compilation; playing it requires a browser with WebAssembly JSPI support. A byte match checks reproduction of the pinned build, not correctness
 of every possible program.
 
+## Edit the report
+
+Edit [web/report.md](web/report.md). It contains the text, tables and chart data.
+HTML is generated during the normal site build.
+
+```sh
+npm run preview:report
+```
+
+Open http://127.0.0.1:8000/report.html and refresh after saving. This preview
+needs no compiler downloads. `npm run build:report` writes a standalone preview
+to `build/report-preview/`.
+
+The YAML header controls page metadata. Layout comments keep section links
+stable and mark the chart, stat cards and FAQ. An italic line above a table
+becomes its caption. The page shell is [web/report.template.html](web/report.template.html);
+styling and chart interaction remain in `web/report.css` and `web/report.mjs`.
+
 ## Run locally
 
 Use Python 3.11+ and Node 22+:

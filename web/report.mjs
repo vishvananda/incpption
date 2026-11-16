@@ -9,7 +9,7 @@ for (const input of document.querySelectorAll('input[name="metric"]')) {
       clang: Number(phase.dataset[`clang${key}`]),
       cppgm: Number(phase.dataset[`cppgm${key}`]),
     }));
-    const max = Math.max(...costs.map(cost => cost.clang));
+    const max = Math.max(...costs.flatMap(cost => [cost.clang, cost.cppgm])) || 1;
     const gap = costs.reduce((sum, cost) => sum + cost.clang - cost.cppgm, 0);
     document.querySelector('#metric-name').textContent = metric;
     phases.forEach((phase, index) => {
@@ -21,7 +21,7 @@ for (const input of document.querySelectorAll('input[name="metric"]')) {
         bar.querySelector('span').textContent = value;
         bar.setAttribute('aria-label', `${compiler === 'clang' ? 'Clang' : 'cppgm'}: ${value} billion ${metric}`);
       }
-      phase.querySelector('.share').textContent = `${Math.round((cost.clang - cost.cppgm) / gap * 100)}% of attributed gap`;
+      phase.querySelector('.share').textContent = `${gap ? Math.round((cost.clang - cost.cppgm) / gap * 100) : 0}% of attributed gap`;
     });
   });
 }

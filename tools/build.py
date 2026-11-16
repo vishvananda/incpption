@@ -128,10 +128,12 @@ def main():
     (output / 'clang-seed/manifest.sha256').write_text(sha(output / 'clang-seed/manifest.json') + '\n')
     prepare_download_plan(output)
     for path in (ROOT / 'web').rglob('*'):
-        if path.is_file():
+        if path.is_file() and not path.name.startswith('.') and not path.name.endswith(('.template.html', '.swp', '.swo', '~')):
             target = output / path.relative_to(ROOT / 'web')
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(path, target)
+    subprocess.run(['node', str(ROOT / 'tools/render_report.mjs'), '--output', str(output / 'report.html')],
+                   cwd=ROOT, check=True)
     # A cached shim from an older deployment can lack worker isolation headers.
     # Give the dependency graph a fresh URL without changing its pinned bytes.
     shim_identity = hashlib.sha256(json.dumps(manifest['shim_files'], sort_keys=True).encode() + (ROOT / 'config/_headers').read_bytes()).hexdigest()[:16]

@@ -28,7 +28,14 @@
     "test:report": "node tests/report_browser_test.cjs dist",
     "test:workflow": "node tests/build_policy_test.mjs && node tests/workflow_state_test.mjs && node tests/input_broker_test.mjs && node tests/file_buffers_test.mjs && node tests/asset_cache_test.mjs && node tests/wasi_process_test.mjs && node tests/emscripten_process_test.mjs && node tests/seed_stream_test.mjs && node tests/memory_image_test.mjs && node tests/build_journal_test.mjs",
     "test:projects": "node tests/projects_browser_test.cjs dist all build/project-results",
-    "test:players": "node tests/project_players_test.cjs dist godot build/project-results"
+    "test:players": "node tests/project_players_test.cjs dist godot build/project-results",
+    "build:report": "node tools/render_report.mjs --output build/report-preview/report.html",
+    "preview:report": "node tools/preview_report.mjs",
+    "test:report-source": "node tests/report_markdown_test.mjs"
   },
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "marked": "18.2.0",
+    "yaml": "2.9.1"
+  }
 }

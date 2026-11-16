@@ -8,3 +8,8 @@ __pycache__/
 .env
 .env.*
 *.token
+
+# Editor scratch files
+*.swp
+*.swo
+*~
