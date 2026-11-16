@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="A technical look at compilation costs in a native cppgm and Clang study.">
+<title>Compilation cost study · cppgm inception</title>
+<link rel="stylesheet" href="report.css">
+</head>
+<body>
+<header><a class="brand" href="./">cppgm <span>inception</span></a><nav aria-label="Page"><a href="./">← Browser demo</a><a href="#method">Method &amp; limits</a></nav></header>
+<main>
+  <section class="intro" aria-labelledby="title">
+    <p class="eyebrow">Native compilation study · 16 November 2026</p>
+    <h1 id="title">Where compilation<br>costs go</h1>
+    <p class="lead">A profile of cppgm and Clang compiling 16 LLVM source units at <code>-O2</code>. The sample points to semantic analysis and optimization as major contributors to the instruction gap.</p>
+    <p class="scope"><strong>Separate from the browser demo.</strong> This study used native cppgm 0.9.3 and Clang 22.1.2 on a Xeon E5-2696 v4. The demo uses cppgm 0.9.4 and runs WebAssembly on your device. These results are not browser timings or a universal speedup.</p>
+  </section>
+  <section aria-labelledby="totals-title">
+    <div class="section-label">01 / Whole compile</div><h2 id="totals-title">The measured totals</h2>
+    <p>Across the sample, callgrind counted 214.7 billion instructions for Clang and 59.8 billion for cppgm: about <strong>3.6×</strong> as many for Clang. A separate perf run measured 288.4 billion cycles for Clang and 52.3 billion for cppgm, about <strong>5.5×</strong> as many. Cycle counts came from a host under load.</p>
+    <div class="stats"><div><span>Clang instructions</span><strong>214.7<span> G</span></strong></div><div><span>cppgm instructions</span><strong>59.8<span> G</span></strong></div><div><span>Sample</span><strong>16 <span>units</span></strong></div></div>
+    <p class="note">G = billions. Counts are summed over the sample, not per source file. Instruction and cycle figures above come from different runs.</p>
+  </section>
+  <section aria-labelledby="phases-title">
+    <div class="section-label">02 / Explore the phases</div><h2 id="phases-title">A closer look at the gap</h2>
+    <p>The front end accounts for the largest share of the attributed gap. Select a metric to compare each compiler’s phase costs and see how much each phase contributes.</p>
+    <fieldset class="metric" disabled><legend>Show phase costs in</legend><label><input type="radio" name="metric" value="instructions" checked> Instructions</label><label><input type="radio" name="metric" value="cycles"> Cycles</label></fieldset>
+    <div class="chart-key"><span><i class="clang-key"></i> Clang</span><span><i class="cppgm-key"></i> cppgm</span><span>Billions · <span id="metric-name">instructions</span></span></div>
+    <div id="phase-chart" class="phase-chart" aria-live="polite">
+      <div class="phase" data-clang-instructions="126.3" data-cppgm-instructions="42.2" data-clang-cycles="168.6" data-cppgm-cycles="37.3"><div class="phase-head"><strong>Front end</strong><span class="share">54% of attributed gap</span></div><div class="bars"><div class="bar clang" style="--width:100%" role="img" aria-label="Clang: 126.3 billion instructions"><span aria-hidden="true">126.3</span></div><div class="bar cppgm" style="--width:33.4%" role="img" aria-label="cppgm: 42.2 billion instructions"><span aria-hidden="true">42.2</span></div></div><p>Lexing, preprocessing, parsing and semantic analysis</p></div>
+      <div class="phase" data-clang-instructions="12.1" data-cppgm-instructions="2.6" data-clang-cycles="15.5" data-cppgm-cycles="2.4"><div class="phase-head"><strong>IR generation</strong><span class="share">6% of attributed gap</span></div><div class="bars"><div class="bar clang" style="--width:9.6%" role="img" aria-label="Clang: 12.1 billion instructions"><span aria-hidden="true">12.1</span></div><div class="bar cppgm" style="--width:2.1%" role="img" aria-label="cppgm: 2.6 billion instructions"><span aria-hidden="true">2.6</span></div></div><p>Includes cppgm lowering and object writing</p></div>
+      <div class="phase" data-clang-instructions="49.8" data-cppgm-instructions="12.2" data-clang-cycles="67.9" data-cppgm-cycles="10.8"><div class="phase-head"><strong>Optimizer</strong><span class="share">24% of attributed gap</span></div><div class="bars"><div class="bar clang" style="--width:39.4%" role="img" aria-label="Clang: 49.8 billion instructions"><span aria-hidden="true">49.8</span></div><div class="bar cppgm" style="--width:9.7%" role="img" aria-label="cppgm: 12.2 billion instructions"><span aria-hidden="true">12.2</span></div></div><p>Optimization passes and analyses</p></div>
+      <div class="phase" data-clang-instructions="26.0" data-cppgm-instructions="2.1" data-clang-cycles="23.9" data-cppgm-cycles="1.9"><div class="phase-head"><strong>Back end</strong><span class="share">15% of attributed gap</span></div><div class="bars"><div class="bar clang" style="--width:20.6%" role="img" aria-label="Clang: 26.0 billion instructions"><span aria-hidden="true">26.0</span></div><div class="bar cppgm" style="--width:1.7%" role="img" aria-label="cppgm: 2.1 billion instructions"><span aria-hidden="true">2.1</span></div></div><p>Instruction selection, allocation and encoding</p></div>
+    </div>
+    <p class="note">Phase figures are estimates, not the whole-compile totals above. The separate perf run measured 214.4 G and 59.1 G instructions for Clang and cppgm; rounded phase values sum to 214.2 G and 59.1 G. Clang phases use separate runs and subtraction; cppgm costs are apportioned using <code>--stats</code> timing shares. The shares use the sum of displayed phase differences and are rounded independently. In cycles, Clang’s rounded phase values sum to 275.9 G versus 288.4 G for the whole compile. The separate runs were on a loaded host and may have been affected by cache behavior and load.</p>
+  </section>
+  <section aria-labelledby="findings-title">
+    <div class="section-label">03 / What the profiles suggest</div><h2 id="findings-title">The costs are uneven</h2>
+    <div class="cards"><article><h3>Semantic analysis</h3><p>Profile attribution points to type representation, expression bookkeeping, lookup, overload resolution and templates as substantial costs. Some of this work supports diagnostics and language features.</p></article><article><h3>Optimization</h3><p>LLVM ran more passes and analyses in this sample. Its optimizer was estimated at 49.8 G instructions versus 12.2 G for cppgm. Similar IR sizes do not establish equivalent optimization or output quality.</p></article><article><h3>Lexing and parsing</h3><p>Here cppgm used more instructions: 20.9 G versus Clang’s 12.8 G combined. The overall advantage does not extend to every phase.</p></article></div>
+  </section>
+  <section id="method" aria-labelledby="method-title">
+    <div class="section-label">04 / Evidence &amp; limits</div><h2 id="method-title">How to read the result</h2>
+    <p>The inputs were 16 sampled LLVM 22.1.2 units, built with CI flags and libstdc++ 15 headers. The four largest units accounted for 66% of Clang’s instructions and 60% of cppgm’s, so this sample is concentrated. Clang was built at <code>-O3</code>, statically linked, with symbols.</p>
+    <details><summary>What was measured and estimated?</summary><p>This report summarizes local profiling; the full raw profiles are not published here. Callgrind provided whole-compile instruction counts and per-function profiles. Perf supplied phase counts and cycles. Clang’s phases were measured in separate modes; cppgm’s were estimated from its timing shares, with optimizer cost inferred from its <code>-O2</code> back half less the <code>-O0</code> lowering and object-writing cost. Source-file categories and charging shared code to callers are approximations; inlined call counts can be missing.</p></details>
+    <details><summary>How comparable was the work?</summary><p>The counts were similar, not identical: on 12 units Clang recorded 70,419 class instantiations and cppgm 65,107. Before optimization the IR counts were 472,926 LLVM instructions and 477,253 LowIR instructions; afterwards they were 195,009 and 210,469. These are different representations and counting methods. Similar volumes do not prove equal semantics, diagnostics or generated code quality.</p></details>
+    <details><summary>What about an LLVM combination?</summary><p>A hypothetical cppgm front end combined with LLVM costs on Clang’s own IR was estimated at 131.7–148.2 G cycles at <code>-O2</code>. This was not an implemented or measured compiler combination. The range depends on assumptions about IR generation; cppgm-produced LLVM IR would also need appropriate metadata for comparable output.</p></details>
+    <details><summary>What this study cannot establish</summary><p>It does not establish runtime performance or code quality. Clang supports broader diagnostics, tooling and targets; those capabilities can have costs. The measured ratios depend on source, flags, versions and hardware, and loaded-host cycle counts are especially sensitive to conditions.</p></details>
+  </section>
+</main>
+<footer><span>cppgm inception · Native study</span><span><a href="https://github.com/vishvananda/cppgm">Compiler source</a> · <a href="https://github.com/vishvananda/incpption/tree/main/web">Report source</a> · <a href="./">Browser demo →</a></span></footer>
+<script type="module" src="report.mjs"></script>
+</body>
+</html>

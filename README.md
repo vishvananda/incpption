@@ -41,6 +41,8 @@ on the player origin for Play and later runs. If browser storage is unavailable,
 Play downloads the data directly. Phones wait until compilation finishes before
 caching large game data, so Doom’s download does not overlap the compiler heaps.
 This is a comparison on your device, not a general compiler benchmark.
+The [native compilation cost study](https://incpption.com/report.html) examines a separate sample
+and explains its methods and limits.
 
 Phones and Safari default to two compile workers, one in each comparison lane.
 Phones load the linker in a fresh worker after compilation. Releases with the optional WASI host helpers reuse one compiler
