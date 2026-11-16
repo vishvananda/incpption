@@ -5,3 +5,5 @@
 .improvement-group{margin-top:30px}.improvement-group+ .improvement-group{padding-top:24px;border-top:1px solid var(--line)}.improvement-group h3{font-size:21px;margin-bottom:12px}.improvement-group p{font-size:14px}
 
 .intro h1{max-width:18ch}.scope>p:last-child{margin-bottom:0}
+
+.improvement-group:last-child>p:last-child{margin-bottom:0}

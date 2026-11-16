@@ -4,7 +4,7 @@ description: "A technical look at compilation costs in cppgm vs. Clang."
 eyebrow: "Native compilation study · 16 November 2026"
 ---
 
-# Where compilation costs go
+# Compile time comparison
 
 We profiled cppgm and Clang compiling 16 LLVM source units at `-O2`. The sample pointed to semantic analysis and optimization as major contributors to the instruction gap.
 
