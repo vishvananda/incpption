@@ -63,10 +63,19 @@ const methods=[],requests=[],server=http.createServer((req,res)=>{
     assert.equal(await page.locator('#flow-rows .flow-node.active').count(),2);
     await page.waitForFunction(()=>window.lastGameDataDownload?.project==='lara'&&window.lastGameDataDownload.loaded>0);
     assert.equal(await page.locator('#cancel').isEnabled(),true,'game data did not preload during compilation');
+    await page.waitForFunction(()=>document.getElementById('completion-modal').open||window.lastWorkflowEvent?.kind==='error'||window.lastGameBuild?.kind==='complete'&&window.lastClangGameBuild?.kind==='complete',null,{timeout:600000});
+    if(await page.locator('#completion-modal').isVisible()){
+      assert.equal(await page.locator('#cancel').isEnabled(),true,'Clang stopped at the completion prompt');
+      await page.locator('#completion-wait').click();
+    }
     await page.waitForFunction(()=>window.lastGameBuild?.kind==='error'||window.lastWorkflowEvent?.kind==='error'||window.lastGameBuild?.kind==='complete'&&window.lastClangGameBuild?.kind==='complete',null,{timeout:600000});
     const report=await page.evaluate(()=>({cppgm:window.lastGameBuild,clang:window.lastClangGameBuild,error:window.lastWorkflowEvent?.kind==='error'?window.lastWorkflowEvent.error:null}));
     assert.equal(report.error,null);assert.equal(report.cppgm.kind,'complete');assert.equal(report.clang.kind,'complete');
     assert.equal(report.cppgm.workerCount,report.clang.workerCount);
+    await page.waitForFunction(()=>window.gamePlaying||window.gameError,null,{timeout:120000});
+    assert.equal(await page.evaluate(()=>window.gameError),undefined);
+    assert.equal(await page.locator('#completion-modal').isVisible(),false);
+    await page.locator('#game-close').click();
     assert.equal(await page.locator('#comparison-result').isVisible(),true);
     const ratio=Math.max(report.cppgm.compileSeconds,report.clang.compileSeconds)/Math.min(report.cppgm.compileSeconds,report.clang.compileSeconds);
     assert.equal(await page.locator('#comparison-result>strong').textContent(),ratio.toFixed(2)+'×');

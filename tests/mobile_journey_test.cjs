@@ -41,11 +41,17 @@ const server=http.createServer((req,res)=>{
         await page.setViewportSize({width:390,height:844});
         await page.locator('[data-phase=game]').click();
         await page.waitForFunction(()=>Math.abs(document.getElementById('build-grids').getBoundingClientRect().top-86)<8);
+        await page.waitForFunction(()=>document.getElementById('completion-modal').open||window.lastWorkflowEvent?.kind==='error'||window.lastGameBuild?.kind==='complete'&&window.lastClangGameBuild?.kind==='complete',null,{timeout:600000});
+        if(await page.locator('#completion-modal').isVisible()){
+          await page.locator('#completion-play').click();
+          await page.waitForFunction(()=>window.gamePlaying||window.gameError,null,{timeout:90000});
+          if(await page.locator('#completion-modal').isVisible())throw Error('Play now kept the completion prompt open');
+        }
         await page.waitForFunction(()=>window.lastWorkflowEvent?.kind==='error'||window.lastGameBuild?.kind==='complete'&&window.lastClangGameBuild?.kind==='complete',null,{timeout:600000});
         const built=await page.evaluate(()=>window.lastGameBuild);if(built.kind!=='complete')throw Error(built.error);
         const reusable=!!JSON.parse(fs.readFileSync(path.join(root,'compiler/manifest.json'))).process_reset;
         if(built.workerCount!==1||!built.deferredLinker||(reusable?built.retiredWorkers!==1:built.retiredWorkers<290))throw Error('Phone did not bound worker memory');
-        await page.locator('#game-play').click();
+        if(!await page.locator('#game-modal').isVisible())await page.locator('#game-play').click();
         await page.waitForFunction(()=>window.gamePlaying||window.gameError,null,{timeout:90000});
         if(await page.evaluate(()=>window.gameError))throw Error(await page.evaluate(()=>window.gameError));
         const frame=page.frameLocator('#game-frame');

@@ -175,6 +175,10 @@ with (OUT / 'safaridriver.log').open('w') as log:
         click('[data-phase=game]')
         wait('window.lastWorkflowEvent?.kind === "error" || window.lastGameBuild?.kind === "complete" && window.lastClangGameBuild?.kind === "complete"')
         check_error()
+        if js('return document.getElementById("game-modal").open'):
+            wait('window.gamePlaying || window.gameError', 180)
+            check_error()
+            click('#game-close')
         REPORT['cppgm'] = summary('lastGameBuild')
         REPORT['clang'] = summary('lastClangGameBuild')
         REPORT['compileEvents'] = js('return window.compileEvents || []')

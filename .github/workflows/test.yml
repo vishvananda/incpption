@@ -57,6 +57,7 @@ jobs:
       - run: npm run test:game
         env:
           GAME_TEST_TOUCH: '1'
+      - run: npm run test:completion
       - run: npm run test:comparison
       - run: npm run test:mobile
       - run: npm run test:safari

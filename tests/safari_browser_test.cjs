@@ -56,6 +56,10 @@ const requests=[],server=http.createServer((req,res)=>{
   await page.locator('[data-phase=game]').click();
   const timer=setInterval(async()=>{try{console.log(JSON.stringify(await page.evaluate(()=>({status:document.getElementById('status').textContent,cppgm:document.getElementById('completed').textContent,clang:document.getElementById('completed-clang').textContent}))));}catch{}},15000);
   try{await page.waitForFunction(()=>window.lastWorkflowEvent?.kind==='error'||window.lastGameBuild?.kind==='complete'&&window.lastClangGameBuild?.kind==='complete',null,{timeout:900000});}finally{clearInterval(timer);}
+  if(await page.locator('#game-modal').isVisible()){
+   await page.waitForFunction(()=>window.gamePlaying||window.gameError,null,{timeout:300000});
+   await page.locator('#game-close').click();
+  }
   const report=await page.evaluate(()=>{const summary=({player,...data}={})=>data;return {cppgm:summary(window.lastGameBuild),clang:summary(window.lastClangGameBuild),status:document.getElementById('status').textContent,error:window.lastWorkflowEvent?.error,ua:navigator.userAgent};});
   console.log(JSON.stringify(report));assert.equal(report.cppgm.kind,'complete',report.error);assert.equal(report.clang.kind,'complete',report.error);
   assert.equal(await page.locator('#comparison-result').isVisible(),true);

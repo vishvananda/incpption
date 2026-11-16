@@ -29,10 +29,14 @@ const requests=[],server=http.createServer((req,res)=>{
    timer=setInterval(async()=>{try{const status=await page.evaluate(()=>({event:window.lastWorkflowEvent?.kind,phase:window.lastWorkflowEvent?.phase,status:document.getElementById('status').textContent,cppgm:document.getElementById('completed').textContent,clang:document.getElementById('completed-clang').textContent,time:document.getElementById('workflow-time').textContent}));console.log(target,JSON.stringify(status));fs.appendFileSync(path.join(out,target+'-progress.jsonl'),JSON.stringify(status)+'\n');}catch{}},15000);
    await page.waitForFunction(only=>window.lastWorkflowEvent?.kind==='error'||window.lastGameBuild?.kind==='complete'&&(only||window.lastClangGameBuild?.kind==='complete'),cppgmOnly,{timeout:target==='godot'?10800000:5400000});
    assert.notEqual(await page.evaluate(()=>window.lastWorkflowEvent?.kind),'error',await page.evaluate(()=>window.lastWorkflowEvent?.error));
+   if(await page.locator('#game-modal').isVisible()){
+    await page.waitForFunction(()=>window.gamePlaying||window.gameError,null,{timeout:300000});
+    await page.locator('#game-close').click();
+   }
    clearInterval(timer);
    assert.equal(await page.locator('#units .done').count(),units);if(!cppgmOnly)assert.equal(await page.locator('#units-clang .done').count(),units);
    const report=await page.evaluate(()=>({cppgm:window.lastGameBuild,clang:window.lastClangGameBuild}));
-   if(cppgmOnly){delete report.clang;if(await page.locator('#cancel').isEnabled())await page.locator('#cancel').click();}
+   if(cppgmOnly){delete report.clang;if(await page.locator('#completion-modal').isVisible())await page.keyboard.press('Escape');if(await page.locator('#cancel').isEnabled())await page.locator('#cancel').click();}
    report.units=units;report.supportSources=manifest.commands.filter(row=>row.category==='support').length;
    assert(report.supportSources>0);assert.equal(report.cppgm.sha256,manifest.link.sha256);
    fs.writeFileSync(path.join(out,target+'-compiled-manifest.json'),fs.readFileSync(path.join(root,'projects',target,'manifest.json')));

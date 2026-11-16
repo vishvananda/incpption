@@ -151,3 +151,5 @@ header,main{width:calc(100% - 32px)}header{grid-template-columns:1fr auto;gap:8p
 .phase-heading #rerun-phase:enabled:hover{border-color:var(--line)}
 .build-facts #comparison-note{font-size:inherit;color:inherit}
 @media(max-width:700px){.rerun-label{display:none}.phase-heading #rerun-phase{padding:3px;margin:0}.phase-heading:has(#rerun-phase)>div:first-child{justify-content:flex-start}}
+
+#completion-modal{width:calc(100vw - 32px);max-width:420px;padding:24px}#completion-title{font-size:24px;margin:0 0 12px;color:var(--green)}#completion-message{font-size:14px;line-height:1.5;color:var(--muted);margin:0 0 24px}.completion-actions{display:flex;flex-wrap:wrap;gap:10px}.completion-actions button{min-height:44px;flex:1}#completion-play{background:var(--green);border-color:var(--green);color:var(--bg)}#completion-wait:disabled{opacity:.6}

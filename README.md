@@ -24,6 +24,9 @@ Each build compiles its C, C++ and assembly sources, including the supporting
 SDK libraries. The grid shows every source, archive and final link. Selecting
 another project keeps completed compiler stages and changes the final stage.
 The final action plays the game or opens the editor in a separate modal.
+In the comparison, the **Cppgm complete!** prompt lets you play immediately
+or wait for clang. Clang keeps compiling. When it finishes, the prompt closes
+and the game opens automatically.
 
 The clang and LLD seeds were built by cppgm and match the optional clang stage.
 Build results stay in the current tab. Select a completed stage to review it.
@@ -69,6 +72,7 @@ npm run build
 npm run check
 npx playwright install chromium webkit
 npm test
+npm run test:completion
 npm run test:comparison
 npm run test:mobile
 npm run test:safari

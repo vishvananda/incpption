@@ -17,7 +17,7 @@ const policy = buildPolicy(), journal = new BuildJournal();
 const state = new WorkflowState(), jobs = new Map(), sourceNames = {}, grids = new Map(), downloads = new Map();
 const requestedProject=new URLSearchParams(location.search).get('project');
 let scenario, target = ['doom','lara','godot'].includes(requestedProject)?requestedProject:'lara', visiblePhase, automatic = false, player, playing = false, opening = false, gameLaunch = 0;
-let selectedGame = 'game', plan, comparisonInputs, preloadTarget;
+let selectedGame = 'game', plan, comparisonInputs, preloadTarget, comparisonPending = false;
 const gameData=new Map();
 const clock = seconds => `${Math.floor(seconds/60)}:${String(Math.floor(seconds%60)).padStart(2,'0')}`;
 const size = bytes => `${(bytes/1048576).toFixed(1)} MiB`;
@@ -238,12 +238,13 @@ function drawDownloads() {
 function terminate(id) {journal.finish(id);const job=jobs.get(id); if (!job) return; clearTimeout(job.deadline); job.session.terminate(); jobs.delete(id);}
 function fail(message, cancelled=false) {
   if (!busy()) return;
+  closeCompletion();
   for (const id of [...jobs.keys()]) {
     const row=phase(id); row.seconds=seconds(row); row.compileSeconds=buildTime(row); row.state=cancelled?'cancelled':'failed'; row.running.clear();
     projectEvent(id,cancelled?'cancel':'error'); terminate(id); paintGrid(id);
   }
   comparisonInputs?.close();comparisonInputs=null;
-  stopGame();
+  closeGame();stopGame();
   automatic=false; drawFlow(); $('status').classList.remove('sr-only'); $('status').textContent=cancelled?'Cancelled. Use Rerun to try again.':'Build stopped. Open Diagnostics for the error.';
   $('log').textContent+=message+'\n';
   if(!cancelled)document.querySelector('.diagnostics').open=true;
@@ -256,7 +257,7 @@ function invalidate(id) {
 function start(id, {rerun=false,scroll=true}={}) {
   if (busy() || !canRun(id)) return;
   if (!rerun && phase(id).state === 'done') {showPhase(id); return;}
-  closeGame();
+  closeCompletion();closeGame();
   $('status').classList.add('sr-only');
   if (rerun) invalidate(id);
   if (scenario === 'game') {
@@ -332,11 +333,14 @@ function launch(id, args) {
       terminate(id);if(isGame(id))preloadGameData(id);drawFlow();drawDownloads();
       const index=paths[scenario].indexOf(id),next=paths[scenario][index+1];
       if (scenario==='game') {
+        if(id==='game'&&busy()&&canPlay())showCompletion();
         if(!busy()) {
           comparisonInputs?.close();comparisonInputs=null;
           const a=phase('game').result.compileSeconds,b=phase('game-clang').result.compileSeconds;
           $('status').textContent=`Built locally. cppgm ${a.toFixed(2)} s · clang ${b.toFixed(2)} s. Choose either Play button.`;
-          if(automatic){automatic=false;if(canPlay())openGame('game');else $('status').textContent='Built locally. This browser needs JSPI support to play Doom.';}
+          const play=automatic||comparisonPending||id==='game';
+          automatic=false;closeCompletion();
+          if(play){if(canPlay())openGame('game');else $('status').textContent='Built locally. This browser needs JSPI support to play Doom.';}
         }
       } else {
         $('status').textContent=id==='match'?'Every object and the compiler match. Ready to build.':isGame(id)?'Built here. Ready to play.':`${definitions[id].label} built. Ready for the next phase.`;
@@ -356,7 +360,7 @@ $('run-workflow').onclick=()=>{
 function chooseScenario(name) {
   if(busy())return;
   $('status').classList.add('sr-only');
-  closeGame();scenario=name;showJourney(name);
+  closeCompletion();closeGame();scenario=name;showJourney(name);
   showPhase(paths[name].find(id=>phase(id).state!=='done')||paths[name].at(-1));
   $('status').textContent=completed()?'Results from this tab. Select a stage to review, or use Rerun.':name==='roundtrip'?'Optional long build. cppgm → clang → cppgm → matching cppgm → project.':'Choose a box to build, or run the whole workflow.';
 }
@@ -379,6 +383,23 @@ $('build-target').onchange=()=>{
   targetNote();
   $('game-modal-title').textContent=`${item?.name||target} · built in your browser`;
   updateRoutes();chooseScenario(scenario);
+};
+function closeCompletion(){
+  comparisonPending=false;
+  if($('completion-modal').open)$('completion-modal').close();
+}
+function showCompletion(){
+  comparisonPending=true;
+  $('completion-message').textContent='Your build is ready. Clang is still compiling.';
+  $('completion-wait').disabled=false;$('completion-wait').textContent='Wait for clang';
+  $('completion-modal').showModal();
+}
+$('completion-play').onclick=()=>{
+  automatic=false;closeCompletion();openGame('game');
+};
+$('completion-wait').onclick=()=>{
+  $('completion-message').textContent='Clang is still compiling. Your game will open when it finishes.';
+  $('completion-wait').disabled=true;$('completion-wait').textContent='Waiting for clang…';
 };
 function closeGame(){if($('game-modal').open){$('game-modal').close();stopGame();}}
 function stopGame(){
