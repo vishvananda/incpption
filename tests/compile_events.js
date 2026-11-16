@@ -11,7 +11,7 @@
       this.addEventListener('message', ({data}) => {
         if (!this.observedLane) return;
         const row = {lane: this.observedLane, at: performance.now()};
-        for (const key of ['kind', 'index', 'name', 'source', 'seconds', 'compileSeconds', 'bytes', 'memoryBytes', 'workerCount', 'sha256', 'error'])
+        for (const key of ['kind', 'index', 'name', 'source', 'seconds', 'compileSeconds', 'dispatchSeconds', 'verifySeconds', 'bytes', 'memoryBytes', 'workerCount', 'sha256', 'error'])
           if (data[key] !== undefined) row[key] = data[key];
         window.compileEvents.push(row);
       });
