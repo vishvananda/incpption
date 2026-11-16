@@ -15,6 +15,10 @@ for(const device of [
 }
 assert.equal(buildPolicy({...desktop,hardwareConcurrency:1}).defaultWorkers,1);
 assert.equal(buildPolicy({...desktop,maxTouchPoints:1},()=>({matches:true})).lowMemory,true);
+const webkit={...desktop,userAgent:'Mozilla/5.0 AppleWebKit/605.1.15 Version/27.2 Safari/605.1.15'};
+assert.equal(buildPolicy(webkit).defaultWorkers,2);assert.equal(buildPolicy(webkit).maximum,8);
+assert.equal(buildPolicy({...webkit,userAgent:webkit.userAgent+' Chrome/140.0.0.0'}).defaultWorkers,8);
+assert.equal(buildPolicy({...webkit,userAgent:webkit.userAgent+' Edg/140.0.0.0'}).defaultWorkers,8);
 const safari=Error('WebAssembly.Instance: Out of memory');safari.stack='invokeEmscripten@https://site.test/emscripten_host.mjs:26:90';
 assert.match(errorText(safari),/Out of memory/);assert.match(errorText(safari),/invokeEmscripten@/);
 const chrome=Error('compile failed');assert.equal(errorText(chrome),chrome.stack);

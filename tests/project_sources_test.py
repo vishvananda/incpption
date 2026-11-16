@@ -116,7 +116,7 @@ class ProjectSourcesTest(unittest.TestCase):
 
 
     def test_complete_profiles_include_sdk_and_assembly_with_bounded_source_views(self):
-        checksum=self.package(self.payload,[('dev/main.cpp',b'int main(){}')],dict(sources=['dev/main.cpp']))
+        checksum=self.package(self.payload,[('dev/main.cpp',b'int main(){}'),('wasi_stack.S',b'.text\n'),('sysroot/hidden.h',b'// SDK')],dict(sources=['dev/main.cpp','wasi_stack.S']))
         self.package(self.payload/'llvm',[('clang/main.cpp',b'int main(){}')],dict(commands=[dict(source='clang/main.cpp')]))
         large=b'// generated source\n'*40000
         files=[('game/main.cpp',b'int main(){}'),('sdk/libc.c',b'int support;'),('sdk/memory.S',b'.text\n'),('game/generated.cpp',large)]
@@ -130,6 +130,8 @@ class ProjectSourcesTest(unittest.TestCase):
         shard=gzip.decompress((self.output/blob['url']).read_bytes());preview=shard[blob['offset']:blob['offset']+blob['size']]
         self.assertEqual(preview,large[:120000]);self.assertEqual(digest(preview),blob['sha256']);self.assertEqual(digest(large),row['sha256'])
         self.assertEqual(by_path['game/main.cpp']['blob'],index['projects'][1]['files'][0]['blob'])
+        self.assertEqual([row['path']for row in index['projects'][1]['files']],['dev/main.cpp','wasi_stack.S'])
+        self.assertEqual(index['projects'][1]['buildSources'],['dev/main.cpp','wasi_stack.S'])
         manifest_path=self.payload/'projects/doom/manifest.json';manifest=json.loads(manifest_path.read_text());manifest['compiler_manifest']='0'*64;manifest_path.write_text(json.dumps(manifest))
         with self.assertRaisesRegex(RuntimeError,'different compiler'):
             prepare_projects(self.payload,self.output,{'doom':dict(available=True,name='Doom 3')})

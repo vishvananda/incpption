@@ -11,7 +11,7 @@ on:
         description: Total compile workers
         type: choice
         options: ['8', '4', '2']
-        default: '8'
+        default: '2'
       compare_origin:
         description: Optional second URL for an A/B/B/A comparison on the same Mac
         type: string

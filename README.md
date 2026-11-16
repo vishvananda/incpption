@@ -7,7 +7,7 @@ on your device. There is no build server.
 [cppgm](https://github.com/vishvananda/cppgm) is a C++ compiler designed
 for fast compilation. The starting cppgm compiler is a self-compiled WebAssembly
 build. This repository contains the site, workers and static hosting tools.
-The compiler profile uses the official cppgm v0.9.3 export.
+The compiler profile uses the official cppgm v0.9.4 export.
 
 Choose a project and a workflow:
 
@@ -38,16 +38,17 @@ on the player origin for Play and later runs. If browser storage is unavailable,
 Play downloads the data directly.
 This is a comparison on your device, not a general compiler benchmark.
 
-Phones default to two compile workers, one in each comparison lane.
-They bound compiler memory and load the linker in a fresh worker after
-compilation. Releases with the optional WASI host helpers reuse one compiler
+Phones and Safari default to two compile workers, one in each comparison lane.
+Phones load the linker in a fresh worker after compilation. Releases with the optional WASI host helpers reuse one compiler
 instance per worker: its data, heap and stack are reset between files while
 its reserved memory and browser execution state stay warm. Clang also reuses
 its Wasm instance, with fresh JavaScript runtime and filesystem state for each
 file. Both optimizations apply on phones and desktops. Older cppgm releases
 release each phone worker after a file.
 Idle workers are released as soon as their queue finishes. Four workers remain
-available in Build details. Desktops use up to eight workers.
+available on phones in Build details. Desktops can use up to eight workers.
+The Safari default avoids competition for WebKit’s limited fast Wasm memory
+reservations, which can put one compiler on a slower execution path.
 
 Source browsing loads small source shards. The compiler and SDK load only when
 you compile. The code viewer shows source, LowIR, WebAssembly or x86 assembly.

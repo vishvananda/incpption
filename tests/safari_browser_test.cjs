@@ -44,7 +44,7 @@ const requests=[],server=http.createServer((req,res)=>{
   });
   assert.equal(diagnostic.kind,'error');assert.match(diagnostic.error,/ashrti3\.c:/);
   assert.match(diagnostic.error,/(TypeError|Error): .+/,'Safari lost the exception message');
-  await page.locator('#worker-choice').selectOption(process.env.SAFARI_TEST_WORKERS||(mobile?'2':'8'),{force:true});
+  if(process.env.SAFARI_TEST_WORKERS)await page.locator('#worker-choice').selectOption(process.env.SAFARI_TEST_WORKERS,{force:true});
   await page.locator('#build-target').selectOption('lara');
   await page.locator('[data-phase=game]').click();
   const timer=setInterval(async()=>{try{console.log(JSON.stringify(await page.evaluate(()=>({status:document.getElementById('status').textContent,cppgm:document.getElementById('completed').textContent,clang:document.getElementById('completed-clang').textContent}))));}catch{}},15000);

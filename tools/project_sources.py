@@ -139,10 +139,10 @@ def prepare_projects(payload,output,registry):
     def project(directory,project_id,name,root,build_sources,units=None):
         manifest,_=_manifest(directory);bundle=_logical_bytes(directory/'bundle.bin')
         if _digest(bundle)!=manifest['bundle_sha256']:raise RuntimeError('source bundle changed')
-        rows=[];seen=set()
+        rows=[];seen=set();required=set(build_sources)
         for row in manifest['files']:
             path=_source_path(row['path'])
-            if root and not path.is_relative_to(root):continue
+            if root and not path.is_relative_to(root) and row['path']not in required:continue
             if path.suffix not in {'.cpp','.cc','.cxx','.c','.h','.hpp','.hh','.inc','.inl','.def','.S','.s','.xpm','.glsl',''}:continue
             if row['path']in seen:raise RuntimeError('duplicate source input')
             seen.add(row['path'])

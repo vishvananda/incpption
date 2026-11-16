@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "url": "https://4a5a1a83.cpp-inception.pages.dev/clang-seed",
+  "url": "https://a19aab35.cpp-inception.pages.dev/clang-seed",
   "files": [
     {
       "path": "LICENSE",
@@ -63,21 +63,6 @@
       "sha256": "41c11b25156960f2bac6cead754ef947b32baef46361d64e7ded6db71dad23ee"
     },
     {
-      "path": "licenses/emscripten-AUTHORS.txt",
-      "size": 28933,
-      "sha256": "56f7df65203d4858dac19cafe3a84a8c49abaff56b67d32d2d463d5fef6e440b"
-    },
-    {
-      "path": "licenses/emscripten-LICENSE.txt",
-      "size": 5093,
-      "sha256": "620a78084fc7ca97c0b5dea9abf891f3ffcadfdbf305276f099c9c4e12fc1d86"
-    },
-    {
-      "path": "licenses/emscripten-system-lib-libc-musl-COPYRIGHT.txt",
-      "size": 6204,
-      "sha256": "f9bc4423732350eb0b3f7ed7e91d530298476f8fec0c6c427a1c04ade22655af"
-    },
-    {
       "path": "lld.00.bin",
       "size": 5734087,
       "sha256": "fa34c39d5325586da0c0a1b9a38529fe0317c2c5ce07504f1e99f225123068ff"
@@ -105,12 +90,7 @@
     {
       "path": "manifest.json",
       "size": 3458,
-      "sha256": "9c570f00a8c87a83667892ebd8782669eafcd63b04601c827b98b24b2cc7efda"
-    },
-    {
-      "path": "manifest.sha256",
-      "size": 65,
-      "sha256": "699a21d5a91839a654b1dc5fc94ded6c1c04f062d89fb46f17e2e2943f8472f8"
+      "sha256": "76c2331ccb549f080e7b050f273556afaa989a0a93b89fc58c4c5a7bc0b836a4"
     }
   ]
 }
