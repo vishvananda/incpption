@@ -89,6 +89,18 @@ def play(button):
     assert not js('return !!window.gamePlaying'), 'Closing the player kept it running'
 
 
+def save_object_mismatch():
+    info = js("return window.safariObjectMismatch ? {name:safariObjectMismatch.name, expected:safariObjectMismatch.expected, actual:safariObjectMismatch.actual, bytes:safariObjectMismatch.bytes.length} : null")
+    if not info:
+        return
+    data = bytearray()
+    for offset in range(0, info['bytes'], 65536):
+        encoded = js("return btoa(String.fromCharCode(...safariObjectMismatch.bytes.subarray(arguments[0], arguments[0]+65536)))", offset)
+        data.extend(base64.b64decode(encoded))
+    (OUT / 'mismatched-object.o').write_bytes(data)
+    REPORT['objectMismatch'] = info
+
+
 def summary(name):
     return js('''const {module,game,player,runtime,...row}=window[arguments[0]]; return row;''', name)
 
@@ -155,6 +167,7 @@ with (OUT / 'safaridriver.log').open('w') as log:
         REPORT['error'] = str(error)
         try:
             REPORT['failure'] = state()
+            save_object_mismatch()
             screenshot('failure')
         except Exception as diagnostic:
             REPORT['diagnosticError'] = str(diagnostic)
