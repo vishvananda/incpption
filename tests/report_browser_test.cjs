@@ -45,6 +45,7 @@ const server = http.createServer((req, res) => {
     }
     await page.getByText('What was measured and estimated?').click();
     assert.equal(await page.locator('details').first().getAttribute('open'), '');
+    await page.getByText('Where could Clang reduce compile time?', { exact: true }).click();
     for (const width of [320, 390, 768, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `overflow at ${width}`);
