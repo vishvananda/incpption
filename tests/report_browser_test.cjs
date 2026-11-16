@@ -45,7 +45,12 @@ const server = http.createServer((req, res) => {
     }
     await page.getByText('What was measured and estimated?').click();
     assert.equal(await page.locator('details').first().getAttribute('open'), '');
-    await page.getByText('Where could Clang reduce compile time?', { exact: true }).click();
+    for (const id of ['lexing-evidence', 'clang-improvements', 'gcc-improvements', 'cppgm-improvements']) {
+      await page.locator(`#${id} summary`).click();
+      assert.equal(await page.locator(`#${id}`).getAttribute('open'), '');
+    }
+    assert.match(await page.locator('#cppgm-improvements').innerText(), /39\.2 G sampled/);
+    assert.match(await page.locator('#lexing-evidence').innerText(), /5\.57 \/ 3\.99/);
     for (const width of [320, 390, 768, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `overflow at ${width}`);
