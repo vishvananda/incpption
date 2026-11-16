@@ -74,8 +74,15 @@ const methods=[],requests=[],server=http.createServer((req,res)=>{
     const report=await page.evaluate(()=>({cppgm:window.lastGameBuild,clang:window.lastClangGameBuild,error:window.lastWorkflowEvent?.kind==='error'?window.lastWorkflowEvent.error:null}));
     assert.equal(report.error,null);assert.equal(report.cppgm.kind,'complete');assert.equal(report.clang.kind,'complete');
     assert.equal(report.cppgm.workerCount,report.clang.workerCount);
-    await page.waitForFunction(()=>window.gamePlaying||window.gameError,null,{timeout:120000});
-    assert.equal(await page.evaluate(()=>window.gameError),undefined);
+    try{
+      // The player allows five minutes for cold Wasm/graphics startup. Let it
+      // report its own error before the test deadline, including on CI software GL.
+      await page.waitForFunction(()=>window.gamePlaying||window.gameError,null,{timeout:330000});
+      assert.equal(await page.evaluate(()=>window.gameError),undefined);
+    }catch(error){
+      const startup=await page.evaluate(()=>({status:document.getElementById('game-status').textContent,modal:document.getElementById('game-modal').open,playing:window.gamePlaying,error:window.gameError,log:document.getElementById('log').textContent}));
+      fs.writeFileSync(path.join(out,'player-start-failure.json'),JSON.stringify(startup,null,2));throw error;
+    }
     assert.equal(await page.locator('#completion-modal').isVisible(),false);
     await page.locator('#game-close').click();
     assert.equal(await page.locator('#comparison-result').isVisible(),true);
