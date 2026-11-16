@@ -66,7 +66,7 @@ const server = http.createServer((req, res) => {
     assert.equal(await noJS.getByLabel('Cycles', { exact: true }).isDisabled(), true);
     await noJS.close();
     const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-    assert.match(index, /href="\.\/report\.html"[^>]*>Study<\/a>/);
+    assert.match(index, /href="\.\/report\.html"[^>]*>Analysis<\/a>/);
     await page.setViewportSize({ width: 320, height: 900 });
     await page.goto(`${base}/index.html`, { waitUntil: 'domcontentloaded' });
     assert.equal(await page.locator('footer a[href="./report.html"]').isVisible(), true);

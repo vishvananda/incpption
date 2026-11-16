@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "url": "https://a19aab35.cpp-inception.pages.dev/clang-seed",
+  "url": "https://2399e854.cpp-inception.pages.dev/clang-seed",
   "files": [
     {
       "path": "LICENSE",
@@ -90,7 +90,7 @@
     {
       "path": "manifest.json",
       "size": 3458,
-      "sha256": "76c2331ccb549f080e7b050f273556afaa989a0a93b89fc58c4c5a7bc0b836a4"
+      "sha256": "b2531c826b4620c3487bc0a641062e01c508837fb26951c3292974e2c76a2be8"
     }
   ]
 }

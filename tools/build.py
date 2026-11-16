@@ -154,7 +154,7 @@ def main():
     for path in output.glob('*.html'):
         content = path.read_text().replace('content="PROJECT_INDEX"', 'content="' + project_index + '"')
         content = content.replace('content="PLAYER_URL"', 'content="' + config['player_url'] + '"')
-        for marker, value in [('SITE_DESCRIPTION', config['description']), ('COMPILER_VERSION', release['version']), ('COMPILER_RELEASE_URL', release['url'])]:
+        for marker, value in [('SITE_DESCRIPTION', config['description']), ('PROJECT_PROMPT', config['project_prompt']), ('COMPILER_VERSION', release['version']), ('COMPILER_RELEASE_URL', release['url'])]:
             content = content.replace(marker, html.escape(value, quote=True))
         for original, versioned in styles.items():
             content = content.replace(f'href="{original}"', f'href="{versioned}"')

@@ -22,6 +22,14 @@ const methods=[],requests=[],server=http.createServer((req,res)=>{
     const project=JSON.parse(fs.readFileSync(path.join(root,'projects/lara/manifest.json')));
     assert(Number.isSafeInteger(project.source_date_epoch),'project references must pin __DATE__ and __TIME__');
     assert.equal(await page.title(),'cppgm inception');
+    const config=JSON.parse(fs.readFileSync(path.join(__dirname,'../site.json')));
+    for(const selector of ['meta[name=description]','meta[property="og:description"]','meta[name="twitter:description"]']){
+      assert.equal(await page.locator(selector).getAttribute('content'),config.description);
+      assert(!config.description.includes(config.project_prompt),'Project prompt leaked into sharing metadata');
+    }
+    assert.equal(await page.locator('.intro').textContent(),config.description+' '+config.project_prompt);
+    assert.equal(await page.locator('#comparison-analysis').isVisible(),false);
+
     assert.equal(await page.locator('[data-journey=game] strong').textContent(),'compilation');
     assert.equal(await page.locator('.route-vs').count(),0);
     assert.equal(await page.locator('#flow .node-download').textContent(),await page.locator('#flow-clang .node-download').textContent(),'project inputs must be identical');
@@ -86,6 +94,9 @@ const methods=[],requests=[],server=http.createServer((req,res)=>{
     assert.equal(await page.locator('#completion-modal').isVisible(),false);
     await page.locator('#game-close').click();
     assert.equal(await page.locator('#comparison-result').isVisible(),true);
+    assert.equal(await page.locator('#comparison-analysis a').textContent(),'Read the compiler analysis →');
+    assert.equal(await page.locator('#comparison-analysis a').getAttribute('target'),'_blank');
+    assert.equal(await page.locator('#comparison-analysis').isVisible(),true);
     const ratio=Math.max(report.cppgm.compileSeconds,report.clang.compileSeconds)/Math.min(report.cppgm.compileSeconds,report.clang.compileSeconds);
     assert.equal(await page.locator('#comparison-result>strong').textContent(),ratio.toFixed(2)+'×');
     await page.waitForFunction(()=>window.lastGameDataDownload?.done);
@@ -100,6 +111,7 @@ const methods=[],requests=[],server=http.createServer((req,res)=>{
     }
     await page.locator('.journey-nav [data-journey=inception]').click();
     assert.equal(await page.locator('#comparison-result').isVisible(),false,'another workflow showed the comparison result');
+    assert.equal(await page.locator('#comparison-analysis').isVisible(),false);
     await page.locator('.journey-nav [data-journey=game]').click();
     assert.equal(await page.locator('#comparison-result').isVisible(),true,'cached comparison lost its speedup');
     assert.equal(await page.locator('#units .done').count(),units,'changing workflows lost results');

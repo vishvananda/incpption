@@ -7,7 +7,7 @@ on your device. There is no build server.
 [cppgm](https://github.com/vishvananda/cppgm) is a C++ compiler designed
 for fast compilation. The starting cppgm compiler is a self-compiled WebAssembly
 build. This repository contains the site, workers and static hosting tools.
-The compiler profile uses the official cppgm v0.9.4 export.
+The compiler profile uses the official cppgm v0.9.5 export.
 
 Choose a project and a workflow:
 

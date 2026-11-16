@@ -124,9 +124,10 @@ function drawFlow() {
 function drawComparison(){
   const result=$('comparison-result'),a=phase('game'),b=phase('game-clang');
   result.hidden=scenario!=='game'||a.state!=='done'||b.state!=='done';
+  $('comparison-analysis').hidden=result.hidden;
   if(result.hidden){result.replaceChildren();return;}
   const cppgm=a.result.compileSeconds,clang=b.result.compileSeconds;
-  if(!(cppgm>0&&clang>0)){result.hidden=true;return;}
+  if(!(cppgm>0&&clang>0)){result.hidden=true;$('comparison-analysis').hidden=true;return;}
   const winner=cppgm<=clang?'cppgm':'clang',ratio=Math.max(cppgm,clang)/Math.min(cppgm,clang);
   result.innerHTML=`<strong>${ratio.toFixed(2)}×</strong><span>${cppgm===clang?'Equal build times':winner+' faster'}<span class="comparison-times">cppgm ${cppgm.toFixed(2)} s · clang ${clang.toFixed(2)} s</span></span>`;
 }
