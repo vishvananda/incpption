@@ -12,6 +12,10 @@ on:
         type: choice
         options: ['8', '4', '2']
         default: '8'
+      compare_origin:
+        description: Optional second URL for an A/B/B/A comparison on the same Mac
+        type: string
+        default: ''
       execution:
         description: Worker execution or diagnostic page-stack probe
         type: choice
@@ -35,11 +39,18 @@ jobs:
           python-version: '3.12'
       - run: sudo /usr/bin/safaridriver --enable
       - run: python3 tests/macos_safari_test.py
+        if: inputs.compare_origin == ''
         env:
           SAFARI_TEST_ORIGIN: ${{ inputs.origin }}
           SAFARI_TEST_WORKERS: ${{ inputs.workers }}
           SAFARI_TEST_EXECUTION: ${{ inputs.execution }}
           SAFARI_TEST_MODE: ${{ inputs.mode }}
+      - run: python3 tests/macos_safari_compare.py
+        if: inputs.compare_origin != ''
+        env:
+          SAFARI_TEST_ORIGIN: ${{ inputs.origin }}
+          SAFARI_COMPARE_ORIGIN: ${{ inputs.compare_origin }}
+          SAFARI_TEST_WORKERS: ${{ inputs.workers }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:
