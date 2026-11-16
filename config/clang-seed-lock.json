@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "url": "https://85587688.cpp-inception.pages.dev/clang-seed",
+  "url": "https://4a5a1a83.cpp-inception.pages.dev/clang-seed",
   "files": [
     {
       "path": "LICENSE",
@@ -14,53 +14,48 @@
     },
     {
       "path": "clang.00.bin",
-      "size": 7295019,
-      "sha256": "7955bb9238248aa3589001b0650a4b9ee5c56874e493b84ec56b874e2b172e8d"
+      "size": 6053204,
+      "sha256": "a7a8a2c81358f7421749de719bf2f8e398661912b49991922165c127f6041236"
     },
     {
       "path": "clang.01.bin",
-      "size": 7101605,
-      "sha256": "92d7d94544cbe517c9a63cff6317cc7f8369f2fe5aa8e3e752bfe3492faffde7"
+      "size": 5925711,
+      "sha256": "c51894dc3074dfbac8ffc1155b34b17f129e5fc83e3e675409a63afdfcac493b"
     },
     {
       "path": "clang.02.bin",
-      "size": 6763714,
-      "sha256": "64186aec4d0f15fc3d4586a3b297810f6cc20cc3c643750d5a668f9548b27466"
+      "size": 5590942,
+      "sha256": "4478a0f791492d4aa100f7bd6168daea819cb3f4211f9622076afc330e4255ca"
     },
     {
       "path": "clang.03.bin",
-      "size": 7062749,
-      "sha256": "f3f2835af53af5f3d1bd2c6234cb7bb4c953bf756ceada6acbe71de0bd23e93d"
+      "size": 5874205,
+      "sha256": "c9e6fcc3547baf3421cb5bc9314520136864c99185520c1386edb5d86f8fbe32"
     },
     {
       "path": "clang.04.bin",
-      "size": 6511197,
-      "sha256": "34ff59e5a8cb71690b87e04a1904b99cca50456d6fb829c319b322853b924c06"
+      "size": 5637139,
+      "sha256": "cf88bf7452e2f2e721c33ad0d81c1d6d2998db33e312f2f22c78dbc5615e115a"
     },
     {
       "path": "clang.05.bin",
-      "size": 6554935,
-      "sha256": "6ea56461a0309193deca988c090cbc1991d2b21b74502479f28bb988a4ce516f"
+      "size": 3975567,
+      "sha256": "267e7d78590449f4de410326b2dfac01d37bf794e98a4f8174352677053f71d0"
     },
     {
       "path": "clang.06.bin",
-      "size": 5128670,
-      "sha256": "fc8600491f046e189d007d09a3ec1bb83a0a3389aa7aefceb104ba059b88083e"
+      "size": 4929326,
+      "sha256": "81ca700ffa5b3f65fbfaf3cbad63f0c5c4c0b9a56a44c0d78f9f9eca33db097e"
     },
     {
       "path": "clang.07.bin",
-      "size": 5057551,
-      "sha256": "c24ae85603eb38aac1e31fbb8d9db64235394d5dea11e8c02594e8fa663b4de1"
+      "size": 2633186,
+      "sha256": "63329197e66f6e8338663aed71deffe589aef9cc0e69c538925cb871a98c1b44"
     },
     {
       "path": "clang.08.bin",
-      "size": 1620731,
-      "sha256": "8365b7e30925106f0a19874beb18e200109b14409a28df53e8525309c3dd93ff"
-    },
-    {
-      "path": "clang.09.bin",
-      "size": 901007,
-      "sha256": "60e38e3b9d72125993aeefb38e57f17d4abca3a2d7c311bac2a05772ab18d102"
+      "size": 1100912,
+      "sha256": "fab7b18f0b7b5059d1fd421d5a73e22c5de3203b047bdf1c097544956b5cffec"
     },
     {
       "path": "clang.41c11b25156960f2.mjs",
@@ -68,29 +63,39 @@
       "sha256": "41c11b25156960f2bac6cead754ef947b32baef46361d64e7ded6db71dad23ee"
     },
     {
+      "path": "licenses/emscripten-AUTHORS.txt",
+      "size": 28933,
+      "sha256": "56f7df65203d4858dac19cafe3a84a8c49abaff56b67d32d2d463d5fef6e440b"
+    },
+    {
+      "path": "licenses/emscripten-LICENSE.txt",
+      "size": 5093,
+      "sha256": "620a78084fc7ca97c0b5dea9abf891f3ffcadfdbf305276f099c9c4e12fc1d86"
+    },
+    {
+      "path": "licenses/emscripten-system-lib-libc-musl-COPYRIGHT.txt",
+      "size": 6204,
+      "sha256": "f9bc4423732350eb0b3f7ed7e91d530298476f8fec0c6c427a1c04ade22655af"
+    },
+    {
       "path": "lld.00.bin",
-      "size": 6731848,
-      "sha256": "9a964fa0b64dd84c9f4527ed9081c66e92b965a16495290bb6553c06a87e9bbc"
+      "size": 5734087,
+      "sha256": "fa34c39d5325586da0c0a1b9a38529fe0317c2c5ce07504f1e99f225123068ff"
     },
     {
       "path": "lld.01.bin",
-      "size": 7477921,
-      "sha256": "d8dfd8c7d30fc9d0283e4ff020b4ab9d76129f89c5f98301dd3daf327e7c3d39"
+      "size": 6239781,
+      "sha256": "931a05491e56101af84af325ed6396f88bc0274777a37aae22acc7d9cbe8f752"
     },
     {
       "path": "lld.02.bin",
-      "size": 7323561,
-      "sha256": "a1250c5166fd03e2a3ab16fedfea0118bd45a7c4ddf73703ef6175e3ae66082c"
+      "size": 6017349,
+      "sha256": "193fe58ba26435028b10d39d94433a1c84e79963e9c5b7e768f280ee536db723"
     },
     {
       "path": "lld.03.bin",
-      "size": 7436139,
-      "sha256": "50a2434e1519d7393d313723ec9e3a3bc56dcf7a600f1d62f7b6f17c376ac180"
-    },
-    {
-      "path": "lld.04.bin",
-      "size": 2550006,
-      "sha256": "1c4f7e31061919f98803d23f8e59667c5705ab279689e3da1fd8646ba22d833c"
+      "size": 5955921,
+      "sha256": "b14daf7b1c85cdb4ddb61f79a1a623a0540c497af6c4d7c0e4f910a548b84948"
     },
     {
       "path": "lld.0c710644c726cecd.mjs",
@@ -99,8 +104,13 @@
     },
     {
       "path": "manifest.json",
-      "size": 3865,
-      "sha256": "b2e253bb0364a7741501c5b31d3753346b2c38a808a11cf0278dd0302c7c61d0"
+      "size": 3458,
+      "sha256": "9c570f00a8c87a83667892ebd8782669eafcd63b04601c827b98b24b2cc7efda"
+    },
+    {
+      "path": "manifest.sha256",
+      "size": 65,
+      "sha256": "699a21d5a91839a654b1dc5fc94ded6c1c04f062d89fb46f17e2e2943f8472f8"
     }
   ]
 }
