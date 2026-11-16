@@ -1,7 +1,10 @@
+import {supportsProcessReuse} from './wasi_process.mjs';
+
 export class CompilePool {
   constructor(ports, {controlPort, recycleEvery = 0} = {}) {
     if (!ports?.length) throw Error('No compile workers were supplied');
     this.control = controlPort; this.recycleEvery = recycleEvery;
+    this.defaultRecycleEvery = recycleEvery;
     this.requests = new Map(); this.nextRequest = 0;
     if (controlPort) controlPort.onmessage = ({data}) => {
       const resolve = this.requests.get(data.request);
@@ -33,6 +36,8 @@ export class CompilePool {
     return new Promise((resolve, reject) => {slot.pending = {resolve, reject}; slot.port.postMessage(data);});
   }
   async initialize(module, layers, host = null) {
+    this.reuseProcess = !host && supportsProcessReuse(module);
+    this.recycleEvery = this.reuseProcess ? 0 : this.defaultRecycleEvery;
     this.init = {kind: 'init', module, layers, host};
     await Promise.all(this.slots.map(async slot => {
       if (!slot.port) this.attach(slot, await this.request('replace', slot.index));

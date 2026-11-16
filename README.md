@@ -39,8 +39,12 @@ Play downloads the data directly.
 This is a comparison on your device, not a general compiler benchmark.
 
 Phones default to four compile workers, split equally between comparison lanes.
-They release each compiler worker after a file and load the linker in a fresh
-worker after compilation. Choose two workers in Build details for a smaller
+They bound compiler memory and load the linker in a fresh worker after
+compilation. Releases with the optional WASI host helpers reuse one compiler
+instance per worker: its data, heap and stack are reset between files while
+its reserved memory and browser execution state stay warm. Older releases and
+the Emscripten Clang host release each worker after a file.
+Choose two workers in Build details for a smaller
 memory budget. Desktops use up to eight workers.
 
 Source browsing loads small source shards. The compiler and SDK load only when

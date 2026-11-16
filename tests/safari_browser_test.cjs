@@ -1,6 +1,7 @@
 // Exercise the compiler in WebKit with the stale headers observed on production.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http'),{webkit}=require('playwright');
 const root=path.resolve(process.argv[2]||'dist'),out=path.resolve(process.argv[3]||(process.env.SAFARI_TEST_MOBILE?'build/safari-mobile-results':'build/safari-results')),origin=process.env.SAFARI_TEST_ORIGIN,mobile=!!process.env.SAFARI_TEST_MOBILE;
+const reusable=!!JSON.parse(fs.readFileSync(path.join(root,'compiler/manifest.json'))).process_reset;
 fs.mkdirSync(out,{recursive:true});
 const headerRules=fs.readFileSync(path.join(root,'_headers'),'utf8').trim().split(/\n\s*\n/).map(block=>{
  const [pattern,...lines]=block.split('\n');
@@ -51,9 +52,10 @@ const requests=[],server=http.createServer((req,res)=>{
   const report=await page.evaluate(()=>{const summary=({player,...data}={})=>data;return {cppgm:summary(window.lastGameBuild),clang:summary(window.lastClangGameBuild),status:document.getElementById('status').textContent,error:window.lastWorkflowEvent?.error,ua:navigator.userAgent};});
   console.log(JSON.stringify(report));assert.equal(report.cppgm.kind,'complete',report.error);assert.equal(report.clang.kind,'complete',report.error);
   assert.equal(await page.locator('#comparison-result').isVisible(),true);
-  if(mobile)for(const row of [report.cppgm,report.clang]){
+  if(mobile)for(const [lane,row] of Object.entries({cppgm:report.cppgm,clang:report.clang})){
     assert.equal(row.deferredLinker,true,'linker shares the compiler realm');
-    assert(row.retiredWorkers>=290,'compile heaps survived between files');
+    if(lane==='cppgm'&&reusable)assert.equal(row.retiredWorkers,row.workerCount,'resettable compilers recreated workers');
+    else assert(row.retiredWorkers>=290,'compile heaps survived between files');
     assert.equal(row.workerCount,Number(process.env.SAFARI_TEST_WORKERS||4)/2);
   }
   for(const button of ['game-play','game-play-clang']){
@@ -80,7 +82,9 @@ const requests=[],server=http.createServer((req,res)=>{
   finally{clearInterval(selfProgress);}
   report.inception=await page.evaluate(()=>window.lastInceptionEvent);
   assert.equal(report.inception.kind,'complete',report.inception.error);
-  if(mobile){assert.equal(report.inception.workerCount,Number(process.env.SAFARI_TEST_WORKERS||4));assert(report.inception.retiredWorkers>=469,'self-build retained compiler heaps');}
+  if(mobile){assert.equal(report.inception.workerCount,Number(process.env.SAFARI_TEST_WORKERS||4));
+    if(reusable)assert(report.inception.retiredWorkers<=report.inception.workerCount+1,'self-build recreated resettable workers');
+    else assert(report.inception.retiredWorkers>=469,'self-build retained compiler heaps');}
   await page.locator('[data-phase=game]').click();
   await page.waitForFunction(()=>window.lastGameBuild?.kind==='complete'||window.lastWorkflowEvent?.kind==='error',null,{timeout:300000});
   assert.equal(await page.evaluate(()=>window.lastGameBuild.kind),'complete');

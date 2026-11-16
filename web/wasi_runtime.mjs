@@ -3,6 +3,7 @@ import {WASI, File, OpenFile, ConsoleStdout, PreopenDirectory, Directory} from '
 import {fetchBytes} from './transport_bytes.mjs';
 import {bundleLayers} from './bundle_layers.mjs';
 import {errorText} from './error_text.mjs';
+import {runWasiProcess} from './wasi_process.mjs';
 export {fetchBytes};
 
 export const encoder = new TextEncoder();
@@ -47,10 +48,7 @@ export function invoke(module, root, args, sourceDateEpoch) {
       new DataView(wasi.inst.exports.memory.buffer).setBigUint64(pointer,BigInt(sourceDateEpoch)*1000000000n,true);return 0;
     };
   }
-  return WebAssembly.instantiate(module, {wasi_snapshot_preview1: wasi.wasiImport}).then(instance => {
-    const status = wasi.start(instance);
-    return {status, log, memoryBytes: instance.exports.memory.buffer.byteLength};
-  }).catch(error => {
+  return runWasiProcess(module, wasi).then(result => ({...result, log})).catch(error => {
     throw Error([...log, errorText(error)].join('\n'));
   });
 }
