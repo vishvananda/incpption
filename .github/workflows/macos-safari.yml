@@ -26,6 +26,10 @@ on:
         type: choice
         options: ['full', 'comparison']
         default: full
+      profile:
+        description: Sample WebKit CPU stacks during large source compilation
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -45,6 +49,7 @@ jobs:
           SAFARI_TEST_WORKERS: ${{ inputs.workers }}
           SAFARI_TEST_EXECUTION: ${{ inputs.execution }}
           SAFARI_TEST_MODE: ${{ inputs.mode }}
+          SAFARI_TEST_PROFILE: ${{ inputs.profile }}
       - run: python3 tests/macos_safari_compare.py
         if: inputs.compare_origin != ''
         env:

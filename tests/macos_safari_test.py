@@ -15,6 +15,8 @@ ORIGIN = os.environ.get('SAFARI_TEST_ORIGIN', 'https://incpption.com').rstrip('/
 WORKERS = os.environ.get('SAFARI_TEST_WORKERS', '8')
 EXECUTION = os.environ.get('SAFARI_TEST_EXECUTION', 'worker')
 MODE = os.environ.get('SAFARI_TEST_MODE', 'full')
+PROFILE = os.environ.get('SAFARI_TEST_PROFILE') == 'true'
+SAMPLED = set()
 OUT = Path(os.environ.get('SAFARI_TEST_OUTPUT', 'build/macos-safari'))
 OUT.mkdir(parents=True, exist_ok=True)
 SESSION = ''
@@ -47,11 +49,37 @@ def wait(script, timeout=900):
         value = js('return ' + script)
         if value:
             return value
+        if PROFILE:
+            sample_active_compiler()
         if time.monotonic() >= progress:
             print(json.dumps(state()), flush=True)
             progress = time.monotonic() + 20
         time.sleep(1)
     raise TimeoutError(script)
+
+
+def sample_active_compiler():
+    active = js('''const active=new Map();for(const event of window.compileEvents||[]){
+      const key=event.lane+':'+event.index;
+      if(event.kind==='progress'&&event.name)active.set(key,event);
+      if(event.kind==='unit')active.delete(key);
+      }return [...active.values()].filter(e=>e.name.endsWith('/main.cpp')).map(e=>e.lane);''')
+    for lane in active:
+        if lane in SAMPLED:
+            continue
+        SAMPLED.add(lane)
+        processes = subprocess.check_output(['ps', '-axo', 'pid,pcpu,rss,comm'], text=True)
+        (OUT / (lane + '-processes.txt')).write_text(processes)
+        candidates = []
+        for line in processes.splitlines()[1:]:
+            fields = line.split(None, 3)
+            if len(fields) == 4 and 'WebKit.WebContent' in fields[3]:
+                candidates.append((float(fields[1]), fields[0]))
+        if candidates:
+            _, pid = max(candidates)
+            result = subprocess.run(['sample', pid, '2', '-file', str(OUT / (lane + '-sample.txt'))],
+                                    capture_output=True, text=True)
+            (OUT / (lane + '-sample-status.txt')).write_text(result.stdout + result.stderr)
 
 
 def state():
