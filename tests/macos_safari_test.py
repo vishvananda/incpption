@@ -94,8 +94,8 @@ def save_object_mismatch():
     if not info:
         return
     data = bytearray()
-    for offset in range(0, info['bytes'], 65536):
-        encoded = js("return btoa(String.fromCharCode(...safariObjectMismatch.bytes.subarray(arguments[0], arguments[0]+65536)))", offset)
+    for offset in range(0, info['bytes'], 8192):
+        encoded = js("return btoa(String.fromCharCode(...safariObjectMismatch.bytes.subarray(arguments[0], arguments[0]+8192)))", offset)
         data.extend(base64.b64decode(encoded))
     (OUT / 'mismatched-object.o').write_bytes(data)
     REPORT['objectMismatch'] = info
