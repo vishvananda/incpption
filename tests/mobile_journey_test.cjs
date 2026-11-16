@@ -40,14 +40,19 @@ const server=http.createServer((req,res)=>{
         await page.locator('#build-target').selectOption('lara');
         await page.setViewportSize({width:390,height:844});
         await page.locator('[data-phase=game]').click();
-        await page.waitForFunction(()=>Math.abs(document.getElementById('build-grids').getBoundingClientRect().top-86)<8);
+        await page.waitForFunction(()=>{
+          const toolbar=document.querySelector('.workflow-toolbar').getBoundingClientRect(),heading=document.querySelector('.phase-heading').getBoundingClientRect();
+          return toolbar.top>=-1&&heading.top>=toolbar.bottom&&heading.bottom<innerHeight;
+        });
         await page.waitForFunction(()=>document.getElementById('completion-modal').open||window.lastWorkflowEvent?.kind==='error'||window.lastGameBuild?.kind==='complete'&&window.lastClangGameBuild?.kind==='complete',null,{timeout:600000});
-        if(await page.locator('#completion-modal').isVisible()){
+        const playEarly=await page.locator('#completion-modal').isVisible();
+        if(playEarly){
           await page.locator('#completion-play').click();
           await page.waitForFunction(()=>window.gamePlaying||window.gameError,null,{timeout:90000});
           if(await page.locator('#completion-modal').isVisible())throw Error('Play now kept the completion prompt open');
         }
-        await page.waitForFunction(()=>window.lastWorkflowEvent?.kind==='error'||window.lastGameBuild?.kind==='complete'&&window.lastClangGameBuild?.kind==='complete',null,{timeout:600000});
+        await page.waitForFunction(early=>window.lastWorkflowEvent?.kind==='error'||window.lastGameBuild?.kind==='complete'&&window.lastClangGameBuild?.kind===(early?'cancelled':'complete'),playEarly,{timeout:600000});
+        if(playEarly&&page.workers().length)throw Error('Compiler workers survived Play now');
         const built=await page.evaluate(()=>window.lastGameBuild);if(built.kind!=='complete')throw Error(built.error);
         const reusable=!!JSON.parse(fs.readFileSync(path.join(root,'compiler/manifest.json'))).process_reset;
         if(built.workerCount!==1||!built.deferredLinker||(reusable?built.retiredWorkers!==1:built.retiredWorkers<290))throw Error('Phone did not bound worker memory');

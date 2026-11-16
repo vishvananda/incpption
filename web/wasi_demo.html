@@ -42,7 +42,7 @@
       <button id="journey-roundtrip" role="tab" aria-controls="workflow-panel" aria-selected="false" tabindex="-1" data-journey="roundtrip"><span class="journey-title"><strong>inception<sup>2</sup></strong><span>full round-trip through clang</span></span><small class="route-caption" data-route="roundtrip"></small><span class="long-build">Long build</span><span class="download-badge" data-flow-size="roundtrip"></span></button>
     </nav>
     <div id="workflow-panel" role="tabpanel" aria-labelledby="journey-game">
-    <div class="workflow-toolbar"><div><span class="metric-label">Workflow time</span><strong id="workflow-time">0:00</strong><span id="workflow-files"></span></div><div class="workflow-actions"><button id="run-workflow">Run workflow <span aria-hidden="true">→</span></button><button id="cancel" disabled>Cancel</button></div></div>
+    <div class="workflow-toolbar"><div><span class="metric-label">Workflow time</span><strong id="workflow-time">0:00</strong><span id="workflow-files"></span></div><div class="workflow-actions"><label class="worker-setting">Workers <select id="worker-choice" title="Equal workers for each compiler"><option value="8">4 each</option><option value="4">2 each</option><option value="2">1 each</option><option value="1">1</option></select></label><button id="run-workflow">Run workflow <span aria-hidden="true">→</span></button><button id="cancel" disabled>Cancel</button></div></div>
     <div id="flow-rows"><ol id="flow" class="flow" aria-label="cppgm compiler flow"></ol><ol id="flow-clang" class="flow" aria-label="Clang compiler flow" hidden></ol></div>
     <p id="status" class="sr-only" role="status"></p>
 
@@ -56,7 +56,7 @@
     </div>
     <div class="grid-key"><span><i class="waiting"></i>Waiting <i class="active"></i>Building <i class="done"></i>Built <i class="matched"></i>Matched</span><span id="memory"></span></div>
     <p id="unit-detail">Select a square to view its source.</p>
-    <details class="build-details"><summary>Build details &amp; downloads</summary><label>Compile workers <select id="worker-choice"><option value="8">8</option><option value="4">4</option><option value="2">2</option><option value="1">1</option></select></label><div id="game-data-download" hidden><span></span><progress aria-label="Game data download" value="0" max="1"></progress></div><ul class="build-facts"><li id="comparison-note"></li><li>Build times exclude downloads. Workflow time includes them.</li><li>Inception compares every object and the final compiler, byte for byte.</li></ul><div id="downloads"></div></details><details class="build-details diagnostics"><summary>Diagnostics</summary><pre id="log"></pre></details>
+    <details class="build-details"><summary>Build details &amp; downloads</summary><div id="game-data-download" hidden><span></span><progress aria-label="Game data download" value="0" max="1"></progress></div><ul class="build-facts"><li id="comparison-note"></li><li>Build times exclude downloads. Workflow time includes them.</li><li>Inception compares every object and the final compiler, byte for byte.</li></ul><div id="downloads"></div></details><details class="build-details diagnostics"><summary>Diagnostics</summary><pre id="log"></pre></details>
     </div>
   </section>
   <section id="explorer" class="explorer" aria-labelledby="explore-title">
@@ -78,7 +78,7 @@
   </section>
   <footer><span id="revision">Source revision appears after package verification.</span><span>Experimental · Chrome &amp; Safari · <a href="./report.html" target="_blank" rel="noopener" title="Compilation cost study (opens in a new tab)">Study</a> · <a href="./credits.html">Credits</a></span></footer>
 </main>
-<dialog id="completion-modal" aria-labelledby="completion-title" aria-describedby="completion-message"><h2 id="completion-title">Cppgm complete!</h2><p id="completion-message" role="status">Your build is ready. Clang is still compiling.</p><div class="completion-actions"><button id="completion-play" autofocus>Play now</button><button id="completion-wait">Wait for clang</button></div></dialog>
+<dialog id="completion-modal" aria-labelledby="completion-title" aria-describedby="completion-message"><h2 id="completion-title">Cppgm complete!</h2><p id="completion-message" role="status">Play now stops clang. Or wait for the full comparison.</p><div class="completion-actions"><button id="completion-play" autofocus>Play now</button><button id="completion-wait">Wait for clang</button></div></dialog>
 <dialog id="game-modal" aria-labelledby="game-modal-title"><div class="modal-header"><h2 id="game-modal-title">OpenLara · built in your browser</h2><button id="game-close" autofocus>Close <span aria-hidden="true">×</span></button></div><div id="game-surface"></div><p class="small" id="game-help">Click the game, then use arrow keys to move · Ctrl to act · Alt to jump · Esc for menu. On a phone, use the touch controls.</p><p id="game-status" role="status"></p></dialog>
 <script type="module" src="wasi_demo.mjs"></script>
 <script type="module" src="inspector.mjs"></script>

@@ -17,7 +17,7 @@ const policy = buildPolicy(), journal = new BuildJournal();
 const state = new WorkflowState(), jobs = new Map(), sourceNames = {}, grids = new Map(), downloads = new Map();
 const requestedProject=new URLSearchParams(location.search).get('project');
 let scenario, target = ['doom','lara','godot'].includes(requestedProject)?requestedProject:'lara', visiblePhase, automatic = false, player, playing = false, opening = false, gameLaunch = 0;
-let selectedGame = 'game', plan, comparisonInputs, preloadTarget, comparisonPending = false;
+let selectedGame = 'game', plan, comparisonInputs, preloadTarget, comparisonPending = false, scrollOnReady = false;
 const gameData=new Map();
 const clock = seconds => `${Math.floor(seconds/60)}:${String(Math.floor(seconds%60)).padStart(2,'0')}`;
 const size = bytes => `${(bytes/1048576).toFixed(1)} MiB`;
@@ -79,7 +79,7 @@ function addFlow(list, ids, compiler) {
     node.className = `flow-node ${row.state}${visiblePhase === id ? ' selected' : ''}`;
     const button = document.createElement('button'); button.type = 'button'; button.dataset.phase = id;
     button.disabled = row.state !== 'done' && !canRun(id) || busy() && row.state === 'waiting';
-    button.innerHTML = `<span class="node-name">${definition.label}<span class="node-check">${row.state === 'done' ? id === 'match' ? '✓ matches' : '✓' : ''}</span></span><span class="node-description">${definition.detail}</span><span class="node-stats"><span>${row.rows.size} / ${row.names.length || '…'}</span><time>${phaseClock(row)}</time></span><span class="node-download" title="${isGame(id)?'Identical source, headers and SDK in both lanes; downloaded once, before compilation.':'Cold stage download; shared inputs counted once in the workflow badge.'}">${isGame(id)?'Shared inputs':'Inputs'} ↓ ${isGame(id) && plan && !plan.targets[target]?.available ? 'Package pending' : size(isGame(id)?fileSize(plan?.targets[target]?.inputs):downloadSize([id]))}</span>`;
+    button.innerHTML = `<span class="node-name">${definition.label}<span class="node-check">${row.state === 'done' ? id === 'match' ? '✓ matches' : '✓' : ''}</span></span><span class="node-description">${row.stoppedForPlay?'Stopped to play':definition.detail}</span><span class="node-stats"><span>${row.rows.size} / ${row.names.length || '…'}</span><time>${phaseClock(row)}</time></span><span class="node-download" title="${isGame(id)?'Identical source, headers and SDK in both lanes; downloaded once, before compilation.':'Cold stage download; shared inputs counted once in the workflow badge.'}">${isGame(id)?'Shared inputs':'Inputs'} ↓ ${isGame(id) && plan && !plan.targets[target]?.available ? 'Package pending' : size(isGame(id)?fileSize(plan?.targets[target]?.inputs):downloadSize([id]))}</span>`;
     button.setAttribute('aria-label', `${definition.label}: ${row.state === 'done' ? id === 'match' ? 'matches, view results' : 'built, view results' : row.state === 'active' ? 'building, view progress' : 'build phase'}`);
     button.onclick = () => {
       if (row.state === 'done' || row.state === 'active') {showPhase(id); return;}
@@ -99,6 +99,12 @@ function addFlow(list, ids, compiler) {
 }
 function drawFlow() {
   const comparison = scenario === 'game';
+  if(comparison&&Number($('worker-choice').value)<2)$('worker-choice').value='2';
+  for(const option of $('worker-choice').options){
+    const count=Number(option.value);option.hidden=comparison&&count===1;option.disabled=count>policy.maximum||option.hidden;
+    option.textContent=comparison&&count>1?`${count/2} each`:String(count);
+  }
+  $('worker-choice').title=comparison?'Workers for each compiler; both lanes use the same count':'Workers for the current build stage';
   $('flow-rows').classList.toggle('comparison', comparison);
   $('build-grids').classList.toggle('comparison', comparison);
   document.body.classList.toggle('building', busy());
@@ -108,6 +114,7 @@ function drawFlow() {
   $('run-workflow').disabled = busy() || !plan?.targets[target]?.available;
   $('run-workflow').textContent = completed() ? 'View results' : comparison ? 'Start comparison →' : 'Run workflow →';
   $('cancel').disabled = !busy(); $('worker-choice').disabled = busy(); $('build-target').disabled = busy();
+  $('clang-results').querySelector('strong').textContent=phase('game-clang').stoppedForPlay?'clang · stopped':'clang';
   $('rerun-phase').disabled = busy() || !visiblePhase || phase(visiblePhase).state === 'waiting' || !canRun(visiblePhase);
   $('rerun-phase').title = comparison ? 'Rerun both compilers' : 'Rerun this stage and clear later results';
   $('comparison-note').textContent = comparison ? 'Both compilers use the same source, SDK, O3 settings and worker count.' : '';
@@ -254,10 +261,27 @@ function fail(message, cancelled=false) {
 function invalidate(id) {
   for (const row of state.invalidate(scenario,target,id)) if(downloads.has(row)){URL.revokeObjectURL(downloads.get(row));downloads.delete(row);}
 }
+const workflowToolbar=document.querySelector('.workflow-toolbar');
+function measureToolbar(){
+  const height=Math.ceil(workflowToolbar.getBoundingClientRect().height);
+  document.documentElement.style.setProperty('--workflow-toolbar-height',height+'px');
+  return height;
+}
+new ResizeObserver(measureToolbar).observe(workflowToolbar);
+for(const type of ['wheel','touchmove'])window.addEventListener(type,()=>{scrollOnReady=false;},{passive:true});
+window.addEventListener('keydown',event=>{if(['PageUp','PageDown','Home','End','ArrowUp','ArrowDown'].includes(event.key))scrollOnReady=false;});
+function scrollToBuild(){
+  // Wait for the active toolbar, file counts and grids to settle before measuring.
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    const offset=measureToolbar()+16,rect=$('build-grids').getBoundingClientRect();
+    const delta=policy.handheld||rect.top<offset?rect.top-offset:Math.max(0,Math.min(rect.top-offset,rect.bottom-innerHeight+24));
+    window.scrollBy({top:delta,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+  }));
+}
 function start(id, {rerun=false,scroll=true}={}) {
   if (busy() || !canRun(id)) return;
   if (!rerun && phase(id).state === 'done') {showPhase(id); return;}
-  closeCompletion();closeGame();
+  closeCompletion();closeGame();scrollOnReady=scroll;
   $('status').classList.add('sr-only');
   if (rerun) invalidate(id);
   if (scenario === 'game') {
@@ -266,12 +290,12 @@ function start(id, {rerun=false,scroll=true}={}) {
     launch('game',{workers,barrier:true}); launch('game-clang',{workers,barrier:true,compiler:'clang'});
     showPhase(id);
   } else {launch(id,{workers:Number($('worker-choice').value)}); showPhase(id);}
-  if(scroll&&policy.handheld)requestAnimationFrame(()=>$('build-grids').scrollIntoView({block:'start',behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}));
+  if(scroll)scrollToBuild();
 }
 function launch(id, args) {
   // Failed/cancelled attempts restart from clean inputs; completed rows are only
   // invalidated by the explicit rerun action.
-  const row=phase(id); row.rows.clear(); row.running.clear(); row.state='active'; row.started=performance.now(); row.seconds=0; row.compileStarted=null; row.compileSeconds=0; row.loadingMs=0; row.compilePaused=null; row.result=null; row.peak=0;
+  const row=phase(id); row.rows.clear(); row.running.clear(); row.state='active'; row.started=performance.now(); row.seconds=0; row.compileStarted=null; row.compileSeconds=0; row.loadingMs=0; row.compilePaused=null; row.result=null; row.peak=0; row.stoppedForPlay=false;
   const session=new BuildSession('./'+definitions[id].worker,{workers:args.workers,maximum:8,inputBroker:comparisonInputs});
   const job={session,ready:false,deadline:setTimeout(()=>fail('This phase exceeded the 90-minute deadline.'),90*60000)};
   jobs.set(id,job); row.workers=session.count;
@@ -284,9 +308,9 @@ function launch(id, args) {
   if (id==='match'&&scenario==='roundtrip') args.compilerBytes=phase('clang').result.module;
   if (isGame(id)&&scenario!=='game') args.compilerBytes=phase('match').result.module;
   projectEvent(id,'reset'); $('status').textContent=`Loading ${definitions[id].label} inputs…`;
-  session.onerror=event=>fail(event.message||'The compiler could not start. Reload the page and try again.');
+  session.onerror=event=>{if(jobs.get(id)===job)fail(event.message||'The compiler could not start. Reload the page and try again.');};
   session.onmessage=({data})=>{
-    if (!jobs.has(id)) return;
+    if (jobs.get(id)!==job) return;
     const {module,game,runtime,assets,...summary}=data;
     if(['loading','ready','prepared','progress','unit','checking','link-preparing'].includes(data.kind))
       journal.update(id,{project:target,workflow:scenario,label:definitions[id].label,step:data.name||data.message||data.kind,completed:row.rows.size,total:row.names.length,memoryBytes:data.memoryBytes});
@@ -302,11 +326,13 @@ function launch(id, args) {
       $('worker-count').textContent=`${data.workerCount} workers${scenario==='game'?' each':''}`;
       if(data.revision)$('revision').textContent=`cppgm ${data.revision.slice(0,12)}`;
       if(data.seedSha256)$('log').textContent+=`Published seed SHA-256 ${data.seedSha256}\n`;
-      drawFlow();
+      drawFlow();if(scrollOnReady)scrollToBuild();
+      if(scenario!=='game')scrollOnReady=false;
     }
     if (data.kind==='prepared') {
       job.ready=true;
       if ([...jobs.values()].every(job=>job.ready)) {
+        scrollOnReady=false;
         const now=performance.now();
         for (const [id,job] of jobs) {phase(id).compileStarted=now;job.session.coordinator.postMessage({kind:'start'});}
         $('status').textContent='Both compilers ready. Building the same files.';
@@ -390,13 +416,28 @@ function closeCompletion(){
 }
 function showCompletion(){
   comparisonPending=true;
-  $('completion-message').textContent='Your build is ready. Clang is still compiling.';
+  $('completion-message').textContent='Play now stops clang. Or wait for the full comparison.';
   $('completion-wait').disabled=false;$('completion-wait').textContent='Wait for clang';
-  $('completion-modal').showModal();
+  $('completion-modal').show();
 }
-$('completion-play').onclick=()=>{
-  automatic=false;closeCompletion();openGame('game');
+function stopClangForPlay(){
+  const id='game-clang';if(!jobs.has(id))return;
+  const row=phase(id);row.seconds=seconds(row);row.compileSeconds=buildTime(row);row.state='cancelled';row.stoppedForPlay=true;row.running.clear();
+  terminate(id);comparisonInputs?.close();comparisonInputs=null;projectEvent(id,'cancel');paintGrid(id);drawFlow();
+  window.lastClangGameBuild={kind:'cancelled',reason:'play',compileSeconds:row.compileSeconds};
+  window.lastWorkflowEvent={...window.lastClangGameBuild,phase:id};
+  $('status').textContent='Clang stopped. Playing the cppgm build.';$('log').textContent+='Clang stopped to release compiler memory before playback. No comparison result.\n';
+}
+$('completion-play').onclick=async()=>{
+  const project=target,workflow=scenario;
+  automatic=false;closeCompletion();stopClangForPlay();
+  // Give terminated compiler workers a turn to tear down before loading the game.
+  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+  if(target===project&&scenario===workflow)openGame('game');
 };
+window.addEventListener('keydown',event=>{
+  if(event.key==='Escape'&&$('completion-modal').open){event.preventDefault();$('completion-modal').close();}
+});
 $('completion-wait').onclick=()=>{
   $('completion-message').textContent='Clang is still compiling. Your game will open when it finishes.';
   $('completion-wait').disabled=true;$('completion-wait').textContent='Waiting for clang…';

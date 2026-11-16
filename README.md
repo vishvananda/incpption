@@ -24,9 +24,9 @@ Each build compiles its C, C++ and assembly sources, including the supporting
 SDK libraries. The grid shows every source, archive and final link. Selecting
 another project keeps completed compiler stages and changes the final stage.
 The final action plays the game or opens the editor in a separate modal.
-In the comparison, the **Cppgm complete!** prompt lets you play immediately
-or wait for clang. Clang keeps compiling. When it finishes, the prompt closes
-and the game opens automatically.
+In the comparison, the **Cppgm complete!** prompt leaves the build visible.
+**Play now** stops clang and releases its workers before opening the game.
+**Wait for clang** keeps the comparison running; the game opens when it finishes.
 
 The clang and LLD seeds were built by cppgm and match the optional clang stage.
 Build results stay in the current tab. Select a completed stage to review it.
@@ -53,7 +53,8 @@ its Wasm instance, with fresh JavaScript runtime and filesystem state for each
 file. Both optimizations apply on phones and desktops. Older cppgm releases
 release each phone worker after a file.
 Idle workers are released as soon as their queue finishes. Four workers remain
-available on phones in Build details. Desktops can use up to eight workers.
+available on phones in the Workers selector beside Start. Desktops can use up to
+eight workers. The comparison selector shows workers per compiler.
 The Safari default avoids competition for WebKit’s limited fast Wasm memory
 reservations, which can put one compiler on a slower execution path.
 

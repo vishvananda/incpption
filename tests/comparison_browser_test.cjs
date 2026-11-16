@@ -61,11 +61,13 @@ const methods=[],requests=[],server=http.createServer((req,res)=>{
     await page.locator('[data-phase=game]').click();
     assert.equal(await page.locator('#cancel').isEnabled(),true);
     assert.equal(await page.locator('#flow-rows .flow-node.active').count(),2);
+    await page.waitForFunction(()=>document.getElementById('build-grids').getBoundingClientRect().bottom<=innerHeight);
     await page.waitForFunction(()=>window.lastGameDataDownload?.project==='lara'&&window.lastGameDataDownload.loaded>0);
     assert.equal(await page.locator('#cancel').isEnabled(),true,'game data did not preload during compilation');
     await page.waitForFunction(()=>document.getElementById('completion-modal').open||window.lastWorkflowEvent?.kind==='error'||window.lastGameBuild?.kind==='complete'&&window.lastClangGameBuild?.kind==='complete',null,{timeout:600000});
     if(await page.locator('#completion-modal').isVisible()){
       assert.equal(await page.locator('#cancel').isEnabled(),true,'Clang stopped at the completion prompt');
+      await page.screenshot({path:path.join(out,'cppgm-complete.png')});
       await page.locator('#completion-wait').click();
     }
     await page.waitForFunction(()=>window.lastGameBuild?.kind==='error'||window.lastWorkflowEvent?.kind==='error'||window.lastGameBuild?.kind==='complete'&&window.lastClangGameBuild?.kind==='complete',null,{timeout:600000});

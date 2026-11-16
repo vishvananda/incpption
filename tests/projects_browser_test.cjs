@@ -2,7 +2,7 @@
 const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict'),{chromium}=require('playwright');
 const root=path.resolve(process.argv[2]||'dist'),targets=(process.argv[3]||'all')==='all'?['lara','doom','godot']:[process.argv[3]],out=path.resolve(process.argv[4]||'build/project-results');
 fs.mkdirSync(out,{recursive:true});
-const cppgmOnly=process.env.GAME_TEST_CPPGM_ONLY==='1',compilers=cppgmOnly?['cppgm']:['cppgm','clang'];
+const playNow=process.env.GAME_TEST_PLAY_NOW==='1',cppgmOnly=playNow||process.env.GAME_TEST_CPPGM_ONLY==='1',compilers=cppgmOnly?['cppgm']:['cppgm','clang'];
 const requests=[],server=http.createServer((req,res)=>{
  requests.push({method:req.method,url:req.url});const file=path.resolve(root,'.'+decodeURIComponent(req.url.split('?')[0]));
  if(!file.startsWith(root+'/'))return res.writeHead(403).end();
@@ -15,7 +15,7 @@ const requests=[],server=http.createServer((req,res)=>{
  const browser=await chromium.launch({headless:true,args:['--no-sandbox','--enable-unsafe-swiftshader','--use-angle=swiftshader','--site-per-process']});
  try{for(const target of targets){
   const touch=process.env.GAME_TEST_TOUCH==='1'&&target==='lara';
-  const page=await browser.newPage({viewport:touch?{width:390,height:844}:{width:1440,height:1000},hasTouch:touch,isMobile:touch}),errors=[];let timer;
+  const phone=touch||playNow,page=await browser.newPage({viewport:phone?{width:390,height:844}:{width:1440,height:1000},hasTouch:phone,isMobile:phone}),errors=[];let timer;
   page.setDefaultTimeout(180000);page.on('pageerror',e=>{errors.push(String(e));console.error('PAGE',String(e));});
   page.on('console',m=>{if(m.type()==='error')console.log('CONSOLE',m.text().slice(0,600));});
   await page.addInitScript(url=>window.incpptionPlayerURL=url,`http://localhost:${server.address().port}/game_frame.html`);
@@ -36,7 +36,7 @@ const requests=[],server=http.createServer((req,res)=>{
    clearInterval(timer);
    assert.equal(await page.locator('#units .done').count(),units);if(!cppgmOnly)assert.equal(await page.locator('#units-clang .done').count(),units);
    const report=await page.evaluate(()=>({cppgm:window.lastGameBuild,clang:window.lastClangGameBuild}));
-   if(cppgmOnly){delete report.clang;if(await page.locator('#completion-modal').isVisible())await page.keyboard.press('Escape');if(await page.locator('#cancel').isEnabled())await page.locator('#cancel').click();}
+   if(cppgmOnly){delete report.clang;if(!playNow){if(await page.locator('#completion-modal').isVisible())await page.keyboard.press('Escape');if(await page.locator('#cancel').isEnabled())await page.locator('#cancel').click();}}
    report.units=units;report.supportSources=manifest.commands.filter(row=>row.category==='support').length;
    assert(report.supportSources>0);assert.equal(report.cppgm.sha256,manifest.link.sha256);
    fs.writeFileSync(path.join(out,target+'-compiled-manifest.json'),fs.readFileSync(path.join(root,'projects',target,'manifest.json')));
@@ -49,9 +49,15 @@ const requests=[],server=http.createServer((req,res)=>{
 
    for(const compiler of compilers){
     const button=compiler==='cppgm'?'game-play':'game-play-clang';
-    console.log(target,'playing',compiler);await page.locator('#'+button).click();
+    console.log(target,'playing',compiler);
+    if(playNow)await page.locator('#completion-play').click();else await page.locator('#'+button).click();
     await page.waitForFunction(()=>window.gamePlaying||window.gameError,null,{timeout:300000});
     assert.equal(await page.evaluate(()=>window.gameError),undefined);
+    if(playNow){
+      assert.equal(await page.evaluate(()=>window.lastClangGameBuild.reason),'play');
+      assert.equal(page.workers().length,0,'Play now kept compiler workers alive');
+      assert.equal(await page.locator('#comparison-result').isVisible(),false,'Stopped Clang produced a speedup');
+    }
     await page.waitForFunction(minimum=>window.openLaraGame?.drawCalls>minimum,target==='godot'?3:100,{timeout:180000});
     if(touch){
       const frame=page.frameLocator('#game-frame');await frame.locator('.game-controls').scrollIntoViewIfNeeded();
