@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {WorkflowState} from '../web/workflow_state.mjs';
-import {clangCompileArgs, lldArgs} from '../web/clang_arguments.mjs';
+import {clangCompileArgs, lldArgs, clangSourceLanguage, clangAssemblyArgs} from '../web/clang_arguments.mjs';
 const state=new WorkflowState();
 const match=state.phase('inception','lara','match',['one.cpp']);
 match.state='done';match.seconds=10;match.rows.set(0,{seconds:1});match.result={module:new Uint8Array([1])};
@@ -34,3 +34,11 @@ const original={main,memory};assert.equal(runtimeExports(original),original);
 const clang={__main_argc_argv:main,memory};assert.equal(runtimeExports(clang).main(),42);assert.equal(runtimeExports(clang).memory,memory);assert.equal(clang.main,undefined);
 assert.throws(()=>runtimeExports({}),/entry point/);
 console.log('PASS: runtime entry-point adaptation preserves the original Wasm exports');
+
+assert.equal(clangSourceLanguage('dev/main.cpp'),'c++');
+assert.equal(clangSourceLanguage('wasi_stack.S'),'assembler-with-cpp');
+assert.equal(clangSourceLanguage('stack.s'),'assembler');
+assert.equal(clangSourceLanguage('runtime.c'),'c');
+assert.deepEqual(clangAssemblyArgs(['--target=wasm32-wasip1','-mno-bulk-memory','-matomics'],'stack.s','stack.o'),
+  ['-cc1as','-triple','wasm32-wasip1','-target-feature','-bulk-memory','-target-feature','+atomics','-filetype','obj','-o','stack.o','stack.s']);
+assert.equal(clangAssemblyArgs(['--target','wasm32-unknown-emscripten'],'stack.s','stack.o')[2],'wasm32-unknown-emscripten');

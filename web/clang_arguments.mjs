@@ -28,3 +28,18 @@ export function lldArgs(args) {
   }
   return result;
 }
+
+// Compiler exports also include small assembly host helpers outside dev/.
+export function clangSourceLanguage(source) {
+  return source.endsWith('.S') ? 'assembler-with-cpp' : source.endsWith('.s') ? 'assembler' : source.endsWith('.c') ? 'c' : 'c++';
+}
+export function clangAssemblyArgs(args, source, output) {
+  let target = 'wasm32-unknown-emscripten';
+  for (let i = 0; i < args.length; i++) {
+    if (args[i].startsWith('--target=')) target = args[i].slice(9);
+    else if (args[i] === '--target' || args[i] === '-target') target = args[++i];
+  }
+  const features = ['-target-feature', args.includes('-mno-bulk-memory') ? '-bulk-memory' : '+bulk-memory'];
+  if (args.includes('-matomics')) features.push('-target-feature', '+atomics');
+  return ['-cc1as', '-triple', target, ...features, '-filetype', 'obj', '-o', output, source];
+}

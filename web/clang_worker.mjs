@@ -1,5 +1,6 @@
 import {loadCompiler, insert, fileView, lookup, invoke, hash} from './wasi_runtime.mjs';
 import {CompilePool} from './compile_pool.mjs';
+import {clangSourceLanguage} from './clang_arguments.mjs';
 self.onmessage = async ({data}) => {
   const started = performance.now(), pool = new CompilePool(data.ports, data);
   try {
@@ -16,7 +17,7 @@ self.onmessage = async ({data}) => {
     const outputs = [];
     await pool.run(manifest.sources.map((source, index) => {
       const output = 'clang-cppgm/' + source.replaceAll('/', '__') + '.o';
-      return {source, output, args: [...flags, '-c', source, '-o', output], progress: {index, name: source}};
+      return {source, output, language: clangSourceLanguage(source), args: [...flags, '-c', source, '-o', output], progress: {index, name: source}};
     }), async (result, command, index) => {
       insert(root, command.output, fileView(result.bytes)); outputs[index] = command.output;
       postMessage({kind: 'unit', index, name: command.source, bytes: result.bytes.length,

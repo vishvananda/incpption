@@ -1,6 +1,7 @@
 import {mountLayers, insert, lookup, fileView, invoke} from './wasi_runtime.mjs';
 import {invokeEmscripten} from './emscripten_host.mjs';
 import {errorText} from './error_text.mjs';
+import {clangAssemblyArgs} from './clang_arguments.mjs';
 let root, module, layers, host;
 self.onmessage = ({data: {port}}) => {
   port.onmessage = async ({data}) => {
@@ -17,13 +18,13 @@ self.onmessage = ({data: {port}}) => {
       if (host) {
         let result;
         if(data.language==='assembler-with-cpp'||data.language==='assembler'){
-          let source=data.args.find(value=>value.endsWith('.S')||value.endsWith('.s')),files=[];
+          let source=data.source||data.args.find(value=>value.endsWith('.S')||value.endsWith('.s')),files=[];
           if(data.language==='assembler-with-cpp'){
             const preprocessed=data.output+'.s',args=data.args.filter(value=>value!=='-c');args[args.indexOf('-o')+1]=preprocessed;args.push('-E','-fintegrated-cc1');
             const prepared=await invokeEmscripten({module,layers,...host,args,output:preprocessed});
             source=preprocessed;files=[{path:source,bytes:prepared.bytes}];
           }
-          result=await invokeEmscripten({module,layers,...host,files,args:['-cc1as','-triple','wasm32-unknown-emscripten','-target-feature','+bulk-memory','-filetype','obj','-o',data.output,source],output:data.output});
+          result=await invokeEmscripten({module,layers,...host,files,args:clangAssemblyArgs(data.args,source,data.output),output:data.output});
         }else result=await invokeEmscripten({module,layers,...host,args:data.args,output:data.output});
         port.postMessage({kind: 'result', index: data.index, seconds: (performance.now()-start)/1000, ...result}, [result.bytes.buffer]);
         return;
