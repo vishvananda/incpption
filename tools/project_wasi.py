@@ -56,7 +56,7 @@ def qualify(project,reference,wasmtime,jobs):
     # browser adapter accepts the same write, so use it for reference linking.
     runtime=project/'qualification-host';runtime.mkdir(exist_ok=True)
     site=Path(__file__).resolve().parents[1]
-    for name in ['wasi_runtime.mjs','file_buffers.mjs','transport_bytes.mjs','bundle_layers.mjs']:
+    for name in ['wasi_runtime.mjs','file_buffers.mjs','transport_bytes.mjs','bundle_layers.mjs','error_text.mjs']:
         shutil.copyfile(site/'web'/name,runtime/name)
     shutil.copytree(reference/'shim',runtime/'shim',dirs_exist_ok=True)
     save(runtime/'package.json',{'type':'module'})

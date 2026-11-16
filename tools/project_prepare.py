@@ -205,7 +205,7 @@ def prepare(args,target):
     manifest=dict(schema=2,id=target,compiler_manifest=digest((args.compiler_reference/'manifest.json').read_bytes()),
         commands=commands,archives=archives,link=dict(name='Link '+target,args=link_args,output='build/'+target+'.wasm'))
     if profile.normalizations:manifest['generated_inputs']=profile.normalizations
-    if target=='doom':manifest['source_date_epoch']=1735689600
+    manifest['source_date_epoch']=1735689600  # Stable __DATE__/__TIME__ in every project.
     if previous and previous['compiler_manifest']!=manifest['compiler_manifest']:raise ValueError('resume compiler differs')
     reusable={row['output']:row for row in previous['commands']} if previous and previous.get('source_date_epoch')==manifest.get('source_date_epoch') else {}
     if previous and previous.get('generated_inputs')!=manifest.get('generated_inputs'):

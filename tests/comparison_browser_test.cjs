@@ -19,6 +19,8 @@ const methods=[],requests=[],server=http.createServer((req,res)=>{
     await page.addInitScript(url=>window.incpptionPlayerURL=url,`http://localhost:${server.address().port}/game_frame.html`);
     await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);
     await page.waitForFunction(()=>window.lastProjectEvent?.kind==='source'&&!document.getElementById('run-workflow').disabled);
+    const project=JSON.parse(fs.readFileSync(path.join(root,'projects/lara/manifest.json')));
+    assert(Number.isSafeInteger(project.source_date_epoch),'project references must pin __DATE__ and __TIME__');
     assert.equal(await page.title(),'cppgm inception');
     assert.equal(await page.locator('[data-journey=game] strong').textContent(),'compilation');
     assert.equal(await page.locator('.route-vs').count(),0);
