@@ -45,9 +45,11 @@ const server = http.createServer((req, res) => {
     }
     await page.getByText('What was measured and estimated?').click();
     assert.equal(await page.locator('details').first().getAttribute('open'), '');
-    for (const id of ['lexing-evidence', 'clang-improvements', 'gcc-improvements', 'cppgm-improvements']) {
-      await page.locator(`#${id} summary`).click();
-      assert.equal(await page.locator(`#${id}`).getAttribute('open'), '');
+    await page.locator('#lexing-evidence summary').click();
+    assert.equal(await page.locator('#lexing-evidence').getAttribute('open'), '');
+    for (const id of ['clang-improvements', 'gcc-improvements', 'cppgm-improvements']) {
+      assert.equal(await page.locator(`#improvements #${id}`).isVisible(), true);
+      assert.equal(await page.locator(`#method #${id}`).count(), 0);
     }
     assert.match(await page.locator('#cppgm-improvements').innerText(), /39\.2 G sampled/);
     assert.match(await page.locator('#lexing-evidence').innerText(), /5\.57 \/ 3\.99/);
