@@ -16,6 +16,10 @@ on:
         description: Optional second URL for an A/B/B/A comparison on the same Mac
         type: string
         default: ''
+      calibrate:
+        description: Run baseline calibration and warm both URLs before A/B/B/A
+        type: boolean
+        default: false
       execution:
         description: Worker execution or diagnostic page-stack probe
         type: choice
@@ -56,6 +60,7 @@ jobs:
           SAFARI_TEST_ORIGIN: ${{ inputs.origin }}
           SAFARI_COMPARE_ORIGIN: ${{ inputs.compare_origin }}
           SAFARI_TEST_WORKERS: ${{ inputs.workers }}
+          SAFARI_COMPARE_CALIBRATE: ${{ inputs.calibrate }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -8,10 +8,15 @@ import sys
 out = Path('build/macos-safari')
 out.mkdir(parents=True, exist_ok=True)
 observations = []
-for label, origin in [('A1', os.environ['SAFARI_TEST_ORIGIN']),
+cases = [('A1', os.environ['SAFARI_TEST_ORIGIN']),
                       ('B1', os.environ['SAFARI_COMPARE_ORIGIN']),
                       ('B2', os.environ['SAFARI_COMPARE_ORIGIN']),
-                      ('A2', os.environ['SAFARI_TEST_ORIGIN'])]:
+                      ('A2', os.environ['SAFARI_TEST_ORIGIN'])]
+if os.environ.get('SAFARI_COMPARE_CALIBRATE') == 'true':
+    cases = [('Acal1', os.environ['SAFARI_TEST_ORIGIN']),
+             ('Acal2', os.environ['SAFARI_TEST_ORIGIN']),
+             ('Bwarm', os.environ['SAFARI_COMPARE_ORIGIN']), *cases]
+for label, origin in cases:
     # Close the preceding browser so its Wasm heaps cannot consume fast-memory
     # reservations in the following run. Each run creates a new driver session.
     subprocess.run(['pkill', '-x', 'Safari'], check=False)

@@ -2,6 +2,10 @@ name: Browser demo
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '.github/workflows/macos-safari.yml'
+      - 'tests/macos_safari_*.py'
+      - 'tests/compile_events.js'
   pull_request:
   workflow_dispatch:
     inputs:
@@ -15,6 +19,9 @@ on:
         default: false
 permissions:
   contents: read
+concurrency:
+  group: browser-${{ github.event_name == 'workflow_dispatch' && github.run_id || github.ref }}
+  cancel-in-progress: true
 jobs:
   browser:
     runs-on: ubuntu-24.04
