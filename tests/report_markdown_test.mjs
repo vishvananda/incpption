@@ -27,6 +27,7 @@ try{
  for(const [name,bytes]of [['report.md',source],['report.template.html',template],['report.css','body{}'],['report.mjs','export {};']])await writeFile(path.join(dir,name),bytes);
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  const base='http://127.0.0.1:'+server.address().port;
+ assert.equal(await(await fetch(base+'/report')).text(),rendered);
  assert.equal(await(await fetch(base+'/report.html')).text(),rendered);
  await writeFile(path.join(dir,'report.md'),edited);
  const response=await fetch(base+'/report.html');

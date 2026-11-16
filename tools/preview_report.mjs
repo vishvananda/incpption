@@ -11,7 +11,7 @@ export function createReportPreview(webDir=web){
   try{
    const route=new URL(req.url,'http://localhost').pathname;
    res.setHeader('Cache-Control','no-store');
-   if(route==='/'||route==='/report.html'){
+   if(route==='/'||route==='/report'||route==='/report.html'){
     const [markdown,template]=await Promise.all(['report.md','report.template.html'].map(name=>readFile(path.join(webDir,name),'utf8')));
     res.setHeader('Content-Type','text/html; charset=utf-8');res.end(renderReport(markdown,template));
    }else if(route==='/report.css'||route==='/report.mjs'){
@@ -25,5 +25,5 @@ if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.ur
  const args=process.argv.slice(2),port=args.length===2&&args[0]==='--port'?Number(args[1]):8000;
  if(args.length&&(args.length!==2||args[0]!=='--port')||!Number.isInteger(port)||port<0||port>65535)throw Error('Usage: npm run preview:report -- [--port 8000]');
  const server=createReportPreview();
- server.listen(port,'127.0.0.1',()=>console.log('Report preview: http://127.0.0.1:'+server.address().port+'/report.html (refresh after saving Markdown)'));
+ server.listen(port,'127.0.0.1',()=>console.log('Report preview: http://127.0.0.1:'+server.address().port+'/report (refresh after saving Markdown)'));
 }

@@ -5,7 +5,8 @@ const path = require('node:path');
 const { chromium } = require('playwright');
 const root = path.resolve(process.argv[2] || 'dist');
 const server = http.createServer((req, res) => {
-  const file = path.resolve(root, '.' + decodeURIComponent(req.url.split('?')[0]));
+  const route = decodeURIComponent(req.url.split('?')[0]);
+  const file = path.resolve(root, '.' + (route === '/report' ? '/report.html' : route));
   if (!file.startsWith(root + path.sep)) return res.writeHead(403).end();
   res.setHeader('Content-Type', ({ '.html': 'text/html', '.css': 'text/css', '.mjs': 'text/javascript' })[path.extname(file)] || 'application/octet-stream');
   const stream = fs.createReadStream(file);
@@ -19,7 +20,7 @@ const server = http.createServer((req, res) => {
     const page = await browser.newPage(), errors = [];
     page.on('pageerror', error => errors.push(String(error)));
     const base = `http://127.0.0.1:${server.address().port}`;
-    await page.goto(`${base}/report.html`);
+    await page.goto(`${base}/report`);
     assert.equal(await page.title(), 'Compilation cost study · cppgm inception');
     assert.equal(await page.locator('.phase').count(), 4);
     assert.equal(await page.locator('.bar[role=img][aria-label]').count(), 8);
@@ -59,21 +60,28 @@ const server = http.createServer((req, res) => {
     }
     assert.deepEqual(errors, []);
     const noJS = await browser.newPage({ javaScriptEnabled: false });
-    await noJS.goto(`${base}/report.html`);
+    await noJS.goto(`${base}/report`);
     assert.equal(await noJS.locator('.phase').first().locator('.clang span').textContent(), '126.3');
     assert.equal(await noJS.locator('.phase').first().locator('.clang').getAttribute('aria-label'), 'Clang: 126.3 billion instructions');
     assert.equal(await noJS.locator('a.brand').getAttribute('href'), './');
     assert.equal(await noJS.getByLabel('Cycles', { exact: true }).isDisabled(), true);
     await noJS.close();
     const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-    assert.match(index, /href="\.\/report\.html"[^>]*>Analysis<\/a>/);
+    assert.match(index, /href="\/report"[^>]*>Analysis<\/a>/);
     await page.setViewportSize({ width: 320, height: 900 });
     await page.goto(`${base}/index.html`, { waitUntil: 'domcontentloaded' });
-    assert.equal(await page.locator('footer a[href="./report.html"]').isVisible(), true);
-    for (const link of await page.locator('a[href="./report.html"]').all()) {
+    assert.equal(await page.locator('footer a[href="/report"]').isVisible(), true);
+    for (const link of await page.locator('a[href="/report"]').all()) {
       assert.equal(await link.getAttribute('target'), '_blank', 'Opening the report must preserve the running demo');
       assert.match(await link.getAttribute('rel'), /noopener/);
     }
+    const opened = page.waitForEvent('popup');
+    await page.locator('.mobile-analysis a').click();
+    const report = await opened;
+    await report.waitForLoadState('domcontentloaded');
+    assert.equal(report.url(), `${base}/report`);
+    assert.equal(await report.title(), 'Compilation cost study · cppgm inception');
+    await report.close();
     assert.match(fs.readFileSync(path.join(root, 'report.html'), 'utf8'), /assets\/report\.[a-f0-9]+\.css/);
     console.log('Report browser checks passed.');
   } finally {

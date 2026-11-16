@@ -21,7 +21,7 @@
 <body>
 <header>
   <div class="header-brand"><button type="button" class="brand wordmark" aria-label="Replay cppgm inception logo animation"><span class="wordmark-cpp" aria-hidden="true">cpp</span><span class="wordmark-gm" aria-hidden="true">gm</span><span class="wordmark-name" aria-hidden="true">in<span class="wordmark-cep">cep</span>tion</span></button><a class="compiler-version" href="COMPILER_RELEASE_URL" target="_blank" rel="noopener noreferrer" aria-label="cppgm COMPILER_VERSION release notes">COMPILER_VERSION</a></div>
-  <nav aria-label="Page"><a href="#workflow">Build</a><a href="#explorer">Code</a><a href="./report.html" target="_blank" rel="noopener" title="Compilation cost study (opens in a new tab)">Analysis</a></nav>
+  <nav aria-label="Page"><a href="#workflow">Build</a><a href="#explorer">Code</a><a href="/report" target="_blank" rel="noopener" title="Compilation cost study (opens in a new tab)">Analysis</a></nav>
   <div class="header-actions">
     <a href="https://github.com/vishvananda/incpption" target="_blank" rel="noopener noreferrer" aria-label="Site source on GitHub"><svg xmlns="http://www.w3.org/2000/svg" class="github-mark" width="20" height="20" fill="currentColor" aria-hidden="true" focusable="false" viewBox="0 0 16 16"><path d="M6.766 11.328c-2.063-.25-3.516-1.734-3.516-3.656 0-.781.281-1.625.75-2.188-.203-.515-.172-1.609.063-2.062.625-.078 1.468.25 1.968.703.594-.187 1.219-.281 1.985-.281.765 0 1.39.094 1.953.265.484-.437 1.344-.765 1.969-.687.218.422.25 1.515.046 2.047.5.593.766 1.39.766 2.203 0 1.922-1.453 3.375-3.547 3.64.531.344.89 1.094.89 1.954v1.625c0 .468.391.734.86.547C13.781 14.359 16 11.53 16 8.03 16 3.61 12.406 0 7.984 0 3.563 0 0 3.61 0 8.031a7.88 7.88 0 0 0 5.172 7.422c.422.156.828-.125.828-.547v-1.25c-.219.094-.5.156-.75.156-1.031 0-1.64-.562-2.078-1.609-.172-.422-.36-.672-.719-.719-.187-.015-.25-.093-.25-.187 0-.188.313-.328.625-.328.453 0 .844.281 1.25.86.313.452.64.655 1.031.655s.641-.14 1-.5c.266-.265.47-.5.657-.656"/></svg><span class="github-label">GitHub</span></a>
     <button id="share" type="button">Share <span aria-hidden="true">↗</span></button>
@@ -33,7 +33,7 @@
     <h1 class="logo-title"><button type="button" class="wordmark" aria-label="cppgm inception. Replay logo animation"><span class="wordmark-cpp" aria-hidden="true">cpp</span><span class="wordmark-gm" aria-hidden="true">gm</span><span class="wordmark-name" aria-hidden="true">in<span class="wordmark-cep">cep</span>tion</span></button></h1>
     <p class="intro">SITE_DESCRIPTION PROJECT_PROMPT</p>
     <p class="locality">Everything compiles locally in your browser. Nothing runs server-side.</p>
-    <p class="mobile-analysis"><a href="./report.html" target="_blank" rel="noopener">Analysis →</a></p>
+    <p class="mobile-analysis"><a href="/report" target="_blank" rel="noopener">Analysis →</a></p>
   </div>
   <section id="workflow" aria-label="Browser build workflow">
     <div class="target-toolbar"><label for="build-target">Choose a Project <select id="build-target"><option value="lara">OpenLara · Tomb Raider game</option><option value="doom">Doom 3 · First-person shooter</option><option value="godot">Godot · Game editor · Long build</option></select></label><span id="target-note"></span></div>
@@ -55,7 +55,7 @@
     </section>
     <section id="clang-results" class="phase-grid" aria-label="Clang build results" hidden><div class="phase-heading"><strong>clang</strong><div><span id="completed-clang">0 files</span><span id="elapsed-clang">0:00</span></div></div><progress id="progress-clang" value="0" max="1" aria-label="Clang phase progress"></progress><div id="units-clang" class="units" aria-label="Clang source files"></div></section>
     </div>
-    <p id="comparison-analysis" hidden><a href="./report.html" target="_blank" rel="noopener">Read the compiler analysis →</a></p>
+    <p id="comparison-analysis" hidden><a href="/report" target="_blank" rel="noopener">Read the compiler analysis →</a></p>
     <div class="grid-key"><span><i class="waiting"></i>Waiting <i class="active"></i>Building <i class="done"></i>Built <i class="matched"></i>Matched</span><span id="memory"></span></div>
     <p id="unit-detail">Select a square to view its source.</p>
     <details class="build-details"><summary>Build details &amp; downloads</summary><div id="game-data-download" hidden><span></span><progress aria-label="Game data download" value="0" max="1"></progress></div><ul class="build-facts"><li id="comparison-note"></li><li>Build times exclude downloads. Workflow time includes them.</li><li>Inception compares every object and the final compiler, byte for byte.</li></ul><div id="downloads"></div></details><details class="build-details diagnostics"><summary>Diagnostics</summary><pre id="log"></pre></details>
@@ -78,7 +78,7 @@
     <p id="inspector-status" role="status">Loading the source list. Browsing files does not download the compiler or SDK.</p>
 
   </section>
-  <footer><span id="revision">Source revision appears after package verification.</span><span>Experimental · Chrome &amp; Safari · <a href="./report.html" target="_blank" rel="noopener" title="Compilation cost study (opens in a new tab)">Analysis</a> · <a href="./credits.html">Credits</a></span></footer>
+  <footer><span id="revision">Source revision appears after package verification.</span><span>Experimental · Chrome &amp; Safari · <a href="/report" target="_blank" rel="noopener" title="Compilation cost study (opens in a new tab)">Analysis</a> · <a href="./credits.html">Credits</a></span></footer>
 </main>
 <dialog id="completion-modal" aria-labelledby="completion-title" aria-describedby="completion-message"><h2 id="completion-title">Cppgm complete!</h2><p id="completion-message" role="status">Play now stops clang. Or wait for the full comparison.</p><div class="completion-actions"><button id="completion-play" autofocus>Play now</button><button id="completion-wait">Wait for clang</button></div></dialog>
 <dialog id="game-modal" aria-labelledby="game-modal-title"><div class="modal-header"><h2 id="game-modal-title">OpenLara · built in your browser</h2><button id="game-close" autofocus>Close <span aria-hidden="true">×</span></button></div><div id="game-surface"></div><p class="small" id="game-help">Click the game, then use arrow keys to move · Ctrl to act · Alt to jump · Esc for menu. On a phone, use the touch controls.</p><p id="game-status" role="status"></p></dialog>
