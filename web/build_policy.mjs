@@ -6,6 +6,6 @@ export function buildPolicy(device = navigator, media = globalThis.matchMedia) {
   const lowMemory = handheld || device.deviceMemory > 0 && device.deviceMemory <= 4;
   const maximum = lowMemory ? 4 : 8, cores = Math.max(1, Number(device.hardwareConcurrency) || 1);
   return {handheld, lowMemory, maximum,
-    defaultWorkers: [8, 4, 2, 1].find(n => n <= Math.min(maximum, cores)),
+    defaultWorkers: [8, 4, 2, 1].find(n => n <= Math.min(lowMemory ? 2 : maximum, cores)),
     recycleEvery: lowMemory ? 1 : 0};
 }

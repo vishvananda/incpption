@@ -44,7 +44,7 @@ const server=http.createServer((req,res)=>{
         await page.waitForFunction(()=>window.lastWorkflowEvent?.kind==='error'||window.lastGameBuild?.kind==='complete'&&window.lastClangGameBuild?.kind==='complete',null,{timeout:600000});
         const built=await page.evaluate(()=>window.lastGameBuild);if(built.kind!=='complete')throw Error(built.error);
         const reusable=!!JSON.parse(fs.readFileSync(path.join(root,'compiler/manifest.json'))).process_reset;
-        if(built.workerCount!==2||!built.deferredLinker||(reusable?built.retiredWorkers!==2:built.retiredWorkers<290))throw Error('Phone did not bound worker memory');
+        if(built.workerCount!==1||!built.deferredLinker||(reusable?built.retiredWorkers!==1:built.retiredWorkers<290))throw Error('Phone did not bound worker memory');
         await page.locator('#game-play').click();
         await page.waitForFunction(()=>window.gamePlaying||window.gameError,null,{timeout:90000});
         if(await page.evaluate(()=>window.gameError))throw Error(await page.evaluate(()=>window.gameError));

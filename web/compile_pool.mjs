@@ -35,11 +35,13 @@ export class CompilePool {
     if (slot.pending) throw Error('Compile worker already busy');
     return new Promise((resolve, reject) => {slot.pending = {resolve, reject}; slot.port.postMessage(data);});
   }
-  async initialize(module, layers, host = null) {
+  async initialize(module, layers, host = null, count = this.slots.length) {
+    if (!Number.isInteger(count) || count < 1 || count > this.slots.length) throw Error('Invalid active worker count');
+    this.activeSlots = this.slots.slice(0, count);
     this.reuseProcess = !host && supportsProcessReuse(module);
     this.recycleEvery = this.reuseProcess ? 0 : this.defaultRecycleEvery;
     this.init = {kind: 'init', module, layers, host};
-    await Promise.all(this.slots.map(async slot => {
+    await Promise.all(this.activeSlots.map(async slot => {
       if (!slot.port) this.attach(slot, await this.request('replace', slot.index));
       slot.uses = 0;
       await this.send(slot, this.init);
@@ -65,12 +67,13 @@ export class CompilePool {
   invoke(task) {return this.execute(this.slots[0], task);}
   async run(tasks, completed) {
     const results = new Array(tasks.length); let next = 0;
-    await Promise.all(this.slots.map(async slot => {
+    await Promise.all(this.activeSlots.map(async slot => {
       while (next < tasks.length) {
         const index = next++, task = tasks[index];
         postMessage({kind: 'progress', ...task.progress});
         results[index] = await completed(await this.execute(slot, task, index), task, index);
       }
+      await this.retire(slot);
     }));
     return results;
   }

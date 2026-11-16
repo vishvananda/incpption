@@ -38,14 +38,14 @@ on the player origin for Play and later runs. If browser storage is unavailable,
 Play downloads the data directly.
 This is a comparison on your device, not a general compiler benchmark.
 
-Phones default to four compile workers, split equally between comparison lanes.
+Phones default to two compile workers, one in each comparison lane.
 They bound compiler memory and load the linker in a fresh worker after
 compilation. Releases with the optional WASI host helpers reuse one compiler
 instance per worker: its data, heap and stack are reset between files while
 its reserved memory and browser execution state stay warm. Older releases and
 the Emscripten Clang host release each worker after a file.
-Choose two workers in Build details for a smaller
-memory budget. Desktops use up to eight workers.
+Idle workers are released as soon as their queue finishes. Four workers remain
+available in Build details. Desktops use up to eight workers.
 
 Source browsing loads small source shards. The compiler and SDK load only when
 you compile. The code viewer shows source, LowIR, WebAssembly or x86 assembly.
@@ -67,7 +67,7 @@ npm test
 npm run test:comparison
 npm run test:mobile
 npm run test:safari
-SAFARI_TEST_MOBILE=1 SAFARI_TEST_WORKERS=4 npm run test:safari
+SAFARI_TEST_MOBILE=1 SAFARI_TEST_WORKERS=2 npm run test:safari
 ```
 
 The build fetches hash-pinned static packages from the URLs in `config/`.

@@ -11,7 +11,7 @@ for(const device of [
   {...desktop,deviceMemory:4}
 ]){
   const policy=buildPolicy(device);
-  assert.equal(policy.maximum,4);assert.equal(policy.defaultWorkers,4);assert.equal(policy.recycleEvery,1);
+  assert.equal(policy.maximum,4);assert.equal(policy.defaultWorkers,2);assert.equal(policy.recycleEvery,1);
 }
 assert.equal(buildPolicy({...desktop,hardwareConcurrency:1}).defaultWorkers,1);
 assert.equal(buildPolicy({...desktop,maxTouchPoints:1},()=>({matches:true})).lowMemory,true);

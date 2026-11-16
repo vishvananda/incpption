@@ -51,9 +51,9 @@ self.onmessage = async ({data: options}) => {
       postMessage({kind: 'unit', stage, index: tasks.length, total: tasks.length + 1, name: 'link compiler', ...rows.at(-1)});
       records.push({stage, seconds: (performance.now() - stageStart) / 1000, commands: rows});
       module = await WebAssembly.compile(actual);
-      await pool.initialize(module, layers);
       postMessage({kind: 'stage', stage, seconds: records.at(-1).seconds, peakMemoryBytes});
     }
+    await pool.initialize(module, layers, null, 1);
     const x86Checks = [];
     for (const level of [0, 2]) {
       postMessage({kind: 'checking', name: `x86 floating corpus at -O${level}`});

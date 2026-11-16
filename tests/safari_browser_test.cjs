@@ -44,7 +44,7 @@ const requests=[],server=http.createServer((req,res)=>{
   });
   assert.equal(diagnostic.kind,'error');assert.match(diagnostic.error,/ashrti3\.c:/);
   assert.match(diagnostic.error,/(TypeError|Error): .+/,'Safari lost the exception message');
-  await page.locator('#worker-choice').selectOption(process.env.SAFARI_TEST_WORKERS||(mobile?'4':'8'),{force:true});
+  await page.locator('#worker-choice').selectOption(process.env.SAFARI_TEST_WORKERS||(mobile?'2':'8'),{force:true});
   await page.locator('#build-target').selectOption('lara');
   await page.locator('[data-phase=game]').click();
   const timer=setInterval(async()=>{try{console.log(JSON.stringify(await page.evaluate(()=>({status:document.getElementById('status').textContent,cppgm:document.getElementById('completed').textContent,clang:document.getElementById('completed-clang').textContent}))));}catch{}},15000);
@@ -56,7 +56,7 @@ const requests=[],server=http.createServer((req,res)=>{
     assert.equal(row.deferredLinker,true,'linker shares the compiler realm');
     if(lane==='cppgm'&&reusable)assert.equal(row.retiredWorkers,row.workerCount,'resettable compilers recreated workers');
     else assert(row.retiredWorkers>=290,'compile heaps survived between files');
-    assert.equal(row.workerCount,Number(process.env.SAFARI_TEST_WORKERS||4)/2);
+    assert.equal(row.workerCount,Number(process.env.SAFARI_TEST_WORKERS||2)/2);
   }
   for(const button of ['game-play','game-play-clang']){
    await page.locator('#'+button).click();
@@ -82,7 +82,7 @@ const requests=[],server=http.createServer((req,res)=>{
   finally{clearInterval(selfProgress);}
   report.inception=await page.evaluate(()=>window.lastInceptionEvent);
   assert.equal(report.inception.kind,'complete',report.inception.error);
-  if(mobile){assert.equal(report.inception.workerCount,Number(process.env.SAFARI_TEST_WORKERS||4));
+  if(mobile){assert.equal(report.inception.workerCount,Number(process.env.SAFARI_TEST_WORKERS||2));
     if(reusable)assert(report.inception.retiredWorkers<=report.inception.workerCount+1,'self-build recreated resettable workers');
     else assert(report.inception.retiredWorkers>=469,'self-build retained compiler heaps');}
   await page.locator('[data-phase=game]').click();

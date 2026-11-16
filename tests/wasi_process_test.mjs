@@ -69,4 +69,30 @@ assert.equal(pool.recycleEvery, 1, 'an older compiler lost its memory limit');
 await pool.initialize(module, [], {runtime: 'clang'});
 assert.equal(pool.recycleEvery, 1, 'the Emscripten host reused native process globals');
 pool.close();
+const releases = [], retired = [];
+const control = {postMessage(data) {
+  if (data.kind === 'retire') retired.push(data.index);
+  else assert.equal(data.kind, 'replace');
+  queueMicrotask(() => control.onmessage({data: {request: data.request, port: data.kind === 'replace' ? workerPort() : undefined}}));
+}, close() {}};
+function workerPort() {
+  return {postMessage(data) {
+    if (data.kind === 'init') queueMicrotask(() => this.onmessage({data: {kind: 'ready'}}));
+    else releases[data.index] = () => this.onmessage({data: {index: data.index}});
+  }, close() {}};
+}
+const tail = new CompilePool([workerPort(), workerPort()], {controlPort: control});
+await tail.initialize(module, []);
+const tasks = [0, 1].map(index => ({args: [], output: `${index}.o`, progress: {index}}));
+globalThis.postMessage = () => {};
+const finish = tail.run(tasks, result => result.index);
+releases[0]();
+await new Promise(resolve => setImmediate(resolve));
+assert.deepEqual(retired, [0], 'an idle worker retained its compiler while a large file was running');
+releases[1]();
+assert.deepEqual(await finish, [0, 1]);
+assert.deepEqual(retired, [0, 1]);
+await tail.initialize(module, [], null, 1);
+assert.equal(tail.activeSlots.length, 1, 'sequential checks recreated the full worker pool');
+tail.close();
 console.log('PASS: process reset restores data, heap, stack and imports; traps retire instances and older compilers stay isolated');
