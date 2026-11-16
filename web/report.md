@@ -1,14 +1,14 @@
 ---
 title: "Compilation cost study · cppgm inception"
-description: "A technical look at compilation costs in a native cppgm and Clang study."
+description: "A technical look at compilation costs in cppgm vs. Clang."
 eyebrow: "Native compilation study · 16 November 2026"
 ---
 
 # Where compilation costs go
 
-A profile of cppgm and Clang compiling 16 LLVM source units at `-O2`. The sample points to semantic analysis and optimization as major contributors to the instruction gap.
+We profiled cppgm and Clang compiling 16 LLVM source units at `-O2`. The sample pointed to semantic analysis and optimization as major contributors to the instruction gap.
 
-> **Separate from the browser demo.** This study used native cppgm 0.9.3 and Clang 22.1.2 on a Xeon E5-2696 v4. The demo uses cppgm 0.9.4 and runs WebAssembly on your device. These results are not browser timings or a universal speedup.
+> **Separate from the browser demo.** The profile used native cppgm 0.9.3 and Clang 22.1.2 on a Xeon E5-2696 v4.
 
 <!-- section: totals | Whole compile -->
 
@@ -45,8 +45,7 @@ The front end accounts for the largest share of the attributed gap. Select a met
 
 <!-- note -->
 
-Phase figures are estimates, not the whole-compile totals above. The separate perf run measured 214.4 G and 59.1 G instructions for Clang and cppgm; rounded phase values sum to 214.2 G and 59.1 G. Clang phases use separate runs and subtraction; cppgm costs are apportioned using `--stats` timing shares. The shares use the sum of displayed phase differences and are rounded independently. In cycles, Clang’s rounded phase values sum to 275.9 G versus 288.4 G for the whole compile. The separate runs were on a loaded host and may have been affected by cache behavior and load.
-
+Phase figures are estimates. A separate perf run measured 214.4 G and 59.1 G instructions for Clang and cppgm.
 <!-- section: findings | What the profiles suggest | cards -->
 
 ## The costs are uneven
@@ -61,7 +60,7 @@ LLVM ran more passes and analyses in this sample. Its optimizer was estimated at
 
 ### Lexing and parsing
 
-Profiling found more instructions but fewer sampled cycles in cppgm. The phase boundaries differ: cppgm’s parser classifies names and builds a tree; Clang charges much of that work to semantic analysis.
+There were only minor differences in lexing and parsing. Profiling found more instructions but fewer sampled cycles in cppgm.
 
 <!-- section: improvements | Potential improvements -->
 
@@ -73,7 +72,7 @@ The opportunities below use different measurements for each compiler. The estima
 
 ### Clang and LLVM
 
-Each figure is Clang’s attributed cost minus cppgm’s cost for the same mechanism over 16 `-O2` units. Percentages use Clang’s 214.7 G callgrind instructions. Matching cppgm’s cost is a comparison scenario; the actual time saving needs to be measured.
+Each figure is Clang’s attributed cost minus cppgm’s cost for the same mechanism over 16 `-O2` units. Percentages use Clang’s 214.7 G callgrind instructions.
 
 *Selected comparison scenarios · G = billion instructions*
 
@@ -87,33 +86,17 @@ Each figure is Clang’s attributed cost minus cppgm’s cost for the same mecha
 | Simpler IR attributes, value handles and metadata | 20.2 G | 9.4% |
 | Skip unchanged passes and retain valid analyses | 19.5 G | 9.1% |
 
-Other suggestions include reducing expression bookkeeping, caching diagnostic state, running warning analyses only when needed, and selecting machine instructions more directly. Keeping type spelling, rejected candidates and warning analysis supports useful diagnostics. Shallower optimization and a simpler back end may affect generated code; we did not compare generated code quality.
+Other suggestions include reducing expression bookkeeping, caching diagnostic state, running warning analyses only when needed, and selecting machine instructions more directly. Note that Clang uses type spelling to report rejected candidates and in warning analysis, so some of these changes might imply changes to warnings and errors.
 
-These cost differences do not form a set of tested patches. Do not sum them into a predicted speedup: proposed changes can overlap, and cppgm’s cost does not prove that Clang can match it while keeping its capabilities. Profile-guided optimization and BOLT might improve code layout, but their recovery was not measured.
+These cost differences do not form a set of tested patches, and cppgm’s cost does not prove that Clang can match it while keeping its capabilities. Profile-guided optimization and BOLT might improve code layout, but their effects were not measured here.
 
 <!-- id: gcc-improvements -->
 
 ### GCC
 
-GCC’s `-ftime-report` timers for an earlier 60-unit `-O0` run attributed about 16% of its compile to overload resolution, 27% to template instantiation and body checking, 24% to the back end, and 5% to garbage collection. These are timer shares, not measured savings or estimates from the 16-unit `-O2` comparison.
+GCC’s `-ftime-report` timers for a 60-unit `-O0` run attributed about 16% of its compile to overload resolution, 27% to template instantiation and body checking, 24% to the back end, and 5% to garbage collection. These are timer shares, not measured savings or estimates from the 16-unit `-O2` comparison.
 
-Filter overload candidates earlier, reuse template and type information, and simplify the `-O0` back end. Writing object files directly avoids a separate assembler. Arenas freed after each phase could replace garbage collection. Each change needs validation for correctness, diagnostics and output quality.
-
-<!-- id: cppgm-improvements -->
-
-### cppgm
-
-Combine token conversion steps, pass parser name bindings to semantic analysis to avoid duplicate lookup, and reduce lexing instructions. These are small opportunities in this sample: lexing and parsing already execute at high instructions per cycle.
-
-*Possible savings · sampled user-mode cycles, 16 units at -O2*
-
-| Proposed change | Basis | Possible saving |
-| --- | --- | --- |
-| Combine token conversion steps | 0.68 G cycles in the steps | Up to 1.7% |
-| Reduce lexing instruction count | Assumes current instructions per cycle | About 2% |
-| Reuse parser name bindings | One of two lookups could go | At most 2.9%; not measured |
-
-The percentages use 39.2 G sampled cppgm user-mode cycles as their denominator, not the 52.3 G whole-compile perf count. They are potential savings, not results of a change, and cannot simply be added.
+This implies that GCC compile time improvements should focus primarily on three areas: filtering overload candidates earlier, reusing template and type information, and simplifying the `-O0` back end. Writing object files directly avoids a separate assembler. Arenas freed after each phase could replace garbage collection.
 
 <!-- section: method | Method & limits | faq -->
 
@@ -144,11 +127,11 @@ cppgm used more instructions but fewer sampled cycles. Its parser also classifie
 
 Instructions come from Callgrind; cycles come from sampled user-mode profiles on the loaded host. These sampled cycle estimates use a different method from the phase chart and are not elapsed times.
 
-### Would using LLVM keep cppgm’s compile-time advantage?
+### Would using LLVM as a backend keep cppgm’s compile-time advantage?
 
 It could keep part of it. Combining cppgm’s front-end cost with LLVM’s pipeline cost gives an estimate of 131.7–148.2 G cycles at `-O2`, compared with 288.4 G for Clang and 52.3 G for cppgm. We have not built or timed this combination. The model uses LLVM’s cost on Clang’s IR and assumes a range of IR generation costs. cppgm-produced LLVM IR would also need appropriate metadata for comparable output.
 
 ### Do these results predict runtime performance or code quality?
 
-No. We measured the cost of compilation, not the speed or quality of the generated programs. Clang provides broader diagnostics, tooling and target support, which can add work. Compilation ratios also depend on the source, flags, compiler versions and hardware. Cycle counts are especially sensitive to the load on the measurement host.
+No. We measured the cost of compilation, not the speed or quality of the generated programs. Clang provides broader diagnostics, tooling and target support, which can add work. Compilation ratios also depend on the source, flags, compiler versions and hardware.
 

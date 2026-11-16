@@ -47,11 +47,11 @@ const server = http.createServer((req, res) => {
     assert.equal(await page.locator('details').first().getAttribute('open'), '');
     await page.locator('#lexing-evidence summary').click();
     assert.equal(await page.locator('#lexing-evidence').getAttribute('open'), '');
-    for (const id of ['clang-improvements', 'gcc-improvements', 'cppgm-improvements']) {
-      assert.equal(await page.locator(`#improvements #${id}`).isVisible(), true);
+    for (const group of await page.locator('#improvements .improvement-group').all()) {
+      assert.equal(await group.isVisible(), true);
+      const id=await group.getAttribute('id');
       assert.equal(await page.locator(`#method #${id}`).count(), 0);
     }
-    assert.match(await page.locator('#cppgm-improvements').innerText(), /39\.2 G sampled/);
     assert.match(await page.locator('#lexing-evidence').innerText(), /5\.57 \/ 3\.99/);
     for (const width of [320, 390, 768, 1440]) {
       await page.setViewportSize({ width, height: 900 });
