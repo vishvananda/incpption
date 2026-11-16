@@ -73,7 +73,11 @@ const requests=[],server=http.createServer((req,res)=>{
   await page.locator('#rerun-phase').click();await page.locator('#cancel').click();assert.equal(await page.locator('#cancel').isEnabled(),false);
   await page.locator('[data-journey=inception]').click();
   await page.locator('[data-phase=match]').click();
-  await page.waitForFunction(()=>window.lastInceptionEvent?.kind==='complete'||window.lastWorkflowEvent?.kind==='error',null,{timeout:900000});
+  const selfProgress=setInterval(()=>page.evaluate(()=>({status:document.getElementById('status')?.textContent,files:document.getElementById('completed')?.textContent,event:window.lastInceptionEvent,workflow:window.lastWorkflowEvent})).then(value=>{
+   fs.writeFileSync(path.join(out,'self-build-progress.json'),JSON.stringify(value,null,2));console.log('self-build',JSON.stringify(value));
+  }).catch(()=>{}),15000);
+  try{await page.waitForFunction(()=>window.lastInceptionEvent?.kind==='complete'||window.lastWorkflowEvent?.kind==='error',null,{timeout:900000});}
+  finally{clearInterval(selfProgress);}
   report.inception=await page.evaluate(()=>window.lastInceptionEvent);
   assert.equal(report.inception.kind,'complete',report.inception.error);
   if(mobile){assert.equal(report.inception.workerCount,Number(process.env.SAFARI_TEST_WORKERS||4));assert(report.inception.retiredWorkers>=469,'self-build retained compiler heaps');}
