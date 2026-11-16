@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Measure a frozen Emscripten compilation database with cppgm's C/C++ modes."""
+"""Measure a frozen Emscripten compilation database with cppgm's C/C++ and Wasm assembly modes."""
 import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import hashlib
@@ -27,9 +27,10 @@ def main():
     start = time.monotonic()
 
     def compile_one(index, item):
-        language = 'c' if Path(item['file']).suffix == '.c' else 'c++'
+        suffix = Path(item['file']).suffix
+        language = 'assembler-with-cpp' if suffix == '.S' else 'c' if suffix == '.c' else 'c++'
         prefix = [value for value in flags if not value.startswith('-std=') and
-                  (language != 'c' or not value.startswith(('-D__GNUG__', '-D__GXX_ABI_VERSION')))]
+                  (language == 'c++' or not value.startswith(('-D__GNUG__', '-D__GXX_ABI_VERSION')))]
         original = item.get('arguments') or shlex.split(item['command'])
         actual = []
         for value in original[1:]:
@@ -44,8 +45,10 @@ def main():
             actual.append(value)
         output = args.output.resolve() / f'{index:05}.o'
         actual[actual.index('-o') + 1] = str(output)
-        if language == 'c':
+        if language != 'c++':
             actual = [v for v in actual if not v.startswith(('-std=c++', '-std=gnu++'))]
+        if language == 'assembler-with-cpp':
+            actual = [v for v in actual if not v.startswith('-std=')]
         command = [str(args.compiler.resolve()), *prefix, '-x', language, *actual, '-O3']
         before = time.monotonic()
         logfile = output.with_suffix('.log')
