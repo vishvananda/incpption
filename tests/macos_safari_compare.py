@@ -8,6 +8,7 @@ import sys
 out = Path('build/macos-safari')
 out.mkdir(parents=True, exist_ok=True)
 observations = []
+expected_outputs = None
 cases = [('A1', os.environ['SAFARI_TEST_ORIGIN']),
                       ('B1', os.environ['SAFARI_COMPARE_ORIGIN']),
                       ('B2', os.environ['SAFARI_COMPARE_ORIGIN']),
@@ -27,6 +28,14 @@ for label, origin in cases:
     subprocess.run([sys.executable, str(Path(__file__).with_name('macos_safari_test.py'))],
                    env=environment, check=True)
     report = json.loads((out / label / 'report.json').read_text())
+    outputs = {(row['lane'], row['name']): row['sha256']
+               for row in report['compileEvents'] if row.get('kind') == 'unit' and 'sha256' in row}
+    if not outputs:
+        raise RuntimeError('comparison did not record output hashes')
+    if expected_outputs is None:
+        expected_outputs = outputs
+    if outputs != expected_outputs:
+        raise RuntimeError('comparison changed compiler output bytes: ' + label)
     observations.append({'label': label, 'origin': origin, 'host': host,
                          'cppgm': report['cppgm']['compileSeconds'],
                          'clang': report['clang']['compileSeconds']})

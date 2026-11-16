@@ -42,8 +42,10 @@ Phones default to two compile workers, one in each comparison lane.
 They bound compiler memory and load the linker in a fresh worker after
 compilation. Releases with the optional WASI host helpers reuse one compiler
 instance per worker: its data, heap and stack are reset between files while
-its reserved memory and browser execution state stay warm. Older releases and
-the Emscripten Clang host release each worker after a file.
+its reserved memory and browser execution state stay warm. Clang also reuses
+its Wasm instance, with fresh JavaScript runtime and filesystem state for each
+file. Both optimizations apply on phones and desktops. Older cppgm releases
+release each phone worker after a file.
 Idle workers are released as soon as their queue finishes. Four workers remain
 available in Build details. Desktops use up to eight workers.
 

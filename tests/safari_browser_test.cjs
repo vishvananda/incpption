@@ -54,7 +54,7 @@ const requests=[],server=http.createServer((req,res)=>{
   assert.equal(await page.locator('#comparison-result').isVisible(),true);
   if(mobile)for(const [lane,row] of Object.entries({cppgm:report.cppgm,clang:report.clang})){
     assert.equal(row.deferredLinker,true,'linker shares the compiler realm');
-    if(lane==='cppgm'&&reusable)assert.equal(row.retiredWorkers,row.workerCount,'resettable compilers recreated workers');
+    if(lane==='clang'||reusable)assert.equal(row.retiredWorkers,row.workerCount,'resettable compilers recreated workers');
     else assert(row.retiredWorkers>=290,'compile heaps survived between files');
     assert.equal(row.workerCount,Number(process.env.SAFARI_TEST_WORKERS||2)/2);
   }

@@ -1,4 +1,5 @@
 import {supportsProcessReuse} from './wasi_process.mjs';
+import {supportsEmscriptenProcessReuse} from './emscripten_process.mjs';
 
 export class CompilePool {
   constructor(ports, {controlPort, recycleEvery = 0} = {}) {
@@ -38,7 +39,7 @@ export class CompilePool {
   async initialize(module, layers, host = null, count = this.slots.length) {
     if (!Number.isInteger(count) || count < 1 || count > this.slots.length) throw Error('Invalid active worker count');
     this.activeSlots = this.slots.slice(0, count);
-    this.reuseProcess = !host && supportsProcessReuse(module);
+    this.reuseProcess = host ? supportsEmscriptenProcessReuse(module, host.program) : supportsProcessReuse(module);
     this.recycleEvery = this.reuseProcess ? 0 : this.defaultRecycleEvery;
     this.init = {kind: 'init', module, layers, host};
     await Promise.all(this.activeSlots.map(async slot => {
