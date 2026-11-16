@@ -26,7 +26,7 @@ self.onmessage=async({data})=>{
     await pool.initialize(clang?.module||module,layers,clang?{runtime:clang.runtime,program:'clang++'}:null);
     if(data.barrier){const ready=new Promise(resolve=>{release=resolve;});postMessage({kind:'prepared'});await ready;release=null;}
     const compileStarted=performance.now();
-    const tasks=manifest.commands.map((row,index)=>({...row,estimatedSeconds:row.seconds,sourceDateEpoch:manifest.source_date_epoch,args:clang?clangCompileArgs(row.args,row.language,manifest.source_date_epoch,manifest.id==='godot'):row.args,
+    const tasks=manifest.commands.map((row,index)=>({...row,sourceDateEpoch:manifest.source_date_epoch,args:clang?clangCompileArgs(row.args,row.language,manifest.source_date_epoch,manifest.id==='godot'):row.args,
       progress:{index,total:units.length,name:row.name,source:row.source,category:row.category}}));
     let peak=0;
     await pool.run(tasks,async(result,command,index)=>{

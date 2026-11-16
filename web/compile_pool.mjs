@@ -60,13 +60,9 @@ export class CompilePool {
   invoke(task) {return this.execute(this.slots[0], task);}
   async run(tasks, completed) {
     const results = new Array(tasks.length); let next = 0;
-    const cost = task => Number.isFinite(task.estimatedSeconds) && task.estimatedSeconds > 0 ? task.estimatedSeconds : 0;
-    // Keep expensive units off the tail, preserving their original result/grid indices.
-    const order = tasks.some(task => cost(task))
-      ? tasks.map((_, index) => index).sort((a, b) => cost(tasks[b]) - cost(tasks[a]) || a - b) : null;
     await Promise.all(this.slots.map(async slot => {
       while (next < tasks.length) {
-        const index = order ? order[next++] : next++, task = tasks[index];
+        const index = next++, task = tasks[index];
         postMessage({kind: 'progress', ...task.progress});
         results[index] = await completed(await this.execute(slot, task, index), task, index);
       }
