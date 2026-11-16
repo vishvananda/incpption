@@ -1,7 +1,7 @@
 {
   "name": "cppgm inception",
   "domain": "incpption.com",
-  "description": "Meet cppgm, a C++ compiler built to be fast. Fast enough to compile in your browser up to 4× faster than Clang.",
+  "description": "Meet cppgm, a C++ compiler built to be fast. Fast enough to compile in your browser at 4× the speed of Clang.",
   "compiler_release": {
     "version": "v0.9.5",
     "revision": "50b6ccfce58613983aa027e54e11d6a071971a9a",
