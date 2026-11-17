@@ -169,5 +169,18 @@ header,main{width:calc(100% - 32px)}header{grid-template-columns:1fr auto;gap:8p
 
 .mobile-analysis{display:none}#comparison-analysis{text-align:center;font-size:12px;margin:12px 0}#comparison-analysis[hidden]{display:none}@media(max-width:700px){.mobile-analysis{display:block;font-size:12px;margin:6px 0 0}.mobile-analysis a{display:inline-block;padding:4px 0}}
 
-/* Fit both editor dimensions so the whole canvas and Close stay visible. */
-#game-modal[data-project=godot]{width:min(1400px,calc(100vw - 32px),calc((100dvh - 180px)*1.6 + 34px))}
+/* Reserve space for the header and status before fitting the editor. */
+#game-modal[data-project=godot][open] {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  width: min(1400px, calc(100vw - 32px));
+  height: min(1000px, calc(100dvh - 32px), calc((100vw - 66px) * .625 + 144px));
+}
+#game-modal[data-project=godot] #game-surface {
+  container-type: size;
+  display: grid;
+  place-items: center;
+}
+#game-frame[data-project=godot] {
+  width: min(100%, 160cqh);
+}

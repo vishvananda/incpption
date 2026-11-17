@@ -17,7 +17,17 @@ const server=http.createServer((req,res)=>{
  const browser=await chromium.launch({headless:true,args:['--no-sandbox','--enable-unsafe-swiftshader','--use-angle=swiftshader','--site-per-process']});
  try{
   for(const compiler of ['cppgm','clang']){
-  const page=await browser.newPage({viewport:{width:1280,height:720},deviceScaleFactor:2}),errors=[];page.setDefaultTimeout(180000);
+  const page=await browser.newPage({viewport:{width:1379,height:994},deviceScaleFactor:2}),errors=[];page.setDefaultTimeout(180000);
+  if (target === 'godot') {
+    // Headless Chromium can emulate the top-level viewport without changing
+    // DPI and screen dimensions inside its cross-origin player frame.
+    await page.addInitScript(() => {
+      if (window === top) return;
+      Object.defineProperty(window, 'devicePixelRatio', {value: 2});
+      Object.defineProperty(screen, 'width', {value: 1800});
+      Object.defineProperty(screen, 'height', {value: 1169});
+    });
+  }
   page.on('pageerror',error=>{errors.push(String(error));console.error(error.stack);});
   await page.goto(`http://127.0.0.1:${server.address().port}/index.html`);
    async function start(){
@@ -37,8 +47,9 @@ const server=http.createServer((req,res)=>{
     assert(geometry.inside&&geometry.close&&!geometry.overflow,'Editor clipped: '+JSON.stringify(geometry));
     assert.equal(geometry.scroll,0,'Focusing editor scrolled its modal');
     assert(Math.abs(geometry.ratio-1.6)<0.01,'Editor aspect ratio changed');
-    const canvas=await page.frameLocator('#game-frame').locator('#canvas').evaluate(c=>{const r=c.getBoundingClientRect();return{inside:r.left>=0&&r.top>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1,size:[c.width,c.height]};});
+    const canvas=await page.frameLocator('#game-frame').locator('#canvas').evaluate(c=>{const r=c.getBoundingClientRect();return{inside:r.left>=0&&r.top>=0&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1,size:[c.width,c.height],dpr:devicePixelRatio};});
     assert(canvas.inside,'Canvas clipped inside iframe: '+JSON.stringify(canvas));assert.deepEqual(canvas.size,[1280,800]);
+    assert.equal(canvas.dpr,2,'Godot player did not run with the Retina display metrics');
    }
    console.log('Starting',compiler);await start();console.log('Started',compiler);
    if(target==='godot'){
@@ -46,7 +57,7 @@ const server=http.createServer((req,res)=>{
     await require('./godot_editor_journey.cjs').openCreate(page);await assertFits();
     await page.evaluate(()=>window.openLaraGame.close());await page.waitForTimeout(250);
     console.log('Starting fresh manager',compiler);await start();console.log('Creating project',compiler);await require('./godot_editor_journey.cjs').createProject(page,compiler,out,{center:true});
-    for(const viewport of [{width:1440,height:1000},{width:1024,height:640},{width:390,height:844}]){await page.setViewportSize(viewport);await page.waitForTimeout(300);await assertFits();await page.screenshot({path:path.join(out,`godot-${compiler}-${viewport.width}.png`)});}
+    for(const viewport of [{width:1440,height:1000},{width:1280,height:720},{width:1024,height:640},{width:390,height:844}]){await page.setViewportSize(viewport);await page.waitForTimeout(300);await assertFits();await page.screenshot({path:path.join(out,`godot-${compiler}-${viewport.width}.png`)});}
     await page.setViewportSize({width:1280,height:720});await assertFits();
    }
    await page.evaluate(()=>window.openLaraGame.close());await page.waitForTimeout(250);assert.deepEqual(errors,[]);
