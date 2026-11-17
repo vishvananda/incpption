@@ -52,6 +52,7 @@ jobs:
           path: .cache
           key: compiler-payload-${{ hashFiles('config/*lock.json') }}
       - run: npm run build
+      - run: npm run test:sharing
       - run: npm test
         env:
           DEMO_TEST_WORKERS: '8'

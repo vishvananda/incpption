@@ -83,6 +83,20 @@ stable and mark the chart, stat cards and FAQ. An italic line above a table
 becomes its caption. The page shell is [web/report.template.html](web/report.template.html);
 styling and chart interaction remain in `web/report.css` and `web/report.mjs`.
 
+## Sharing previews
+
+The page supplies the description from `site.json` and a static logo image for
+LinkedIn, Messages and other link previews. Image URLs include a hash so a new
+image has a new URL. To regenerate the committed PNGs after changing the logo,
+run `npm run build:sharing` with Playwright Chromium installed. The renderer
+uses the same logo markup and CSS as the page. `npm run test:sharing` checks
+the built page metadata and image bytes.
+
+LinkedIn caches previews separately from the site's CDN. Use its
+[Post Inspector](https://www.linkedin.com/post-inspector/) to refresh a shared
+URL; existing posts may keep their old preview. Each messaging app chooses
+whether to show the description below the image.
+
 ## Run locally
 
 Use Python 3.11+ and Node 22+:
