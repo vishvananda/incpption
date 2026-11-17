@@ -50,6 +50,7 @@ for name in ['index.html', 'wasi_demo.html']:
         assert config['project_prompt'] not in head.meta[field]
     for field in ['og:title', 'og:type', 'og:url', 'og:site_name']:
         assert head.meta[field]
+    assert head.meta['og:title'] == head.meta['twitter:title'] == config['share_title']
     assert head.meta['twitter:card'] == 'summary_large_image'
     assert head.meta['og:image'] == head.meta['og:image:secure_url'] == head.meta['twitter:image']
     assert head.meta['og:image:type'] == 'image/png'

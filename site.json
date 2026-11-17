@@ -1,5 +1,6 @@
 {
   "name": "cppgm inception",
+  "share_title": "Compile C++ in your browser",
   "domain": "incpption.com",
   "description": "Meet cppgm, a C++ compiler built to be fast. Fast enough to compile in your browser at 4× the speed of Clang.",
   "compiler_release": {

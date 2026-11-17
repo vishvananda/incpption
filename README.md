@@ -85,7 +85,7 @@ styling and chart interaction remain in `web/report.css` and `web/report.mjs`.
 
 ## Sharing previews
 
-The page supplies the description from `site.json` and a static logo image for
+The page supplies a short preview title, the description from `site.json` and a static logo image for
 LinkedIn, Messages and other link previews. Image URLs include a hash so a new
 image has a new URL. To regenerate the committed PNGs after changing the logo,
 run `npm run build:sharing` with Playwright Chromium installed. The renderer
