@@ -15,8 +15,8 @@ export class PlayerSession {
       if(data.kind==='progress')this.onprogress?.(data);
       if(data.kind?.startsWith('preload-'))this.onpreload?.(data);
       if (data.kind === 'draws') this.draws = data.count;
-      if (data.kind === 'size') this.frame.style.height = Math.max(240, Math.min(1200, data.height)) + 'px';
-      if (data.kind === 'playing') {this.draws = data.count; this.frame.focus(); this.startResolve?.(this);}
+      if (data.kind === 'size' && this.project !== 'godot') this.frame.style.height = Math.max(240, Math.min(1200, data.height)) + 'px';
+      if (data.kind === 'playing') {this.draws = data.count; this.frame.focus({preventScroll:true}); this.startResolve?.(this);}
       if (data.kind === 'error') this.startReject?.(Error(data.error));
       if (data.kind === 'ack') {this.requests.get(data.request)?.(); this.requests.delete(data.request);}
     };
@@ -25,6 +25,9 @@ export class PlayerSession {
     surface.append(this.frame);
   }
   async start(build) {
+    this.project=build.project;
+    this.frame.dataset.project=build.project||'lara';
+    if(build.project==='godot')Object.assign(this.frame.style,{height:'auto',minHeight:'0',aspectRatio:'1280 / 800'});
     const result = new Promise((resolve,reject) => {this.startResolve = resolve; this.startReject = reject;});
     // Register the rejection handler before a user can close during loading.
     result.catch(() => {});

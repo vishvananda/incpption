@@ -168,3 +168,6 @@ header,main{width:calc(100% - 32px)}header{grid-template-columns:1fr auto;gap:8p
 #flow-rows.comparison .flow,#flow-rows:not(.comparison) .flow{gap:32px}
 
 .mobile-analysis{display:none}#comparison-analysis{text-align:center;font-size:12px;margin:12px 0}#comparison-analysis[hidden]{display:none}@media(max-width:700px){.mobile-analysis{display:block;font-size:12px;margin:6px 0 0}.mobile-analysis a{display:inline-block;padding:4px 0}}
+
+/* Fit both editor dimensions so the whole canvas and Close stay visible. */
+#game-modal[data-project=godot]{width:min(1400px,calc(100vw - 32px),calc((100dvh - 180px)*1.6 + 34px))}

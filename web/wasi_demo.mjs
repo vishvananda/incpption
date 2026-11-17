@@ -455,6 +455,7 @@ $('game-modal').addEventListener('click',event=>{if(event.target===$('game-modal
 async function openGame(id='game'){
   if(phase(id).state!=='done'||playing||opening)return;
   selectedGame=id;const launch=++gameLaunch;opening=true;
+  $('game-modal').dataset.project=target;
   $('game-modal-title').textContent=`${plan.targets[target].name} · built in your browser`;$('game-help').textContent=target==='godot'?'Create or open a project in the editor. Close to return to the build.':target==='doom'?'WASD to move · Mouse to aim and fire · Space to jump · Esc for menu. Touch controls are below the game.':'Arrow keys to move · Ctrl to act · Alt to jump · Esc for menu. Touch controls are below the game.';$('game-modal').showModal();$('game-status').textContent='Opening the game you just built…';delete window.gameError;
   try{
     ensurePlayer();

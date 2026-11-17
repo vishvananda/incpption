@@ -9,8 +9,8 @@ export async function playGodot(canvas,build,log,onProgress){
     onExit:()=>{
       if(!nextArgs)return;const args=nextArgs;nextArgs=null;
       const replacement=canvas.cloneNode();canvas.replaceWith(replacement);canvas=replacement;
-      setTimeout(()=>engine.start({args,canvas,persistentDrops:args.includes('--project-manager')}).then(()=>canvas.focus()).catch(error=>log(String(error))),0);
+      setTimeout(()=>engine.start({args,canvas,persistentDrops:args.includes('--project-manager')}).then(()=>canvas.focus({preventScroll:true})).catch(error=>log(String(error))),0);
     }});
-  await engine.init();await engine.start({args:['--project-manager','--single-window']});canvas.focus();
+  await engine.init();await engine.start({args:['--project-manager','--single-window']});canvas.focus({preventScroll:true});
   return{get module(){return engine.rtenv;},engine};
 }
