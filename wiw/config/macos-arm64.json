@@ -1,0 +1,7 @@
+{
+  "version": "v0.9.7",
+  "revision": "1763cb9b6e07c8c5cf27f44cc0ee379db6efff19",
+  "sha256": "b9b1b4de0e5896bb1a747535652bc6c73613cdf65c24adb50fa224df230cd3b6",
+  "archive_url": "https://github.com/vishvananda/cppgm/releases/download/v0.9.7/cppgm-v0.9.7-wasm32-wasip1.tar.gz",
+  "archive_sha256": "7b04c31925ae18ffe904613be718544f672db95a716158715d712c456acef381"
+}

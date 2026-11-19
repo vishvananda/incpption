@@ -1,5 +1,5 @@
 import {extraProjects, qrRepo} from './presets.mjs';
-import {discover, examples, boundedBytes, planBlob, planKey, rawFile, remote, repoName, unpackPlan} from './plans.mjs';
+import {discover, examples, boundedBytes, planBlob, planKey, rawFile, remote, repoName, sourcePaths, unpackPlan, validatePlan} from './plans.mjs';
 import {ProjectTree} from './project_tree.mjs';
 import {bundleLayers} from './bundle_layers.mjs';
 import {fetchBytes, hash} from './transport_bytes.mjs';
@@ -13,7 +13,7 @@ const decoder = new TextDecoder();
 const config = await fetch('settings.json').then(response => response.json());
 const policy = buildPolicy();
 const sharedAssets = config.sharedAssets ?? '';
-const choices = [...extraProjects, ...examples];
+const choices = [...extraProjects.filter(row => !row.prepared || config.preparedPlans?.[row.repo.toLowerCase()]), ...examples];
 const view = {plan:null, project:null, manifest:null, snapshot:null, operation:null, build:null, selected:null};
 const built = new Set(), states = new Map();
 const outputs = new Set();
@@ -97,7 +97,7 @@ async function readFile(file) {
       const [layer] = await bundleLayers(prefix, view.manifest, {select: row => row.path === file.path});
       const [row] = layer.files;
       bytes = layer.bundle.subarray(row.offset, row.offset + row.size);
-    } else if (owner.kind === 'wasi') {
+    } else if (owner.kind === 'wasi' || owner.kind === 'macho') {
       const path = file.path.slice('checkout/'.length);
       bytes = Object.hasOwn(owner.generated ?? {}, path) ? new TextEncoder().encode(owner.generated[path]) :
         await boundedBytes(await remote(rawFile(owner, path)), 1024 * 1024);
@@ -178,7 +178,8 @@ function reset() {
 }
 function setTarget(kind, target) {
   $('target').hidden = !kind;
-  $('target').textContent = kind === 'alpine-cwl' && !target ? 'Linux x86-64 · musl' : kind === 'wasi' || target === 'wasm32-wasip1' ? 'Wasm · WASI' : 'Wasm · Emscripten';
+  $('target').textContent = kind === 'macho' ? 'macOS arm64 · Mach-O' :
+    kind === 'alpine-cwl' && !target ? 'Linux x86-64 · musl' : kind === 'wasi' || target === 'wasm32-wasip1' ? 'Wasm · WASI' : 'Wasm · Emscripten';
 }
 
 async function present(project, plan, origin, signal) {
@@ -206,12 +207,14 @@ async function present(project, plan, origin, signal) {
     progress(view.manifest.commands.length + view.manifest.archives.length + 1);
     status(origin + ' · cppgm ' + config.compilerVersion + (example.id === 'godot' ? ' · Long build' : ''));
     log('Using the frozen incpption Emscripten inputs for ' + example.title + '.');
-  } else if (plan?.kind === 'wasi') {
+  } else if (plan?.kind === 'wasi' || plan?.kind === 'macho') {
     const sources = plan.sources.map(path => 'checkout/' + path);
-    files([...sources, ...[...(plan.files ?? []), ...Object.keys(plan.generated ?? {})].map(path => 'checkout/' + path)].map(path => ({path})), sources, 'checkout');
+    files(sourcePaths(plan).map(path => ({path:'checkout/' + path})), sources, 'checkout');
     progress(plan.sources.length + 1);
-    status(origin + ' · ' + plan.commit.slice(0, 10));
-    log('WASI plan ready. Source files will be loaded from GitHub at the pinned commit.');
+    const macho = plan.kind === 'macho';
+    $('download-plan').hidden = !macho;
+    status(origin + ' · ' + (macho && config.machoCompilerVersion ? 'cppgm ' + config.machoCompilerVersion + ' · ' : '') + plan.commit.slice(0, 10));
+    log((macho ? 'macOS arm64' : 'WASI') + ' plan ready. Loading source from GitHub at the pinned commit.');
   } else if (plan?.kind === 'emscripten') {
     status('Loading captured sources…');
     const {emscriptenLayer} = await import('./emscripten_replay.mjs');
@@ -355,6 +358,11 @@ async function runBuild() {
       $('results').replaceChildren(play, download(webZip(result.files), packageName, 'application/zip'));
       $('results').hidden = false;
     } else resultLinks(result.files, result.game);
+    if (plan.kind === 'macho') {
+      const instructions = document.createElement('code');
+      instructions.textContent = 'chmod +x ./' + plan.output;
+      $('results').append(instructions);
+    }
     preloadGameData(0);
   } catch (error) {
     if (!controller.signal.aborted) {
@@ -547,7 +555,9 @@ $('close-qr').onclick = () => $('qr-dialog').close();
 $('close-player').onclick = () => $('player-dialog').close();
 $('player-dialog').onclose = closePlayer;
 $('download-plan').onclick = () => {
-  if (view.plan?.snapshot) download(planBlob(view.plan), view.project.repo.split('/').at(-1) + '.wwplan').click();
+  const plan = view.plan;
+  if (plan?.snapshot) download(planBlob(plan), view.project.repo.split('/').at(-1) + '.wwplan').click();
+  if (plan?.kind === 'macho') download(JSON.stringify(plan, null, 2) + '\n', plan.output + '-macos-arm64.json', 'application/json').click();
 };
 $('plan-file').onchange = async event => {
   const [file] = event.target.files;
@@ -557,7 +567,12 @@ $('plan-file').onchange = async event => {
   const controller = begin('Opening saved plan…');
   try {
     if (file.size > 128 * 1024 * 1024) throw Error('The saved plan exceeds 128 MiB.');
-    const plan = await unpackPlan(new Uint8Array(await file.arrayBuffer()), project);
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    let plan;
+    if (file.name.endsWith('.json')) {
+      plan = validatePlan(JSON.parse(decoder.decode(bytes)), project);
+      if (plan.kind !== 'macho') throw Error('Choose a Mach-O JSON plan or an Alpine workspace.');
+    } else plan = await unpackPlan(bytes, project);
     controller.signal.throwIfAborted();
     await present({...project, commit:plan.commit}, plan, 'Plan file', controller.signal);
   } catch (error) {

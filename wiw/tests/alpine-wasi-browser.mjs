@@ -25,7 +25,7 @@ try {
     }));
   }
   await page.goto(base);
-  await page.waitForFunction(() => document.querySelectorAll('#examples option').length === 5);
+  await page.waitForFunction(repo => document.querySelector(`#examples option[value="https://github.com/${repo}"]`), repo);
   await page.locator('#repo').fill('https://github.com/' + repo);
   await page.getByRole('button', {name:'Build', exact:true}).click();
   const dialog = page.locator('#alpine-dialog');

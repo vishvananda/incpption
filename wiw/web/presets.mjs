@@ -4,6 +4,7 @@ const qrRevision = '715e29fd4cd71b6e452ae0f4e36d917b43122ce8';
 export const extraProjects = [
   {repo:qrRepo, title:'QR Code generator', ref:qrRevision},
   {repo:'olzhasar/sdl-tetris', title:'SDL Tetris', prepared:true},
+  {repo:'benhoyt/inih', title:'INI reader (macOS arm64)', prepared:true},
 ];
 
 export function presetRecipe({repo, commit}, target) {

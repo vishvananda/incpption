@@ -36,6 +36,18 @@ def compress(source, dest):
             shutil.copyfileobj(src, zipped)
 
 
+def stage_macho_compiler(source, destination):
+    release = read(ROOT / 'config/macos-arm64.json')
+    digest = hashlib.sha256(source.read_bytes()).hexdigest()
+    if digest != release['sha256']:
+        raise ValueError(f"Expected the cppgm.wasm binary from {release['version']}")
+    path = f"macos-arm64/cppgm-{release['version']}-{digest[:16]}.bin"
+    output = destination / path
+    output.parent.mkdir(parents=True, exist_ok=True)
+    compress(source, output)
+    return {'version': release['version'], 'path': path, 'sha256': digest}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--incpption', type=Path, required=True, help='built incpption site with all three projects')
@@ -44,6 +56,7 @@ def main():
     parser.add_argument('--shared-root', action='store_true', help='share compiler and SDK URLs with incpption at the origin root')
     parser.add_argument('--wasi-probe', type=Path, help='static x86-64 Linux cppgm for Alpine WASI configure checks')
     parser.add_argument('--compiler', type=Path, help='fast cppgm WASI seed for the portable plan runner')
+    parser.add_argument('--macho-compiler', type=Path, help='pinned release bin/cppgm.wasm for the Apple Silicon profile')
     parser.add_argument('--binaryen', type=Path, help='pinned Binaryen CMake build for browser Emscripten plans')
     parser.add_argument('--emscripten-plan', type=Path, action='append', default=[], help='stage a captured Emscripten plan')
     parser.add_argument('--registry', help='optional public HTTPS JSON plan index')
@@ -83,6 +96,9 @@ def main():
     if args.shared_root:
         profile['sharedAssets'] = '/'
         profile['wasiCompilerSha256'] = hashlib.sha256(seed.read_bytes()).hexdigest()
+    macho_compiler = stage_macho_compiler(args.macho_compiler, DIST) if args.macho_compiler else None
+    if macho_compiler:
+        profile['machoCompiler'] = macho_compiler
     probe_bytes = 0
     if args.wasi_probe:
         probe = args.wasi_probe.read_bytes()
@@ -100,6 +116,8 @@ def main():
     if args.binaryen:
         stage_binaryen(args.binaryen, DIST / 'binaryen')
     prepared = {}
+    if macho_compiler:
+        prepared['benhoyt/inih'] = 'plans/inih-macos-arm64.json'
     for directory in args.emscripten_plan:
         plan = read(directory / 'plan.json')
         if (plan['kind'] != 'emscripten' or not re.fullmatch(r'[A-Za-z0-9_-]+/[A-Za-z0-9_.-]+', plan['repo']) or
@@ -130,6 +148,7 @@ def main():
         'wasiSdkBytes': wasi_sdk_bytes,
         'guestBytes': sum((args.alpine / row['path']).stat().st_size for row in guest['chunks']),
         'compilerVersion': metadata['compiler_version'],
+        'machoCompilerVersion': macho_compiler['version'] if macho_compiler else None,
         'compilerBytes': len(data),
         'exampleCompilerBytes': game_seed.stat().st_size,
     })

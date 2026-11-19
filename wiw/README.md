@@ -16,6 +16,7 @@ Use Node.js 22 or later and Python 3. Stage these inputs once.
 | `--wasi-probe` | A static x86-64 Linux cppgm executable for configure checks in the Alpine guest. |
 | `--shared-root` | Use incpption's asset URLs when this app is mounted at `/wiw/`. |
 | `--compiler` | Optional raw Wasm seed for portable plans. Use an optimized `-O3` binary for the performance profile. |
+| `--macho-compiler` | The `bin/cppgm.wasm` from the pinned cppgm WASI release for Apple Silicon output. |
 | `--binaryen` and `--emscripten-plan` | Optional browser Binaryen build and captured Emscripten plan. |
 
 ```sh
@@ -64,6 +65,31 @@ A WASI plan lists the translation units and additional source inputs, such as he
   "output": "project.wasm"
 }
 ```
+
+### Apple Silicon plan
+
+Choose **INI reader (macOS arm64)**, then **Build** and **Download inih**. The
+browser uses the published cppgm v0.9.7 Wasm compiler and the existing Wasm LLD
+to build an ad-hoc-signed executable for Apple Silicon running macOS 11 or
+later. The compiled program reads an INI file and prints its keys and values.
+
+```sh
+printf '[build]\ntarget = arm64\n' > settings.ini
+chmod +x ./inih
+./inih settings.ini
+```
+
+A plan of `kind: "macho"` uses the same `sources`, `files`, `generated`, and
+`compileFlags` as the WASI plan. Set `output` to the executable name. List
+the macOS `libSystem` functions the program imports by their C names, such as
+`fopen`. The profile uses macOS's installed `libSystem` and supplies only the
+target headers named in the plan. It does not include a macOS SDK or generate
+Mach-O plans from Alpine. [Example profile](web/plans/inih-macos-arm64.json)
+
+When staging this profile, pass `--macho-compiler` the extracted `bin/cppgm.wasm`
+from the published archive. The stage tool checks the binary against the release
+pin in [macos-arm64.json](config/macos-arm64.json). The frozen browser game
+plans keep their qualified compiler builds for reproducibility.
 
 ### Alpine plan
 
@@ -118,6 +144,7 @@ Run the browser tests against the staged local server with Playwright and Chromi
 node tests/browser.mjs lara doom godot
 node tests/wasi-browser.mjs
 node tests/cmake-wasi-browser.mjs web/plans/xxhash-wasi.json
+node tests/macho-browser.mjs
 node tests/alpine-browser.mjs
 node tests/alpine-wasi-browser.mjs
 node tests/emscripten-browser.mjs /web-plans/owner/project/commit/plan.json

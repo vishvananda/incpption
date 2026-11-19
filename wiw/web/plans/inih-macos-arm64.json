@@ -1,0 +1,17 @@
+{
+  "schema": "willitwasm/v1",
+  "kind": "macho",
+  "repo": "benhoyt/inih",
+  "commit": "5cc5e2c24642513aaa5b19126aad42d0e4e0923e",
+  "sources": ["ini.c", "profile/main.c"],
+  "files": ["ini.h"],
+  "compileFlags": ["-std=c17", "-Icheckout/profile"],
+  "libSystem": ["fopen", "fclose", "fgets", "isspace", "strchr", "strlen", "strcmp", "memcpy", "memset", "printf", "puts"],
+  "output": "inih",
+  "generated": {
+    "profile/stdio.h": "#ifndef WIW_STDIO_H\n#define WIW_STDIO_H\ntypedef struct __sFILE FILE;\ntypedef __SIZE_TYPE__ size_t;\n#define NULL ((void *)0)\nFILE *fopen(const char *, const char *);\nchar *fgets(char *, int, FILE *);\nint fclose(FILE *);\nint printf(const char *, ...);\nint puts(const char *);\n#endif\n",
+    "profile/ctype.h": "#ifndef WIW_CTYPE_H\n#define WIW_CTYPE_H\nint isspace(int);\n#endif\n",
+    "profile/string.h": "#ifndef WIW_STRING_H\n#define WIW_STRING_H\n#include <stdio.h>\nsize_t strlen(const char *);\nchar *strchr(const char *, int);\nint strcmp(const char *, const char *);\nvoid *memcpy(void *, const void *, size_t);\nvoid *memset(void *, int, size_t);\n#endif\n",
+    "profile/main.c": "/* SPDX-License-Identifier: Apache-2.0 */\n#include <stdio.h>\n#include \"ini.h\"\n\nstatic int print_entry(void *user, const char *section, const char *name, const char *value) {\n    (void)user;\n    if (*section) printf(\"%s.%s=%s\\n\", section, name, value);\n    else printf(\"%s=%s\\n\", name, value);\n    return 1;\n}\n\nint main(int argc, char **argv) {\n    if (argc != 2) {\n        puts(\"Usage: inih settings.ini\");\n        return 2;\n    }\n    int error = ini_parse(argv[1], print_entry, NULL);\n    if (error > 0) printf(\"Invalid INI at line %d\\n\", error);\n    if (error < 0) printf(\"Could not read %s\\n\", argv[1]);\n    return error != 0;\n}\n"
+  }
+}

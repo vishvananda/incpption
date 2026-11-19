@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {boundedBytes, discover, planBlob, repoName, unpackPlan, validatePlan} from '../web/plans.mjs';
+import {boundedBytes, discover, planBlob, repoName, sourcePaths, unpackPlan, validatePlan} from '../web/plans.mjs';
 import {hash} from '../web/transport_bytes.mjs';
 import {tar} from '../web/tar.mjs';
 
@@ -23,6 +23,15 @@ test('a plan must bind to the source revision and stay within its workspace', ()
   assert.throws(() => validatePlan(wasi, {repo, commit:'a'.repeat(40)}), /Git commit/);
   assert.throws(() => validatePlan({...wasi, sources:['../main.c']}, project), /Invalid plan path/);
   assert.throws(() => validatePlan({...wasi, kind:'shell'}, project), /Unsupported/);
+});
+
+test('Mach-O plans accept generated sources and validate output and libSystem imports', () => {
+  const plan = {...wasi, kind:'macho', output:'tool', libSystem:['printf', '__error'],
+    generated:{'src/main.c':'int main(void) { return 0; }'}};
+  assert.equal(validatePlan(plan, project), plan);
+  assert.deepEqual(sourcePaths(plan), ['src/main.c', 'src/main.h']);
+  assert.throws(() => validatePlan({...plan, output:'../tool'}, project), /executable name/);
+  assert.throws(() => validatePlan({...plan, libSystem:['exit, _extra']}, project), /import names/);
 });
 
 test('Emscripten plans pin the SDK, outputs and all build inputs', () => {

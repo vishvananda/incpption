@@ -79,6 +79,11 @@ function flags(value = []) {
   return value;
 }
 
+export function sourcePaths(plan) {
+  const sources = new Set(plan.sources);
+  return [...plan.sources, ...(plan.files ?? []), ...Object.keys(plan.generated ?? {}).filter(path => !sources.has(path))];
+}
+
 export function validatePlan(plan, expected) {
   if (plan?.schema !== format || repoName(plan.repo).toLowerCase() !== expected.repo.toLowerCase())
     throw Error('The build plan does not identify this repository.');
@@ -89,19 +94,25 @@ export function validatePlan(plan, expected) {
   }
   if (!isSha(plan.commit) || (expected.commit && expected.commit !== plan.commit))
     throw Error('The build plan must match the selected Git commit.');
-  if (plan.kind === 'wasi') {
+  if (plan.kind === 'wasi' || plan.kind === 'macho') {
     if (!Array.isArray(plan.sources) || !plan.sources.length || !Array.isArray(plan.files ?? []))
-      throw Error('A WASI plan needs a source list.');
+      throw Error('A source build plan needs a source list.');
     const generated = plan.generated ?? {};
     if (typeof generated !== 'object' || !generated || Array.isArray(generated) ||
         Object.values(generated).some(text => typeof text !== 'string' || text.length > 1024 * 1024))
       throw Error('Generated inputs must be text files of at most 1 MiB.');
-    const names = [...plan.sources, ...(plan.files ?? []), ...Object.keys(generated)].map(relativePath);
+    const names = sourcePaths(plan).map(relativePath);
     if (names.length > 6000 || new Set(names).size !== names.length) throw Error('Invalid or duplicate source paths.');
     flags(plan.compileFlags);
     flags(plan.linkFlags);
-    const output = relativePath(plan.output ?? 'program.wasm');
-    if (!output.endsWith('.wasm')) throw Error('The WASI output must end in .wasm.');
+    if (plan.kind === 'wasi') {
+      const output = relativePath(plan.output ?? 'program.wasm');
+      if (!output.endsWith('.wasm')) throw Error('The WASI output must end in .wasm.');
+    } else if (typeof plan.output !== 'string' || !/^[A-Za-z0-9][\w.-]{0,127}$/.test(plan.output) ||
+        !Array.isArray(plan.libSystem) || plan.libSystem.length > 2000 ||
+        plan.libSystem.some(symbol => typeof symbol !== 'string' || !/^[A-Za-z_][A-Za-z0-9_]{0,127}$/.test(symbol))) {
+      throw Error('A Mach-O plan needs an executable name and libSystem import names.');
+    }
   } else if (plan.kind === 'emscripten') {
     const checksum = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
     const commands = plan.compilation;
