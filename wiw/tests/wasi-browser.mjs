@@ -15,7 +15,7 @@ try {
   await page.route('**/wasi-demo.json', route => route.fulfill({json:plan}));
   const query = new URLSearchParams({repo:'https://github.com/' + repo, plan:'wasi-demo.json'});
   await page.goto(base + '?' + query);
-  await page.locator('#build').waitFor({state:'visible'});
+  await page.getByText(/Shared link/).waitFor();
   assert.match(await page.locator('#plan-status').innerText(), /Shared link/);
   await page.locator('#build').click();
   await page.waitForFunction(() => /^Build (complete|failed)/.test(document.querySelector('#plan-status').textContent),

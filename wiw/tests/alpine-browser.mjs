@@ -13,15 +13,15 @@ try {
   let guestRequests = 0;
   page.on('request', request => {if (/guest\.\d+\.bin/.test(request.url())) guestRequests++;});
   await page.goto(url);
-  await page.locator('#generate').waitFor({state:'visible'});
+  await page.getByText(/No build plan found/).waitFor();
   assert.equal(guestRequests, 0);
   const fixture = process.argv[2];
   if (fixture) {
     await page.locator('#plan-file').setInputFiles(fixture);
-    await page.locator('#build').waitFor({state:'visible'});
+    await page.waitForFunction(() => document.querySelector('#plan-status').textContent.startsWith('Plan file'));
     await page.locator('#build').click();
   } else {
-    await page.locator('#generate').click();
+    await page.locator('#build').click();
     await page.locator('#plan-target').selectOption('x86_64-linux-musl');
     await page.getByRole('button', {name:'Start Alpine'}).click();
   }
@@ -47,9 +47,8 @@ try {
   assert.equal(cacheCount, fixture ? 0 : 1);
   await page.reload();
   if (!fixture) {
-    await page.locator('#build').waitFor({state:'visible'});
-    assert.match(await page.locator('#plan-status').innerText(), /Saved in this browser/);
-  } else await page.locator('#generate').waitFor({state:'visible'});
+    await page.getByText(/Saved in this browser/).waitFor();
+  } else await page.getByText(/No build plan found/).waitFor();
   await page.locator('#plan-file').setInputFiles({name:'inih.wwplan', mimeType:'application/octet-stream', buffer:bytes});
   await page.waitForFunction(() => document.querySelector('#plan-status').textContent.startsWith('Plan file'));
   await page.locator('#build').click();

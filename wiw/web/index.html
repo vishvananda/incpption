@@ -39,7 +39,7 @@
         <div class="field">
           <span class="prompt" aria-hidden="true">$</span>
           <input id="repo" name="repo" list="examples" autocomplete="off" spellcheck="false" placeholder="https://github.com/owner/repo" required>
-          <button class="primary" type="submit">Find build plan</button>
+          <button id="build" class="primary" type="submit" disabled>Build</button>
         </div>
       </form>
       <datalist id="examples"></datalist>
@@ -53,8 +53,6 @@
         </div>
         <div class="actions">
           <label id="worker-label" for="workers" hidden>Workers <select id="workers"></select></label>
-          <button id="build" class="primary" hidden>Build</button>
-          <button id="generate" class="primary" hidden>Generate in Alpine</button>
           <button id="cancel" hidden>Stop</button>
         </div>
       </header>

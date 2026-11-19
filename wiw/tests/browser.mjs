@@ -21,7 +21,7 @@ async function check(id) {
   page.on('pageerror', error => console.error(id, error.message));
   try {
     await page.goto(base + '?' + new URLSearchParams({repo:'https://github.com/' + repo}));
-    await page.locator('#build').waitFor({state:'visible', timeout:60000});
+    await page.locator('#workers').waitFor({state:'visible', timeout:60000});
     assert.match(await page.locator('#target').innerText(), /Emscripten/);
     await page.locator('#workers').selectOption('4');
     await page.locator('#build').click();
@@ -34,7 +34,8 @@ async function check(id) {
     const file = await download;
     const bytes = await readFile(await file.path());
     const actual = createHash('sha256').update(bytes).digest('hex');
-    const manifest = await fetch(base + 'projects/' + id + '/manifest.json').then(response => response.json());
+    const settings = await fetch(new URL('settings.json', base)).then(response => response.json());
+    const manifest = await fetch(new URL((settings.sharedAssets ?? '') + 'projects/' + id + '/manifest.json', base)).then(response => response.json());
     assert.equal(actual, manifest.link.sha256);
     assert.equal(await page.locator('#progress').getAttribute('value'), await page.locator('#progress').getAttribute('max'));
     console.log(id, status, bytes.length, actual);

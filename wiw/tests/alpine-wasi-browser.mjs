@@ -27,11 +27,15 @@ try {
   await page.goto(base);
   await page.waitForFunction(() => document.querySelectorAll('#examples option').length === 5);
   await page.locator('#repo').fill('https://github.com/' + repo);
-  await page.getByRole('button', {name:'Find build plan'}).click();
-  await page.locator('#generate').click();
+  await page.getByRole('button', {name:'Build', exact:true}).click();
+  const dialog = page.locator('#alpine-dialog');
+  await dialog.waitFor({state:'visible'});
   assert.equal(guestRequests, 0);
   assert.equal(await page.locator('#plan-target').inputValue(), 'wasm32-wasip1');
-  await page.getByRole('button', {name:'Start Alpine'}).click();
+  await dialog.getByRole('button', {name:'Cancel'}).click();
+  assert.equal(guestRequests, 0);
+  await page.getByRole('button', {name:'Build', exact:true}).click();
+  await dialog.getByRole('button', {name:'Start Alpine'}).click();
   await page.waitForFunction(() => /^(Build complete|Build failed|Plan generation failed)/.test(
     document.querySelector('#plan-status').textContent), null, {timeout:900000});
   const status = await page.locator('#plan-status').innerText();
@@ -63,8 +67,10 @@ try {
 
   const requests = guestRequests;
   await page.reload();
-  await page.locator('#build').waitFor({state:'visible'});
-  assert.match(await page.locator('#plan-status').innerText(), /Saved in this browser/);
+  await page.getByText(/Saved in this browser/).waitFor();
+  await page.getByRole('button', {name:'Build', exact:true}).click();
+  await page.getByRole('button', {name:'Try QR generator'}).waitFor();
+  assert.equal(await dialog.isVisible(), false);
   assert.equal(guestRequests, requests);
   assert.deepEqual(errors, []);
   console.log('QR Code generator', status, 'Wasm, SVG preview, and saved plan verified');

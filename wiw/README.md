@@ -86,17 +86,21 @@ The browser builds the resulting Wasm with cppgm and its built-in linker.
 The Linux x86-64 target remains available. Repositories with a prepared
 Emscripten plan can replay their browser-specific targets directly.
 
+The **Build** button starts an available plan immediately. If there is no plan,
+it asks for confirmation before downloading and starting Alpine, then builds
+the generated plan automatically.
+
 The **QR Code generator** example starts with its GitHub source and CMake
 options. The recipe supplies known header check results for the staged WASI SDK.
-Alpine runs CMake and Ninja to capture the build plan. Choose **Generate in
-Alpine**, then **Try QR generator** to run the new Wasm and display its SVG output.
+Alpine runs CMake and Ninja to capture the build plan. Choose **Build**, confirm
+with **Start Alpine**, then choose **Try QR generator** to run the new Wasm.
 Its plan is saved in this browser after the first run.
 
 The browser saves the resulting CWL v1.2 workflow and its configured workspace in IndexedDB, then replays them through cppgm and the archiver. Linux plans link with Wasm LLD. Choose **Download plan** to get a portable `.wwplan` file. Open it on another device with **Open a saved plan**, or host it and use `&plan=`. The file starts with a four-byte little-endian JSON header length, the plan header with inline CWL and the snapshot’s SHA-256, and the packed workspace. A JSON descriptor of kind `alpine-cwl` can also carry a `workflowURL` and `snapshotURL` with `snapshotSha256`.
 
 ## Generate from an upstream repository
 
-[Capture results and commands](docs/capture.md) show the upstream web build commands and how to generate a reusable plan. The site examples use the qualified, expanded packages. The capture tools can list upstream commands or record a complete Emscripten replay plan. A replay plan builds the Wasm in the browser and downloads the web files as a ZIP.
+[Capture results and commands](docs/capture.md) show the upstream web build commands and how to generate a reusable plan. The site examples use the qualified, expanded packages. The capture tools can list upstream commands or record a complete Emscripten replay plan. A replay plan builds the Wasm in the browser and offers the packaged page through **Play** and as a ZIP download. **Play** runs local package assets in an isolated frame. An app that needs network access, shared memory, or relative JavaScript module imports may need to be served from the ZIP.
 
 A project can also cross-configure with a WASI toolchain even if it has no WASI build target. The CMake exporter reads the target's compilation database, scans the source dependencies, and includes generated headers in the plan. The [xxHash WASI plan](web/plans/xxhash-wasi.json) was generated this way and builds in the browser.
 

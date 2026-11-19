@@ -13,7 +13,7 @@ try {
   page.on('pageerror', error => console.error(error.message));
   await page.route('**/cmake-plan.json', route => route.fulfill({json:plan}));
   await page.goto(base + '?' + new URLSearchParams({repo:'https://github.com/' + plan.repo, plan:'cmake-plan.json'}));
-  await page.locator('#build').waitFor({state:'visible'});
+  await page.locator('#workers').waitFor({state:'visible'});
   await page.locator('#workers').selectOption('4');
   await page.locator('#build').click();
   await page.waitForFunction(() => /^Build (complete|failed)/.test(document.querySelector('#plan-status').textContent),

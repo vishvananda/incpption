@@ -118,8 +118,7 @@ async function readFile(file) {
 
 function buttonState() {
   const busy = Boolean(view.operation);
-  $('build').hidden = !view.plan || busy;
-  $('generate').hidden = !view.project?.commit || Boolean(view.plan) || busy;
+  $('build').disabled = busy;
   $('cancel').hidden = !busy;
   $('worker-label').hidden = !view.plan || busy;
   $('plan-file').disabled = !view.project || busy;
@@ -157,6 +156,8 @@ function end(controller) {
 function reset() {
   view.operation?.abort();
   view.operation = null;
+  clearInterval(seconds);
+  if ($('alpine-dialog').open) $('alpine-dialog').close('cancel');
   view.build = view.project = view.plan = view.manifest = view.snapshot = view.selected = null;
   for (const url of outputs) URL.revokeObjectURL(url);
   outputs.clear();
@@ -221,7 +222,7 @@ async function present(project, plan, origin, signal) {
     log('Saved Alpine workspace ready for replay.');
   } else {
     status('No build plan found · ' + project.commit.slice(0, 10));
-    log('No saved plan for this commit. Choose Generate in Alpine, or open a saved plan file.');
+    log('No saved plan for this commit. Build opens Alpine setup. You can also open a saved plan file.');
   }
 }
 
@@ -235,6 +236,8 @@ async function lookup(repo, ref, explicit) {
       signal:controller.signal, base:location.href});
     controller.signal.throwIfAborted();
     await present(result.project, result.plan, result.origin, controller.signal);
+    controller.signal.throwIfAborted();
+    return true;
   } catch (error) {
     if (!controller.signal.aborted) {
       view.plan = null;
@@ -242,6 +245,7 @@ async function lookup(repo, ref, explicit) {
       log(error.message);
     }
   } finally {end(controller);}
+  return false;
 }
 
 function workerBuild(plan, count, signal, receive) {
@@ -333,7 +337,10 @@ async function runBuild() {
       const {webZip} = await import('./web_zip.mjs');
       controller.signal.throwIfAborted();
       const packageName = plan.output.replace(/\.wasm$/, '.zip');
-      $('results').replaceChildren(download(webZip(result.files), packageName, 'application/zip'));
+      const play = document.createElement('button');
+      play.textContent = 'Play';
+      play.onclick = () => openPlayer({entry:plan.entry, files:result.files});
+      $('results').replaceChildren(play, download(webZip(result.files), packageName, 'application/zip'));
       $('results').hidden = false;
     } else resultLinks(result.files, result.game);
   } catch (error) {
@@ -369,10 +376,16 @@ async function runAlpine() {
 }
 
 async function openPlayer(game) {
-  const {PlayerSession} = await import('./player_session.mjs');
   $('player-title').textContent = $('project-name').textContent;
   $('player-dialog').showModal();
   player?.close();
+  if (game.entry) {
+    const {playWebPackage} = await import('./web_player.mjs');
+    if ($('player-dialog').open) player = playWebPackage($('player-surface'), game.entry, game.files);
+    return;
+  }
+  const {PlayerSession} = await import('./player_session.mjs');
+  if (!$('player-dialog').open) return;
   player = new PlayerSession($('player-surface'), {url:'game_frame.html', log});
   try {await player.start(game);}
   catch (error) {
@@ -390,29 +403,41 @@ for (const choice of choices) {
   $('examples').append(option);
 }
 
-function selection(repo) {
+function selection(repo, params = new URLSearchParams()) {
   const choice = choices.find(row => row.repo.toLowerCase() === repo.toLowerCase());
-  return {ref:choice?.ref ?? null, plan:config.preparedPlans?.[repo.toLowerCase()] ?? null};
+  return {
+    ref:params.get('ref') ?? choice?.ref ?? null,
+    plan:params.get('plan') ?? (params.has('ref') ? null : config.preparedPlans?.[repo.toLowerCase()] ?? null),
+  };
 }
 
-$('repo-form').onsubmit = event => {
+$('repo-form').onsubmit = async event => {
   event.preventDefault();
+  if (view.operation) return;
+  let repo;
   try {
-    const repo = repoName($('repo').value);
-    const url = new URL(location.href);
-    const {ref, plan} = selection(repo);
+    repo = repoName($('repo').value);
+  } catch (error) {
+    $('repo').setCustomValidity(error.message);
+    $('repo').reportValidity();
+    return;
+  }
+  const url = new URL(location.href);
+  let sameRepository = false;
+  try {sameRepository = repoName(url.searchParams.get('repo') ?? '').toLowerCase() === repo.toLowerCase();}
+  catch {} // The current link can be empty or invalid.
+  const {ref, plan} = selection(repo, sameRepository ? url.searchParams : undefined);
+  if (!sameRepository) {
     url.search = new URLSearchParams({repo:'https://github.com/' + repo});
     if (ref) url.searchParams.set('ref', ref);
     if (plan) url.searchParams.set('plan', plan);
     history.pushState({}, '', url);
-    void lookup(repo, ref, plan);
-  } catch (error) {
-    $('repo').setCustomValidity(error.message);
-    $('repo').reportValidity();
   }
+  if (!(sameRepository && view.plan) && !await lookup(repo, ref, plan)) return;
+  if (view.plan) await runBuild();
+  else offerAlpine();
 };
 $('repo').oninput = () => $('repo').setCustomValidity('');
-$('build').onclick = runBuild;
 $('cancel').onclick = () => {
   const controller = view.operation;
   controller?.abort();
@@ -426,13 +451,13 @@ function updateGuestDownload() {
   $('guest-download').textContent = 'The first run downloads about ' + mb(bytes) + '. The browser caches the Alpine image.';
 }
 $('plan-target').onchange = updateGuestDownload;
-$('generate').onclick = () => {
+function offerAlpine() {
   $('plan-target').options[0].disabled = !config.wasiProbeBytes;
   $('plan-target').value = config.wasiProbeBytes ? 'wasm32-wasip1' : 'x86_64-linux-musl';
   updateGuestDownload();
   $('alpine-dialog').returnValue = '';
   $('alpine-dialog').showModal();
-};
+}
 $('alpine-dialog').onclose = () => {
   if ($('alpine-dialog').returnValue === 'generate' && view.project?.commit && !view.operation) void runAlpine();
 };
@@ -463,14 +488,16 @@ $('plan-file').onchange = async event => {
 function fromURL() {
   const params = new URLSearchParams(location.search);
   const value = params.get('repo');
-  if (!value) {reset();$('workspace').hidden = true;return;}
+  if (!value) {reset();buttonState();$('workspace').hidden = true;return;}
   $('repo').value = value;
   try {
     const repo = repoName(value);
-    const choice = selection(repo);
-    void lookup(repo, params.get('ref') ?? choice.ref, params.get('plan') ?? (params.has('ref') ? null : choice.plan));
+    const {ref, plan} = selection(repo, params);
+    void lookup(repo, ref, plan);
   }
   catch (error) {
+    reset();
+    buttonState();
     $('workspace').hidden = false;
     status('Invalid repository');
     log(error.message);
