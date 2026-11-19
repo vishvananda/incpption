@@ -180,3 +180,19 @@ wrangler pages deploy dist --project-name cpp-inception --branch main
 
 The player only needs publishing when its source or runtime changes. Site builds
 include the code revision and input hashes in `site-release.json`.
+
+### Will it Wasm
+
+The browser planner lives in [wiw/](../wiw/README.md). Stage its inputs with
+`wiw/tools/stage.py --shared-root --wasi-probe "$STATIC_CPPGM"` and the
+compiler, guest and replay inputs listed in its README. Copy it into the
+Pages output before deploying from the repository root.
+
+```sh
+python3 tools/stage_wiw.py dist wiw/dist
+wrangler pages deploy dist --project-name cpp-inception --branch main
+```
+
+The app uses incpption's compiler, SDK and LLD URLs. The Pages function at
+`/wiw/api/archive` relays public GitHub tarballs pinned by commit. It
+does not run any build commands.

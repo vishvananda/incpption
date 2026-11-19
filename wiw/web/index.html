@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Build a C or C++ repository in your browser with cppgm.">
+  <title>Will it Wasm?</title>
+  <link rel="stylesheet" href="/wasi_demo.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="mast">
+    <a class="brand wordmark" href="/" aria-label="cppgm inception"><span class="wordmark-cpp" aria-hidden="true">cpp</span><span class="wordmark-gm" aria-hidden="true">gm</span><span class="wordmark-name" aria-hidden="true">in<span class="wordmark-cep">cep</span>tion</span></a>
+    <a href="https://github.com/vishvananda/cppgm">Powered by cppgm</a>
+  </header>
+  <main>
+    <section class="intro" aria-labelledby="title">
+      <h1 id="title">Will it <em>Wasm?</em></h1>
+      <p>Build a C or C++ repository in your browser.</p>
+      <form id="repo-form">
+        <label for="repo">Choose an example or paste a public GitHub URL</label>
+        <div class="field">
+          <span class="prompt" aria-hidden="true">$</span>
+          <input id="repo" name="repo" list="examples" autocomplete="off" spellcheck="false" placeholder="https://github.com/owner/repo" required>
+          <button class="primary" type="submit">Find build plan</button>
+        </div>
+      </form>
+      <datalist id="examples"></datalist>
+    </section>
+
+    <section class="workspace" id="workspace" hidden aria-label="Build workspace">
+      <header class="work-head">
+        <div>
+          <div class="repo-line"><h2 id="project-name">Repository</h2><span id="target" class="target" hidden></span></div>
+          <p id="plan-status" role="status">Finding a plan…</p>
+        </div>
+        <div class="actions">
+          <label id="worker-label" for="workers" hidden>Workers <select id="workers"></select></label>
+          <button id="build" class="primary" hidden>Build</button>
+          <button id="generate" class="primary" hidden>Generate in Alpine</button>
+          <button id="cancel" hidden>Stop</button>
+        </div>
+      </header>
+      <div class="progress-line">
+        <progress id="progress" value="0" max="1" aria-label="Build steps"></progress>
+        <span id="progress-count">0 / 0 steps</span><span id="elapsed">0:00</span>
+      </div>
+      <div class="panes">
+        <section class="files" aria-label="Files">
+          <div class="pane-head">
+            <h3>Files</h3><input id="filter" placeholder="Filter files" aria-label="Filter files" hidden>
+          </div>
+          <div id="file-empty" class="empty">Files appear when a plan is available.</div>
+          <div id="tree"></div>
+        </section>
+        <section class="detail" aria-label="Build output and source">
+          <div class="pane-head">
+            <div class="tabs" aria-label="View">
+              <button id="console-tab" class="current" aria-pressed="true">Console</button>
+              <button id="source-tab" aria-pressed="false" disabled>Source</button>
+            </div>
+            <span id="source-name" class="source-name" hidden></span>
+          </div>
+          <pre id="console" tabindex="0" aria-label="Live build console"></pre>
+          <pre id="source" tabindex="0" hidden><code></code></pre>
+        </section>
+      </div>
+      <div id="results" class="results" hidden></div>
+      <div class="load-row">
+        <label class="file-picker">Open a saved plan <input type="file" id="plan-file" accept=".wwplan"></label>
+        <button id="download-plan" hidden>Download plan</button>
+      </div>
+    </section>
+    <footer>Everything builds locally in your browser.</footer>
+  </main>
+  <dialog id="alpine-dialog">
+    <form method="dialog">
+      <h2>Generate a plan in Alpine?</h2>
+      <p id="guest-download"></p>
+      <p>Alpine configures the repository in an isolated browser guest. cppgm builds the captured plan in the browser.</p>
+      <label class="plan-target">Build target
+        <select id="plan-target"><option value="wasm32-wasip1">WebAssembly (WASI)</option><option value="x86_64-linux-musl">Linux x86-64</option></select>
+      </label>
+      <div class="actions"><button value="cancel">Cancel</button><button class="primary" value="generate">Start Alpine</button></div>
+    </form>
+  </dialog>
+  <dialog id="player-dialog" class="player">
+    <div class="pane-head"><h2 id="player-title">Preview</h2><button id="close-player">Close</button></div>
+    <div id="player-surface"></div>
+  </dialog>
+  <dialog id="qr-dialog" aria-labelledby="qr-title">
+    <div class="pane-head"><h2 id="qr-title">QR Code generator</h2><button id="close-qr">Close</button></div>
+    <form>
+      <label for="qr-text">Text or URL</label>
+      <div class="field">
+        <input id="qr-text" value="https://incpption.com/wiw/" maxlength="512" required>
+        <button class="primary">Generate QR</button>
+      </div>
+    </form>
+    <p role="status"></p>
+    <img alt="Generated QR code" hidden>
+  </dialog>
+  <script type="module" src="app.mjs"></script>
+</body>
+</html>

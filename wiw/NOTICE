@@ -1,0 +1,14 @@
+Will it Wasm?
+Copyright 2026 Vishvananda Ishaya
+
+Parts of this project are adapted from cppgm inception and its build-plan
+experiments. Copyright 2026 Vishvananda Ishaya. The browser compiler runners
+also adapt cppgm tools, copyright 2026 The cppgm Authors.
+
+Site source is licensed under the Apache License, Version 2.0. The compiler,
+third-party JavaScript, project source, SDK, Alpine image and game data staged
+for local use keep their own licenses. The incpption release provides its
+license directory and frozen package manifests.
+
+Incremental SHA-256 uses @noble/hashes, copyright Paul Miller, under the MIT
+license. The staged vendor/noble/LICENSE contains its notice.

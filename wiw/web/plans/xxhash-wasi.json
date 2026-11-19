@@ -1,0 +1,24 @@
+{
+  "schema": "willitwasm/v1",
+  "kind": "wasi",
+  "repo": "Cyan4973/xxHash",
+  "commit": "e626a72bc2321cd320e953a0ccf1584cad60f363",
+  "sources": [
+    "xxhash.c"
+  ],
+  "files": [
+    "xxhash.h"
+  ],
+  "generated": {},
+  "compileFlags": [
+    "-Icheckout/.",
+    "-O3",
+    "-DNDEBUG"
+  ],
+  "linkFlags": [
+    "-nostartfiles",
+    "--export=XXH_versionNumber",
+    "--export=XXH64"
+  ],
+  "output": "xxhash.wasm"
+}
