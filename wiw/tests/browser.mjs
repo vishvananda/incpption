@@ -23,12 +23,20 @@ async function check(id) {
     await page.goto(base + '?' + new URLSearchParams({repo:'https://github.com/' + repo}));
     await page.locator('#workers').waitFor({state:'visible', timeout:60000});
     assert.match(await page.locator('#target').innerText(), /Emscripten/);
+    if (id === 'doom') {
+      assert.match(await page.locator('#game-data-label').innerText(), /Game data.*MiB.*compilation/);
+      assert.equal(await page.locator('#game-data-progress').isVisible(), false);
+    }
     await page.locator('#workers').selectOption('4');
     await page.locator('#build').click();
     await page.waitForFunction(() => /^Build (complete|failed)/.test(document.querySelector('#plan-status').textContent),
       null, {timeout:1200000});
     const status = await page.locator('#plan-status').innerText();
     assert.match(status, /Build complete/, await page.locator('#console').innerText());
+    if (id === 'doom' && await page.evaluate(() => typeof WebAssembly.promising === 'function')) {
+      await page.waitForFunction(() => document.querySelector('#game-data-progress').value > 0,
+        null, {timeout:120000});
+    }
     const download = page.waitForEvent('download');
     await page.getByRole('link', {name:'Download ' + id + '.wasm'}).click();
     const file = await download;

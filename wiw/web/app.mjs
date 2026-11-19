@@ -3,9 +3,10 @@ import {discover, examples, boundedBytes, planBlob, planKey, rawFile, remote, re
 import {ProjectTree} from './project_tree.mjs';
 import {bundleLayers} from './bundle_layers.mjs';
 import {fetchBytes, hash} from './transport_bytes.mjs';
-import {buildPolicy} from './build_policy.mjs';
+import {backgroundDataAllowed, buildPolicy} from './build_policy.mjs';
 import {savePlan} from './storage.mjs';
 import {unpackLayer} from './alpine_replay.mjs';
+import {PlayerSession} from './player_session.mjs';
 
 const $ = id => document.getElementById(id);
 const decoder = new TextDecoder();
@@ -17,7 +18,7 @@ const view = {plan:null, project:null, manifest:null, snapshot:null, operation:n
 const built = new Set(), states = new Map();
 const outputs = new Set();
 const lines = [];
-let flush, seconds, started, player, sourceRequest;
+let flush, seconds, started, player, gameData, sourceRequest;
 const mb = bytes => (bytes / 1048576).toFixed(bytes >= 100 * 1048576 ? 0 : 1) + ' MiB';
 
 function log(message) {
@@ -158,6 +159,9 @@ function reset() {
   view.operation = null;
   clearInterval(seconds);
   if ($('alpine-dialog').open) $('alpine-dialog').close('cancel');
+  gameData = null;
+  drawGameData();
+  closePlayer();
   view.build = view.project = view.plan = view.manifest = view.snapshot = view.selected = null;
   for (const url of outputs) URL.revokeObjectURL(url);
   outputs.clear();
@@ -190,6 +194,13 @@ async function present(project, plan, origin, signal) {
     if (await hash(bytes) !== decoder.decode(reference).trim()) throw Error('Example manifest checksum differs.');
     signal.throwIfAborted();
     view.manifest = JSON.parse(decoder.decode(bytes));
+    if (plan.project === 'doom' && view.manifest.player?.assets?.length) {
+      const descriptor = {...view.manifest.player, baseURL:new URL(prefix, location.href).href};
+      const total = descriptor.assets.reduce((sum, asset) =>
+        sum + asset.chunks.reduce((n, chunk) => n + (chunk.encoded_bytes || chunk.size), 0), 0);
+      gameData = {descriptor, total, loaded:0, state:'waiting'};
+      drawGameData();
+    }
     const sources = [...new Set(view.manifest.commands.map(row => row.source))].filter(Boolean);
     files(view.manifest.files, sources);
     progress(view.manifest.commands.length + view.manifest.archives.length + 1);
@@ -326,6 +337,7 @@ async function runBuild() {
   progress($('progress').max);
   tab('console');
   try {
+    preloadGameData(1);
     const result = await workerBuild(plan, Number($('workers').value), controller.signal, buildMessage);
     controller.signal.throwIfAborted();
     view.build = result;
@@ -343,8 +355,10 @@ async function runBuild() {
       $('results').replaceChildren(play, download(webZip(result.files), packageName, 'application/zip'));
       $('results').hidden = false;
     } else resultLinks(result.files, result.game);
+    preloadGameData(0);
   } catch (error) {
     if (!controller.signal.aborted) {
+      closePlayer();
       status('Build failed');
       log(error.message);
     }
@@ -375,21 +389,85 @@ async function runAlpine() {
   }
 }
 
+function canPreload(activeBuilds) {
+  return backgroundDataAllowed({lowMemory:policy.lowMemory, activeBuilds, bytes:gameData.total});
+}
+
+function drawGameData() {
+  const indicator = $('game-data-download');
+  indicator.hidden = !gameData;
+  if (!gameData) return;
+  const {loaded, total, state} = gameData;
+  const label = {
+    waiting:`Game data ↓ ${mb(total)} · downloads ${canPreload(1) ? 'during' : 'after'} compilation`,
+    downloading:`Game data ↓ ${mb(loaded)} / ${mb(total)} · downloading in background`,
+    paused:`Game data ↓ ${mb(loaded)} / ${mb(total)} · paused`,
+    ready:`Game data ready · ${mb(total)} cached`,
+    error:'Game data will download when you open the game.',
+  };
+  $('game-data-label').textContent = label[state];
+  const progress = $('game-data-progress');
+  progress.hidden = state === 'waiting' || state === 'error';
+  progress.max = total || 1;
+  progress.value = loaded;
+}
+
+function ensurePlayer() {
+  return player ??= new PlayerSession($('player-surface'), {url:'game_frame.html', log});
+}
+
+function preloadGameData(activeBuilds) {
+  const row = gameData;
+  if (!row || !['waiting', 'paused'].includes(row.state) || !canPreload(activeBuilds) ||
+      (row.descriptor.jspi && typeof WebAssembly.promising !== 'function')) return;
+  const session = ensurePlayer();
+  const update = data => {
+    if (gameData !== row || player !== session) return;
+    if (data.kind === 'preload-progress') Object.assign(row, {loaded:data.loaded, total:data.total});
+    if (data.kind === 'preload-complete') Object.assign(row, {loaded:row.total, state:'ready'});
+    if (data.kind === 'preload-error') row.state = 'error';
+    drawGameData();
+  };
+  row.state = 'downloading';
+  drawGameData();
+  session.onpreload = update;
+  session.preload(row.descriptor).catch(() => update({kind:'preload-error'}));
+}
+
+function closePlayer() {
+  const session = player;
+  player = null;
+  session?.close();
+  if (gameData?.state === 'downloading') {
+    gameData.state = 'paused';
+    drawGameData();
+  }
+}
+
 async function openPlayer(game) {
   $('player-title').textContent = $('project-name').textContent;
   $('player-dialog').showModal();
-  player?.close();
+  const message = $('player-status');
+  message.hidden = true;
   if (game.entry) {
+    closePlayer();
     const {playWebPackage} = await import('./web_player.mjs');
     if ($('player-dialog').open) player = playWebPackage($('player-surface'), game.entry, game.files);
     return;
   }
-  const {PlayerSession} = await import('./player_session.mjs');
-  if (!$('player-dialog').open) return;
-  player = new PlayerSession($('player-surface'), {url:'game_frame.html', log});
-  try {await player.start(game);}
+  preloadGameData(0);
+  const session = ensurePlayer();
+  message.hidden = false;
+  message.textContent = 'Opening the game you just built…';
+  session.onprogress = ({loaded, total}) => {
+    message.textContent = `Loading game data: ${mb(loaded)} / ${mb(total)}`;
+  };
+  try {
+    await session.start(game);
+    if (player === session) message.hidden = true;
+  }
   catch (error) {
-    if ($('player-dialog').open) {$('player-dialog').close();log(error.message);}
+    if (player === session && $('player-dialog').open) {$('player-dialog').close();log(error.message);}
   }
 }
 
@@ -442,6 +520,7 @@ $('cancel').onclick = () => {
   const controller = view.operation;
   controller?.abort();
   end(controller);
+  closePlayer();
   status('Stopped');
   log('Stopped.');
 };
@@ -466,7 +545,7 @@ $('console-tab').onclick = () => tab('console');
 $('source-tab').onclick = () => tab('source');
 $('close-qr').onclick = () => $('qr-dialog').close();
 $('close-player').onclick = () => $('player-dialog').close();
-$('player-dialog').onclose = () => {player?.close();player = null;};
+$('player-dialog').onclose = closePlayer;
 $('download-plan').onclick = () => {
   if (view.plan?.snapshot) download(planBlob(view.plan), view.project.repo.split('/').at(-1) + '.wwplan').click();
 };

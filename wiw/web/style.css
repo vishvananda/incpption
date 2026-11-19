@@ -59,6 +59,9 @@ h3 { font-size: .95rem; }
 .progress-line { padding: 0 1rem .75rem; color:var(--muted); font: .83rem var(--mono); }
 progress { flex: 1; height:.45rem; accent-color:var(--green); min-width:4rem; }
 .progress-line span { white-space: nowrap; }
+#game-data-download { justify-content:flex-start; margin:0; font-size:.83rem; }
+#game-data-download progress { flex:0 1 7rem; }
+#game-data-label { white-space:normal; }
 .panes { display:grid; grid-template-columns:minmax(14rem, 30%) minmax(0,1fr); border-block:1px solid var(--line); }
 .files { border-right:1px solid var(--line); min-width:0; }
 .pane-head { min-height:3.25rem; padding:.45rem .8rem; border-bottom:1px solid var(--line); }
@@ -100,6 +103,7 @@ dialog p { margin:.75rem 0; color:var(--muted); }
 dialog .actions { justify-content:flex-end; margin-top:1.15rem; }
 dialog::backdrop { background:#040806bf; }
 .player { width:min(80rem,calc(100vw - 1.2rem)); max-height:calc(100vh - 1.2rem); padding:0; overflow:auto; }
+#player-status { margin:0; padding:.4rem .8rem; font-size:.85rem; }
 #player-surface iframe { width:100%; height: min(75vh, 58rem); border:0; display:block; }
 .token.comment { color:#93a89a; }
 .token.keyword { color:#e2b3ff; }

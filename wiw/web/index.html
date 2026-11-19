@@ -60,6 +60,10 @@
         <progress id="progress" value="0" max="1" aria-label="Build steps"></progress>
         <span id="progress-count">0 / 0 steps</span><span id="elapsed">0:00</span>
       </div>
+      <div id="game-data-download" class="progress-line" hidden>
+        <span id="game-data-label"></span>
+        <progress id="game-data-progress" value="0" max="1" aria-label="Game data download" hidden></progress>
+      </div>
       <div class="panes">
         <section class="files" aria-label="Files">
           <div class="pane-head">
@@ -101,6 +105,7 @@
   </dialog>
   <dialog id="player-dialog" class="player">
     <div class="pane-head"><h2 id="player-title">Preview</h2><button id="close-player">Close</button></div>
+    <p id="player-status" role="status" hidden></p>
     <div id="player-surface"></div>
   </dialog>
   <dialog id="qr-dialog" aria-labelledby="qr-title">
