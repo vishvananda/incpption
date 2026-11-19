@@ -26,4 +26,21 @@ try{
   await page.screenshot({path:path.join(root,'web',name)});
   console.log(`Rendered ${name}: ${width}×${height}`);
  }
+
+ const wiwHTML=await readFile(path.join(root,'wiw/web/index.html'),'utf8');
+ const wiwCSS=await readFile(path.join(root,'wiw/web/style.css'),'utf8');
+ await page.setViewportSize({width:1200,height:630});
+ await page.setContent(`<style>${css}\n${wiwCSS}
+  body{display:grid;place-content:center;justify-items:center;gap:28px;min-height:100vh}
+  .brand.wordmark{font-size:48px;color:var(--ink);text-decoration:none}
+  h1{font-size:112px}
+ </style>`);
+ await page.evaluate(source=>{
+  const documentSource=new DOMParser().parseFromString(source,'text/html');
+  document.body.append(documentSource.querySelector('.mast .wordmark').cloneNode(true),
+   documentSource.querySelector('h1').cloneNode(true));
+ },wiwHTML);
+ await page.evaluate(()=>document.fonts.ready);
+ await page.screenshot({path:path.join(root,'wiw/web/share.png')});
+ console.log('Rendered Will it Wasm? share.png: 1200×630');
 }finally{await browser.close();}

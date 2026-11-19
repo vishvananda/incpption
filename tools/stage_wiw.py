@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Add a staged Will it Wasm site to an incpption Pages upload."""
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import shutil
@@ -29,6 +30,12 @@ def main():
             shutil.copytree(source, dest, dirs_exist_ok=True)
         else:
             shutil.copy2(source, dest)
+    preview = (target / 'share.png').read_bytes()
+    preview_name = f'assets/wiw-share.{hashlib.sha256(preview).hexdigest()[:16]}.png'
+    (site / preview_name).write_bytes(preview)
+    page = target / 'index.html'
+    page.write_text(page.read_text().replace('https://incpption.com/wiw/share.png',
+                                            'https://incpption.com/' + preview_name))
     excessive = [str(file.relative_to(target)) for file in target.rglob('*')
                  if file.is_file() and file.stat().st_size > 25 * 1024 * 1024]
     if excessive:

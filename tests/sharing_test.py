@@ -39,25 +39,33 @@ def image(url, dimensions):
     assert hashlib.sha256(data).hexdigest()[:16] in file.name, 'Image URL must change with its bytes'
 
 
-for name in ['index.html', 'wasi_demo.html']:
+pages = [(name, config['share_title'], config['description'], '/')
+         for name in ['index.html', 'wasi_demo.html']]
+if (output / 'wiw/index.html').is_file():
+    pages.append(('wiw/index.html', 'Will it Wasm?',
+                  'Build a C or C++ repository in your browser with cppgm.', '/wiw/'))
+
+for name, title, description, url_path in pages:
     raw = (output / name).read_bytes()
     # Messages reads a bounded page without executing JavaScript.
     assert len(raw) < 1024 * 1024
     head = Head()
     head.feed(raw.decode())
     for field in ['description', 'og:description', 'twitter:description']:
-        assert head.meta[field] == config['description']
+        assert head.meta[field] == description
         assert config['project_prompt'] not in head.meta[field]
-    for field in ['og:title', 'og:type', 'og:url', 'og:site_name']:
-        assert head.meta[field]
-    assert head.meta['og:title'] == head.meta['twitter:title'] == config['share_title']
+    assert head.meta['og:type'] == 'website'
+    assert head.meta['og:site_name']
+    assert head.meta['og:url'] == 'https://' + config['domain'] + url_path
+    assert head.meta['og:title'] == head.meta['twitter:title'] == title
     assert head.meta['twitter:card'] == 'summary_large_image'
     assert head.meta['og:image'] == head.meta['og:image:secure_url'] == head.meta['twitter:image']
     assert head.meta['og:image:type'] == 'image/png'
     assert (head.meta['og:image:width'], head.meta['og:image:height']) == ('1200', '630')
     assert head.meta['og:image:alt'] and head.meta['twitter:image:alt']
     image(head.meta['og:image'], (1200, 630))
-    assert head.icons['icon'] == head.icons['apple-touch-icon']
-    image(head.icons['apple-touch-icon'], (256, 256))
+    if url_path == '/':
+        assert head.icons['icon'] == head.icons['apple-touch-icon']
+        image(head.icons['apple-touch-icon'], (256, 256))
 assert (output / 'robots.txt').read_text().strip() == 'User-agent: *\nAllow: /'
 print('PASS: static sharing descriptions, absolute image URLs, real PNG sizes, cache identities and icons')
