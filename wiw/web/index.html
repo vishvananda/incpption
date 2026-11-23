@@ -94,13 +94,13 @@
   </main>
   <dialog id="alpine-dialog">
     <form method="dialog">
-      <h2>Generate a plan in Alpine?</h2>
+      <h2 id="planner-title">Generate a build plan?</h2>
       <p id="guest-download"></p>
-      <p>Alpine configures the repository in an isolated browser guest. cppgm builds the captured plan in the browser.</p>
+      <p id="planner-description"></p>
       <label class="plan-target">Build target
         <select id="plan-target"><option value="wasm32-wasip1">WebAssembly (WASI)</option><option value="x86_64-linux-musl">Linux x86-64</option></select>
       </label>
-      <div class="actions"><button value="cancel">Cancel</button><button class="primary" value="generate">Start Alpine</button></div>
+      <div class="actions"><button value="cancel">Cancel</button><button class="primary" id="start-planner" value="generate">Start</button></div>
     </form>
   </dialog>
   <dialog id="player-dialog" class="player">

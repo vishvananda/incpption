@@ -7,13 +7,20 @@ const require = createRequire(import.meta.url);
 const {chromium} = require(process.env.PLAYWRIGHT_PATH || 'playwright');
 const base = process.env.WILLITWASM_URL || 'http://127.0.0.1:8327/';
 const repo = 'fukuchi/libqrencode';
+const settings = await fetch(new URL('settings.json', base)).then(response => response.json());
+const wanix = Boolean(settings.wanix?.chunks);
 const browser = await chromium.launch({headless:true,args:['--no-sandbox']});
 try {
   const page = await browser.newPage({acceptDownloads:true});
   const errors = [];
   let guestRequests = 0;
   page.on('pageerror', error => errors.push(error.message));
-  page.on('request', request => {if (/guest\.\d+\.bin/.test(request.url())) guestRequests++;});
+  let alpineRequests = 0;
+  page.on('request', request => {
+    const path = new URL(request.url()).pathname;
+    if (/guest\.\d+\.bin$/.test(path)) alpineRequests++;
+    if (wanix ? /\/wanix\//.test(path) : /guest\.\d+\.bin$/.test(path)) guestRequests++;
+  });
   if (process.env.WILLITWASM_TRACE) {
     await page.exposeFunction('wwTrace', line => console.log(line));
     await page.addInitScript(() => document.addEventListener('DOMContentLoaded', () => {
@@ -35,24 +42,16 @@ try {
   await dialog.getByRole('button', {name:'Cancel'}).click();
   assert.equal(guestRequests, 0);
   await page.getByRole('button', {name:'Build', exact:true}).click();
-  await dialog.getByRole('button', {name:'Start Alpine'}).click();
-  await page.waitForFunction(() => /^(Build complete|Build failed|Plan generation failed)/.test(
+  await dialog.getByRole('button', {name:wanix ? 'Start Wanix Linux' : 'Start Alpine'}).click();
+  await page.waitForFunction(() => /^(Build complete|Build failed|Plan generation failed|Wanix Linux could not)/.test(
     document.querySelector('#plan-status').textContent), null, {timeout:900000});
   const status = await page.locator('#plan-status').innerText();
   if (!status.startsWith('Build complete')) await page.waitForTimeout(120);
   assert.match(status, /^Build complete/, await page.locator('#console').innerText());
   assert.match(await page.locator('#target').innerText(), /Wasm.*WASI/);
   assert.ok(guestRequests > 0);
+  if (wanix) assert.equal(alpineRequests, 0);
 
-  const saved = page.waitForEvent('download');
-  await page.locator('#download-plan').click();
-  const plan = await unpackPlan(new Uint8Array(await readFile(await (await saved).path())), {repo});
-  assert.equal(plan.target, 'wasm32-wasip1');
-  const executable = page.waitForEvent('download');
-  await page.getByRole('link', {name:'Download qrencode.wasm'}).click();
-  assert.ok(WebAssembly.validate(await readFile(await (await executable).path())));
-
-  await page.getByRole('button', {name:'Try QR generator'}).click();
   const image = page.getByRole('img', {name:'Generated QR code'});
   await image.waitFor({state:'visible'});
   await page.waitForFunction(() => document.querySelector('#qr-dialog img').naturalWidth > 0);
@@ -65,11 +64,22 @@ try {
   }, before);
   await page.locator('#close-qr').click();
 
+  const saved = page.waitForEvent('download');
+  await page.locator('#download-plan').click();
+  const plan = await unpackPlan(new Uint8Array(await readFile(await (await saved).path())), {repo});
+  assert.equal(plan.target, 'wasm32-wasip1');
+  const executable = page.waitForEvent('download');
+  await page.getByRole('link', {name:'Download qrencode.wasm'}).click();
+  assert.ok(WebAssembly.validate(await readFile(await (await executable).path())));
+
   const requests = guestRequests;
   await page.reload();
   await page.getByText(/Saved in this browser/).waitFor();
   await page.getByRole('button', {name:'Build', exact:true}).click();
-  await page.getByRole('button', {name:'Try QR generator'}).waitFor();
+  await image.waitFor({state:'visible'});
+  await page.locator('#close-qr').click();
+  await page.getByRole('button', {name:'Try QR generator'}).click();
+  await image.waitFor({state:'visible'});
   assert.equal(await dialog.isVisible(), false);
   assert.equal(guestRequests, requests);
   assert.deepEqual(errors, []);

@@ -1,4 +1,4 @@
-import {extraProjects, qrRepo} from './presets.mjs';
+import {extraProjects, presetRecipe, qrRepo} from './presets.mjs';
 import {discover, examples, boundedBytes, planBlob, planKey, rawFile, remote, repoName, sourcePaths, unpackPlan, validatePlan} from './plans.mjs';
 import {ProjectTree} from './project_tree.mjs';
 import {bundleLayers} from './bundle_layers.mjs';
@@ -13,12 +13,13 @@ const decoder = new TextDecoder();
 const config = await fetch('settings.json').then(response => response.json());
 const policy = buildPolicy();
 const sharedAssets = config.sharedAssets ?? '';
-const choices = [...extraProjects.filter(row => !row.prepared || config.preparedPlans?.[row.repo.toLowerCase()]), ...examples];
+const choices = [...extraProjects.filter(row => (!row.nano || config.nano || config.wanix) &&
+  (!row.prepared || config.preparedPlans?.[row.repo.toLowerCase()])), ...examples];
 const view = {plan:null, project:null, manifest:null, snapshot:null, operation:null, build:null, selected:null};
 const built = new Set(), states = new Map();
 const outputs = new Set();
 const lines = [];
-let flush, seconds, started, player, gameData, sourceRequest;
+let flush, seconds, started, player, gameData, sourceRequest, plannerFallback;
 const mb = bytes => (bytes / 1048576).toFixed(bytes >= 100 * 1048576 ? 0 : 1) + ' MiB';
 
 function log(message) {
@@ -53,22 +54,33 @@ function download(data, name, type = 'application/octet-stream') {
   link.href = href; link.download = name; link.textContent = 'Download ' + name;
   return link;
 }
+function previewButton(label, open) {
+  const button = document.createElement('button');
+  button.textContent = label;
+  button.onclick = async () => {
+    try {await open();}
+    catch (error) {log('Could not open the preview. ' + error.message);}
+  };
+  return button;
+}
+
 function resultLinks(files, game) {
   $('results').replaceChildren(...files.map(file => download(file.bytes, file.path.split('/').at(-1))));
+  let preview;
   if (game) {
-    const play = document.createElement('button');
-    play.textContent = game.project === 'godot' ? 'Open editor preview' : 'Play';
-    play.onclick = () => openPlayer(game);
-    $('results').prepend(play);
+    preview = previewButton(game.project === 'godot' ? 'Open editor preview' : 'Play', () => openPlayer(game));
+  } else if (view.project?.repo.toLowerCase() === qrRepo) {
+    const qr = files.find(file => file.path.endsWith('/qrencode.wasm'));
+    if (qr) preview = previewButton('Try QR generator', async () => {
+      const build = view.build;
+      const {qrPreview} = await import('./qr_preview.mjs');
+      const dialog = $('qr-dialog');
+      if (build === view.build && !dialog.open) qrPreview(dialog, qr.bytes);
+    });
   }
-  const qr = view.project?.repo.toLowerCase() === qrRepo && files.find(file => file.path.endsWith('/qrencode.wasm'));
-  if (qr) {
-    const preview = document.createElement('button');
-    preview.textContent = 'Try QR generator';
-    preview.onclick = async () => (await import('./qr_preview.mjs')).qrPreview($('qr-dialog'), qr.bytes);
-    $('results').prepend(preview);
-  }
+  if (preview) $('results').prepend(preview);
   $('results').hidden = false;
+  return preview;
 }
 
 const tree = new ProjectTree($('tree'), {onSelect:readFile});
@@ -158,7 +170,11 @@ function reset() {
   view.operation?.abort();
   view.operation = null;
   clearInterval(seconds);
+  plannerFallback = null;
   if ($('alpine-dialog').open) $('alpine-dialog').close('cancel');
+  for (const id of ['player-dialog', 'qr-dialog']) {
+    if ($(id).open) $(id).close();
+  }
   gameData = null;
   drawGameData();
   closePlayer();
@@ -233,10 +249,10 @@ async function present(project, plan, origin, signal) {
     progress(Object.keys(plan.workflow.steps).length);
     $('download-plan').hidden = false;
     status(origin + ' · ' + plan.commit.slice(0, 10));
-    log('Saved Alpine workspace ready for replay.');
+    log('Saved build workspace ready for replay.');
   } else {
     status('No build plan found · ' + project.commit.slice(0, 10));
-    log('No saved plan for this commit. Build opens Alpine setup. You can also open a saved plan file.');
+    log('No saved plan for this commit. Build opens plan setup. You can also open a saved plan file.');
   }
 }
 
@@ -339,61 +355,85 @@ async function runBuild() {
   tree.setStatus(states);
   progress($('progress').max);
   tab('console');
+  let preview;
   try {
     preloadGameData(1);
     const result = await workerBuild(plan, Number($('workers').value), controller.signal, buildMessage);
     controller.signal.throwIfAborted();
     view.build = result;
     progress($('progress').max, $('progress').max);
-    status('Build complete · ' + result.seconds.toFixed(1) + ' s');
     log('Build complete. ' + result.files.map(file => file.path + ' (' + mb(file.bytes.length) + ')').join(', '));
     if (result.sha256) log('SHA-256 ' + result.sha256);
     if (plan.kind === 'emscripten') {
       const {webZip} = await import('./web_zip.mjs');
       controller.signal.throwIfAborted();
       const packageName = plan.output.replace(/\.wasm$/, '.zip');
-      const play = document.createElement('button');
-      play.textContent = 'Play';
-      play.onclick = () => openPlayer({entry:plan.entry, files:result.files});
+      const play = previewButton('Play', () => openPlayer({entry:plan.entry, files:result.files}));
       $('results').replaceChildren(play, download(webZip(result.files), packageName, 'application/zip'));
       $('results').hidden = false;
-    } else resultLinks(result.files, result.game);
+      const prepared = config.preparedPlans?.[plan.repo.toLowerCase()];
+      if (prepared && plan.baseURL === new URL(prepared, location.href).href) preview = play;
+    } else preview = resultLinks(result.files, result.game);
     if (plan.kind === 'macho') {
       const instructions = document.createElement('code');
       instructions.textContent = 'chmod +x ./' + plan.output;
       $('results').append(instructions);
     }
     preloadGameData(0);
+    status('Build complete · ' + result.seconds.toFixed(1) + ' s');
   } catch (error) {
+    preview = undefined;
     if (!controller.signal.aborted) {
       closePlayer();
       status('Build failed');
       log(error.message);
     }
-  } finally {end(controller);}
+  } finally {
+    if (end(controller) && !controller.signal.aborted) preview?.click();
+  }
 }
 
-async function runAlpine() {
+async function runPlanner(guest, target, source) {
   const project = view.project;
-  const controller = begin('Loading Alpine and source archive…', true);
+  const name = guestNames[guest];
+  const controller = begin('Loading ' + name + (source ? '…' : ' and source archive…'), true);
   tab('console');
-  let ready = false;
+  let ready = false, next;
   try {
-    const {configure} = await import('./alpine_configure.mjs');
-    const plan = await configure(project, controller.signal, log, $('plan-target').value);
+    let plan;
+    if (guest === 'alpine') {
+      const {configure} = await import('./alpine_configure.mjs');
+      plan = await configure(project, controller.signal, log, target, source);
+    } else {
+      if (!source) {
+        const {projectSource} = await import('./configure_source.mjs');
+        source = await projectSource(project, controller.signal, log, target);
+      }
+      if (guest === 'nano') {
+        const {configureNano} = await import('./nano_configure.mjs');
+        plan = await configureNano(project, source, config.nano, controller.signal, log);
+      } else {
+        const {configureWanix} = await import('./wanix_configure.mjs');
+        plan = await configureWanix(project, source, config.wanix, target, controller.signal, log);
+      }
+    }
     controller.signal.throwIfAborted();
     try {await savePlan(planKey(project), plan);log('Plan saved in this browser.');}
     catch {log('Browser storage is unavailable. Use Download plan to keep a copy.');}
     controller.signal.throwIfAborted();
-    await present(project, plan, 'Generated in Alpine', controller.signal);
+    await present(project, plan, 'Generated in ' + name, controller.signal);
     ready = true;
   } catch (error) {
     if (!controller.signal.aborted) {
-      status('Plan generation failed');
       log(error.message);
+      if (source) next = nextGuest(target, error.system ?? source.config.system, guest);
+      status(next ? name + ' could not generate a plan' : 'Plan generation failed');
     }
   } finally {
-    if (end(controller) && ready) await runBuild();
+    if (end(controller)) {
+      if (ready) await runBuild();
+      else if (next) offerPlanner({source, target, guest:next});
+    }
   }
 }
 
@@ -453,14 +493,22 @@ function closePlayer() {
 }
 
 async function openPlayer(game) {
+  const dialog = $('player-dialog');
+  if (dialog.open) return;
   $('player-title').textContent = $('project-name').textContent;
-  $('player-dialog').showModal();
+  dialog.showModal();
   const message = $('player-status');
   message.hidden = true;
   if (game.entry) {
     closePlayer();
-    const {playWebPackage} = await import('./web_player.mjs');
-    if ($('player-dialog').open) player = playWebPackage($('player-surface'), game.entry, game.files);
+    const build = view.build;
+    try {
+      const {playWebPackage} = await import('./web_player.mjs');
+      if (dialog.open && build === view.build) player = playWebPackage($('player-surface'), game.entry, game.files);
+    } catch (error) {
+      if (dialog.open && build === view.build) dialog.close();
+      throw error;
+    }
     return;
   }
   preloadGameData(0);
@@ -521,7 +569,7 @@ $('repo-form').onsubmit = async event => {
   }
   if (!(sameRepository && view.plan) && !await lookup(repo, ref, plan)) return;
   if (view.plan) await runBuild();
-  else offerAlpine();
+  else offerPlanner();
 };
 $('repo').oninput = () => $('repo').setCustomValidity('');
 $('cancel').onclick = () => {
@@ -532,21 +580,50 @@ $('cancel').onclick = () => {
   status('Stopped');
   log('Stopped.');
 };
+const guestNames = {nano:'NanoVM', wanix:'Wanix Linux', alpine:'Alpine'};
+function nextGuest(target, system, after) {
+  const wasi = target === 'wasm32-wasip1';
+  const supportsMake = wasi && globalThis.crossOriginIsolated &&
+    ['auto', 'configure', 'make'].includes(system);
+  const order = ['nano', 'wanix', 'alpine'];
+  const available = {nano:supportsMake && config.nano, wanix:globalThis.crossOriginIsolated && config.wanix &&
+      (config.wanix.chunks ? ['auto', 'configure', 'make', 'cmake'].includes(system) : supportsMake),
+    alpine:!wasi || config.wasiProbeBytes};
+  return order.slice(order.indexOf(after) + 1).find(guest => available[guest]);
+}
+function guestFor(target) {
+  return plannerFallback?.guest ?? nextGuest(target, view.project && presetRecipe(view.project, target).system);
+}
 function updateGuestDownload() {
-  const wasi = $('plan-target').value === 'wasm32-wasip1';
-  const bytes = config.guestBytes + (wasi ? config.wasiProbeBytes + config.wasiSdkBytes : 0);
-  $('guest-download').textContent = 'The first run downloads about ' + mb(bytes) + '. The browser caches the Alpine image.';
+  const target = $('plan-target').value, wasi = target === 'wasm32-wasip1';
+  const guest = guestFor(target), name = guestNames[guest];
+  const bytes = guest === 'alpine' ?
+    config.guestBytes + (wasi ? config.wasiProbeBytes + config.wasiSdkBytes : 0) :
+    config[guest].encodedBytes + (wasi ? config.wasiSdkBytes + (sharedAssets ? config.exampleCompilerBytes : config.compilerBytes) :
+      config.linuxSdkBytes + config.linuxLinkerBytes + config.compilerBytes);
+  $('planner-title').textContent = plannerFallback ? 'Try ' + name + '?' : 'Generate a plan in ' + name + '?';
+  $('planner-description').textContent = guest === 'alpine' ?
+    'Alpine configures the repository in an isolated browser guest. cppgm builds the captured plan in the browser.' :
+    name + ' configures the repository in an isolated browser guest. cppgm builds the captured plan in the browser.';
+  $('start-planner').textContent = 'Start ' + name;
+  $('guest-download').textContent = 'Guest and build tools total about ' + mb(bytes) + ' on the first run.';
 }
 $('plan-target').onchange = updateGuestDownload;
-function offerAlpine() {
-  $('plan-target').options[0].disabled = !config.wasiProbeBytes;
-  $('plan-target').value = config.wasiProbeBytes ? 'wasm32-wasip1' : 'x86_64-linux-musl';
+function offerPlanner(fallback = null) {
+  plannerFallback = fallback;
+  const wasi = Boolean(guestFor('wasm32-wasip1'));
+  $('plan-target').options[0].disabled = !wasi;
+  $('plan-target').value = fallback?.target ?? (wasi ? 'wasm32-wasip1' : 'x86_64-linux-musl');
+  $('plan-target').disabled = Boolean(fallback);
   updateGuestDownload();
   $('alpine-dialog').returnValue = '';
   $('alpine-dialog').showModal();
 }
 $('alpine-dialog').onclose = () => {
-  if ($('alpine-dialog').returnValue === 'generate' && view.project?.commit && !view.operation) void runAlpine();
+  const target = $('plan-target').value, guest = guestFor(target), fallback = plannerFallback;
+  plannerFallback = null;
+  if ($('alpine-dialog').returnValue === 'generate' && view.project?.commit && !view.operation)
+    void runPlanner(guest, target, fallback?.source);
 };
 $('filter').oninput = () => tree.setFilter($('filter').value);
 $('console-tab').onclick = () => tab('console');

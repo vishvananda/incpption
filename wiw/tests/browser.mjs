@@ -37,6 +37,12 @@ async function check(id) {
       await page.waitForFunction(() => document.querySelector('#game-data-progress').value > 0,
         null, {timeout:120000});
     }
+    const player = page.locator('#player-dialog');
+    if (id !== 'doom' || await page.evaluate(() => typeof WebAssembly.promising === 'function')) {
+      await player.waitFor({state:'visible'});
+      await page.locator('#game-frame').waitFor({state:'visible'});
+    }
+    if (await player.isVisible()) await page.locator('#close-player').click();
     const download = page.waitForEvent('download');
     await page.getByRole('link', {name:'Download ' + id + '.wasm'}).click();
     const file = await download;

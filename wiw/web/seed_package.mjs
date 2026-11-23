@@ -14,7 +14,7 @@ export async function compileSeed(tool, prefix = 'clang-seed/', {read = fetchByt
   }
   if (offset !== tool.bytes) throw Error('Incomplete compiler seed');
   const digest = sha256.create(), abort = new AbortController();
-  let next = 0, cancelled = false;
+  let next = 0, cancelled = false, readError;
   const stream = new ReadableStream({
     async pull(controller) {
       try {
@@ -26,12 +26,19 @@ export async function compileSeed(tool, prefix = 'clang-seed/', {read = fetchByt
         const row = tool.chunks[next++], part = await read(prefix + row.path, {signal: abort.signal});
         if (part.length !== row.size || await hash(part) !== row.sha256) throw Error('Compiler seed chunk changed');
         digest.update(part); controller.enqueue(part);
-      } catch (error) {if (!cancelled) controller.error(error);}
+      } catch (error) {
+        if (!cancelled) {
+          readError = error;
+          controller.error(error);
+        }
+      }
     },
     cancel() {cancelled = true; abort.abort(); digest.destroy();},
   }, {highWaterMark: 0});
   try {
     return await WebAssembly.compileStreaming(new Response(stream, {headers: {'Content-Type': 'application/wasm'}}));
+  } catch (error) {
+    throw readError ?? error;
   } finally {abort.abort(); digest.destroy();}
 }
 

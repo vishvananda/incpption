@@ -121,8 +121,8 @@ def commands(row, folder, build):
                 break
     target = row.get('target')
     targets = [target] if target else []
-    if wasi and system not in ('cmake', 'make'):
-        raise ValueError('WASI plan generation supports CMake and Make projects')
+    if wasi and system not in ('cmake', 'configure', 'make'):
+        raise ValueError('WASI plan generation supports CMake, configure and Make projects')
     if system == 'cmake':
         toolchain = ['-DCMAKE_TOOLCHAIN_FILE=' + WASI_ROOT + '/wasi_toolchain.cmake',
                      '-DCMAKE_C_FLAGS_RELEASE=-O3 -DNDEBUG', '-DCMAKE_CXX_FLAGS_RELEASE=-O3 -DNDEBUG'] if wasi else []

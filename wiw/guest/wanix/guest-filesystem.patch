@@ -1,0 +1,19 @@
+diff --git a/wasm/wasm.go b/wasm/wasm.go
+--- a/wasm/wasm.go
++++ b/wasm/wasm.go
+@@ -186,7 +186,14 @@ func main() {
+ 			}
+ 			var o []p9.ServerOpt
+ 			// o = append(o, p9.WithServerLogger(ulog.Log))
+-			srv := p9.NewServer(p9kit.Attacher(task.NS(), p9kit.WithMemAttrStore()), o...)
++			// Export only the Linux image. The surrounding Wanix namespace
++			// has browser devices that guest processes must not see.
++			guest, name, err := fs.Resolve(task.NS(), context.Background(), "guest")
++			image, ok := guest.(*memfs.FS)
++			if err != nil || !ok || name != "." {
++				log.Fatal("missing isolated WIW guest filesystem")
++			}
++			srv := p9.NewServer(p9kit.Attacher(image, p9kit.WithMemAttrStore()), o...)
+ 			if err := srv.Handle(ch.Reader(), ch.Writer()); err != nil {
+ 				log.Fatal(err)
+ 			}

@@ -14,7 +14,8 @@ assert.ok(path, 'Pass the URL of a staged Emscripten plan.');
 const plan = await fetch(new URL(path, base)).then(response => response.json());
 const settings = await fetch(new URL('settings.json', base)).then(response => response.json());
 const prepared = settings.preparedPlans?.[plan.repo.toLowerCase()];
-const fromPicker = prepared && new URL(prepared, base).href === new URL(path, base).href && !process.env.WILLITWASM_WORKERS;
+const opensAutomatically = prepared && new URL(prepared, base).href === new URL(path, base).href;
+const fromPicker = opensAutomatically && !process.env.WILLITWASM_WORKERS;
 const action = selectedAction ?? (plan.repo === 'godotengine/godot' ? 'godot' : null);
 const browser = await chromium.launch({headless:true, args:['--no-sandbox', '--enable-unsafe-swiftshader']});
 
@@ -41,7 +42,7 @@ async function play(page, zip, names) {
 }
 
 async function playTetris(page) {
-  await page.getByRole('button', {name:'Play', exact:true}).click();
+  if (!opensAutomatically) await page.getByRole('button', {name:'Play', exact:true}).click();
   const frame = page.frameLocator('#player-surface iframe');
   const canvas = frame.locator('canvas');
   await canvas.evaluate(element => new Promise((resolve, reject) => {
@@ -84,6 +85,11 @@ try {
     await page.waitForTimeout(100);
     assert.fail((await page.locator('#console').innerText()).split('\n').slice(-10).join('\n'));
   }
+  if (action === 'tetris') await playTetris(page);
+  else if (opensAutomatically) {
+    await page.locator('#player-dialog').waitFor({state:'visible'});
+    await page.locator('#close-player').click();
+  }
   const output = page.waitForEvent('download');
   await page.getByRole('link', {name:/^Download .*\.zip$/}).click();
   const zip = await (await output).path();
@@ -92,8 +98,7 @@ try {
   const wasm = execFileSync('unzip', ['-p', zip, plan.output], {maxBuffer:512 * 1024 * 1024});
   assert.equal(createHash('sha256').update(wasm).digest('hex'), plan.sha256);
   assert.ok(WebAssembly.validate(wasm));
-  if (action === 'tetris') await playTetris(page);
-  else if (action) await play(page, zip, names);
+  if (action && action !== 'tetris') await play(page, zip, names);
   assert.deepEqual(errors, []);
   console.log(plan.repo, status, (await readFile(zip)).length, plan.sha256, action ? 'page ran' : '');
 } finally {await browser.close();}

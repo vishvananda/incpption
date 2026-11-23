@@ -40,7 +40,7 @@ python3 tools/cmake_wasi_plan.py --source "$XXHASH_CHECKOUT" --build "$BUILD" \
 
 [zlib 1.3.1](https://github.com/madler/zlib/tree/51b7f2abdade71cd9bb0e7a373ef2610ec6f9daf) also cross-configured cleanly. Its plan captured 15 compilation units and the generated `zconf.h`. The first replay used the driver's default C++ mode for `.c` inputs. The runner now selects C explicitly. Chromium built the plan and the downloaded module compressed and decompressed a test payload.
 
-This capture path uses native CMake and WASI Clang for configuration and dependency discovery. The browser builds the generated plan with cppgm. The Alpine fallback in the site currently captures Linux x86-64. Browser-side WASI configuration needs a cross toolchain and a way to run or supply results for any target executables used by configure probes.
+This capture path uses native CMake and WASI Clang for configuration and dependency discovery. The browser builds the generated plan with cppgm. The site can also capture WASI plans in the browser with NanoVM or Alpine. Cross-configure recipes may need to provide results for checks that try to run a WASI target executable.
 
 ## Capture a replayable Emscripten web build
 
@@ -92,8 +92,7 @@ Serve the extracted directory over HTTP and open the plan's HTML entry point.
 The browser plan carries the JavaScript, HTML shell and preloaded data that
 Emscripten prepared during capture. The Wasm is built from source on each run.
 SDK archives are supplied by the selected SDK. The current capture path
-supports one executable link per plan. The site's Alpine fallback still
-captures Linux x86-64 builds.
+supports one executable link per plan.
 
 The 4.0.9 SDK used in these experiments has the Emscripten header spelling
 normalizations already used by incpption. For C++ builds, use the matching

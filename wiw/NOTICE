@@ -12,3 +12,13 @@ license directory and frozen package manifests.
 
 Incremental SHA-256 uses @noble/hashes, copyright Paul Miller, under the MIT
 license. The staged vendor/noble/LICENSE contains its notice.
+
+The optional NanoVM planner stages the NanoVM runtime separately under
+its own license. Its guest includes BusyBox and GNU Make under their
+respective licenses. The staged nano directory includes their source
+locations and notices.
+
+The optional Wanix Linux planner uses Wanix by Jeff Lindsay under the MIT
+license, the v86 emulator and BIOS files distributed by Wanix, and the
+Alpine Linux guest with Bash, GNU Make, CMake, Ninja, and pkgconf. The staged Wanix directory carries
+license and source information.

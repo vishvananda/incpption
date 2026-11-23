@@ -1,0 +1,84 @@
+{
+  "version": "0.4.0-rc2",
+  "revision": "dd17950e1d67d51c0b65d81d2597e0507ac67b89",
+  "goVersion": "go1.26.8",
+  "packages": {
+    "wanix": "b372107716843b20fff723688c6897a10942ff1a78f4c454e23c0b9abbcf099b",
+    "wanix-extras": "835ef7022ac5654ac73098ccfa340abe793c13d74fcb556eb58da4a4dd35c874",
+    "make": "9ee23f6cc3c4d3215f81b4d75b80edc9d9611d05a36108c78236a6dcfea88d83"
+  },
+  "alpinePackages": {
+    "acl-libs-2.3.2-r1.apk": {
+      "sha256": "377073374b782268065b776a0bffeac053b76ea474155786374918f69a8c0446",
+      "repo": "main"
+    },
+    "libbz2-1.0.8-r6.apk": {
+      "sha256": "bdd77af63b97e79714d1ff0baa8ca08c18098b7987f24f11b52d9f11ba1bcadd",
+      "repo": "main"
+    },
+    "libexpat-2.10.0-r0.apk": {
+      "sha256": "7492ebd4f74bc6a38db645d977a8186739a294f0f6b1e62fea22dfb4176e9c49",
+      "repo": "main"
+    },
+    "lz4-libs-1.10.0-r0.apk": {
+      "sha256": "5abb9cac78d4cf58e5af7372a03f735aa977a6d3ac3f09b6cb0f3e3df42f31af",
+      "repo": "main"
+    },
+    "xz-libs-5.8.4-r0.apk": {
+      "sha256": "8cfdd002358b780c35087176edf8f03ad302a20efc7139c91bd710fe0ebec6ff",
+      "repo": "main"
+    },
+    "zstd-libs-1.5.7-r0.apk": {
+      "sha256": "af64af859e619af891546e18f1c5bb22f1d9c05fa7b74aef6579b253c3be62a1",
+      "repo": "main"
+    },
+    "libarchive-3.8.11-r0.apk": {
+      "sha256": "1e7cf5d8081a859a29509348b69ca7725b81e6da772992155c7ee16850a98ea4",
+      "repo": "main"
+    },
+    "libgcc-14.2.0-r6.apk": {
+      "sha256": "a34b11774b5129374540676551071c60486a40ff507812d001a144ae44ffd7ea",
+      "repo": "main"
+    },
+    "rhash-libs-1.4.5-r0.apk": {
+      "sha256": "47758c56cc9a83024bc5c66649ea392b5d20fa16e47cbadadfebc806599caa70",
+      "repo": "main"
+    },
+    "libstdc++-14.2.0-r6.apk": {
+      "sha256": "009297e8c8a9a9ed12518cce15fe07d0274de7146bf20e363b2f132e083c6ec6",
+      "repo": "main"
+    },
+    "libuv-1.51.0-r0.apk": {
+      "sha256": "f54ff7ce7559a6bbd1ea5d03385c7b91611d735e01c147b417521bd89e268f00",
+      "repo": "main"
+    },
+    "cmake-3.31.7-r1.apk": {
+      "sha256": "de02809f2cba2027aa0b23563fcca9c3866fa68a53099fdcabbdf1fb13d81f9e",
+      "repo": "main"
+    },
+    "pkgconf-2.4.3-r0.apk": {
+      "sha256": "a74da07722f6bbb3f97ebc9088574342e2de9c11e72865cf73be501e648475f6",
+      "repo": "main"
+    },
+    "ncurses-terminfo-base-6.5_p20250503-r0.apk": {
+      "sha256": "3264426877964e0ac55488ede6313e907d3663f831008b45fa27c95d60ac34b8",
+      "repo": "main"
+    },
+    "libncursesw-6.5_p20250503-r0.apk": {
+      "sha256": "b1262e30c3eb0c9a9b74dba4f33c36ca37e33c4a060429af22f371236bfd4d61",
+      "repo": "main"
+    },
+    "readline-8.2.13-r1.apk": {
+      "sha256": "29e35b5876481d0d1d4f60fdfdbd59a0c974d86e6355f7c38ea85518645ada6b",
+      "repo": "main"
+    },
+    "ninja-build-1.12.1-r1.apk": {
+      "sha256": "496f22837b0bfc7c7047adc434b22616675357fd136f055fea6d506969001c45",
+      "repo": "community"
+    },
+    "bash-5.2.37-r0.apk": {
+      "sha256": "6a139a0072d450d3428b15798268871fbae2934a0c71b38784af9dc7b2d4e9c1",
+      "repo": "main"
+    }
+  }
+}

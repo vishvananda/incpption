@@ -13,7 +13,7 @@ const port = Number(process.env.WILLITWASM_PORT || 8327);
 const mime = new Map(Object.entries({
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.mjs': 'text/javascript',
   '.js': 'text/javascript', '.json': 'application/json', '.wasm': 'application/wasm',
-  '.bin': 'application/octet-stream', '.svg': 'image/svg+xml', '.png': 'image/png',
+  '.bin': 'application/octet-stream', '.tgz': 'application/gzip', '.svg': 'image/svg+xml', '.png': 'image/png',
   '.txt': 'text/plain; charset=utf-8', '.woff2': 'font/woff2',
 }));
 
@@ -44,9 +44,10 @@ createServer(async (request, response) => {
     if (!file.startsWith(root + sep)) {response.writeHead(404).end();return;}
     const info = await stat(file);
     if (!info.isFile()) {response.writeHead(404).end();return;}
-    const cache = /\/(?:alpine|compiler|projects|clang-seed|binaryen|web-plans)\//.test(url.pathname) && /\.(bin|wasm)$/.test(url.pathname);
+    const immutable = /^\/(?:wiw\/)?wanix\/[a-f0-9]{16}\//.test(url.pathname);
+    const cache = /\/(?:alpine|compiler|projects|clang-seed|binaryen|web-plans|nano)\//.test(url.pathname) && /\.(bin|wasm)$/.test(url.pathname);
     response.writeHead(200, {'Content-Type': mime.get(extname(file)) || 'application/octet-stream',
-      'Content-Length': info.size, 'Cache-Control': cache ? 'public, max-age=86400' : 'no-cache'});
+      'Content-Length': info.size, 'Cache-Control': immutable ? 'public, max-age=31536000, immutable' : cache ? 'public, max-age=86400' : 'no-cache'});
     if (request.method === 'HEAD') response.end();
     else await pipeline(createReadStream(file), response);
   } catch (error) {

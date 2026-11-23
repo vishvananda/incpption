@@ -28,17 +28,21 @@ export function unpackLayer(bytes, shared = false) {
   return {files, bundle: shared ? shareBytes(bundle) : bundle};
 }
 
-async function sdkLayer({path, sha256}) {
+export async function sdkLayer({path, sha256}) {
   const bytes = await fetchBytes('alpine/' + relativePath(path));
   if (await hash(bytes) !== sha256) throw Error('SDK checksum differs: ' + path);
   return unpackLayer(bytes, true);
 }
 
-export async function compiler(profile, wasi = false) {
+export async function compilerBytes(profile, wasi = false) {
   const shared = wasi && profile.sharedAssets && profile.wasiCompilerSha256;
   const bytes = await fetchBytes(shared ? profile.sharedAssets + 'compiler/inputs/w1/cppgm.wasm' : 'alpine/cppgm.bin');
   if (await hash(bytes) !== (shared ? profile.wasiCompilerSha256 : profile.compilerSha256)) throw Error('Compiler checksum differs.');
-  return WebAssembly.compile(bytes);
+  return bytes;
+}
+
+export async function compiler(profile, wasi = false) {
+  return WebAssembly.compile(await compilerBytes(profile, wasi));
 }
 
 function commands(plan, wasi = false) {
@@ -66,10 +70,10 @@ function commands(plan, wasi = false) {
   });
 }
 
-function linkerArguments(args) {
+export function linkerArguments(args) {
   const input = path => '/inputs/' + workspacePath('', path);
   return args.map((arg, index) => {
-    if (args[index - 1] === '-dynamic-linker') return arg;
+    if (['-dynamic-linker', '--dynamic-linker'].includes(args[index - 1])) return arg;
     if (arg.startsWith('-L/')) return '-L' + input(arg.slice(2));
     if (arg.startsWith('/')) return input(arg);
     return arg;
@@ -131,7 +135,7 @@ export async function replayAlpine(plan, workers, profile) {
       record(task, bytes);
     } else {
       const {bytes} = await invokeEmscripten({...linker, program:'ld.lld', layers:linkLayers,
-        files, args:linkerArguments(task.args), cwd:task.cwd, output:task.output});
+        files, args:linkerArguments(task.args), cwd:task.cwd, output:task.output.startsWith('/') ? '/inputs' + task.output : task.output});
       record(task, bytes);
     }
   }

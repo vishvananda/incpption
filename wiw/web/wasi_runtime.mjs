@@ -67,12 +67,17 @@ function workDirectories(root, cwd) {
   return preopens;
 }
 
-export function invoke(module, root, args, sourceDateEpoch, cwd = '') {
+export function invoke(module, root, args, sourceDateEpoch, cwd = '', {splitOutput = false} = {}) {
   const index=args.lastIndexOf('-o');
-  if(index>=0)insert(root,cwd?workspacePath(cwd,args[index+1]):args[index+1],new OutputFile());
-  const log = [];
+  if(index>=0 && args[index+1] !== '-')insert(root,cwd?workspacePath(cwd,args[index+1]):args[index+1],new OutputFile());
+  const log = [], stdout = [], stderr = [];
+  const collect = stream => line => {
+    log.push(line);
+    if (splitOutput) stream.push(line);
+  };
+  const text = lines => lines.length ? lines.join('\n') + '\n' : '';
   const wasi = new WASI(['cppgm', ...args], [], [new OpenFile(new File([])),
-    ConsoleStdout.lineBuffered(s => log.push(s)), ConsoleStdout.lineBuffered(s => log.push(s)),
+    ConsoleStdout.lineBuffered(collect(stdout)), ConsoleStdout.lineBuffered(collect(stderr)),
     ...workDirectories(root, cwd)], {debug: false});
   if(sourceDateEpoch!==undefined){
     const clock=wasi.wasiImport.clock_time_get;
@@ -81,7 +86,7 @@ export function invoke(module, root, args, sourceDateEpoch, cwd = '') {
       new DataView(wasi.inst.exports.memory.buffer).setBigUint64(pointer,BigInt(sourceDateEpoch)*1000000000n,true);return 0;
     };
   }
-  return runWasiProcess(module, wasi).then(result => ({...result, log})).catch(error => {
+  return runWasiProcess(module, wasi).then(result => ({...result, log, ...(splitOutput ? {stdout:text(stdout), stderr:text(stderr)} : {})})).catch(error => {
     throw Error([...log, errorText(error)].join('\n'));
   });
 }

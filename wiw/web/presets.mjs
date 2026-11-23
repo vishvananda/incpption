@@ -1,13 +1,18 @@
 export const qrRepo = 'fukuchi/libqrencode';
 const qrRevision = '715e29fd4cd71b6e452ae0f4e36d917b43122ce8';
+const zlibRepo = 'madler/zlib';
+const zlibRevision = '51b7f2abdade71cd9bb0e7a373ef2610ec6f9daf';
 
 export const extraProjects = [
   {repo:qrRepo, title:'QR Code generator', ref:qrRevision},
+  {repo:zlibRepo, title:'zlib', ref:zlibRevision, nano:true},
   {repo:'olzhasar/sdl-tetris', title:'SDL Tetris', prepared:true},
   {repo:'benhoyt/inih', title:'INI reader (macOS arm64)', prepared:true},
 ];
 
 export function presetRecipe({repo, commit}, target) {
+  if (repo.toLowerCase() === zlibRepo && commit === zlibRevision && target === 'wasm32-wasip1')
+    return {system:'configure', options:['--static'], target:'libz.a'};
   if (repo.toLowerCase() !== qrRepo || commit !== qrRevision) return {system:'auto'};
   const options = ['-DWITHOUT_PNG=ON', '-DWITH_TESTS=OFF', '-DWITH_TOOLS=ON'];
   if (target === 'wasm32-wasip1') {

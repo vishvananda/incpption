@@ -1,4 +1,4 @@
-import {boundedBytes, recipe, remote} from './plans.mjs';
+import {projectSource} from './configure_source.mjs';
 import {tar} from './tar.mjs';
 import {compileSeed} from './seed_package.mjs';
 import {decodeBytes, fetchBytes, hash} from './transport_bytes.mjs';
@@ -34,25 +34,19 @@ async function guestModule(signal, log) {
   }});
 }
 
-async function batch(project, signal, log, target) {
-  log('Fetching the source archive for ' + project.commit.slice(0, 10));
-  const query = new URLSearchParams({repo: project.repo, sha: project.commit});
-  const [archive, config] = await Promise.all([
-    remote(new URL('api/archive?' + query, import.meta.url), signal).then(response => boundedBytes(response, 96 * 1024 * 1024)),
-    recipe(project, signal, target),
-  ]);
+async function batch(project, {archive, config}) {
   const id = 'checkout';
   const row = {id, version: project.commit, ...config, sha256: await hash(archive)};
   return tar([['batch.json', text.encode(JSON.stringify([row]))], [id + '.tar.gz', archive]]);
 }
 
-export async function configure(project, signal, log, target) {
+export async function configure(project, signal, log, target, source) {
   const wasi = target === 'wasm32-wasip1';
   const extra = wasi ? ['wasi_toolchain.cmake','WASI.cmake','wasi-probe.bin'] : [];
   const names = [...scripts, ...extra];
   const [module, input, scriptBytes, profile, sdk] = await Promise.all([
     guestModule(signal, log),
-    batch(project, signal, log, target),
+    (source ? Promise.resolve(source) : projectSource(project, signal, log, target)).then(source => batch(project, source)),
     Promise.all(names.map(script => fetchBytes('alpine/' + script, {signal}))),
     fetchBytes('alpine/profile.json', {signal}).then(bytes => JSON.parse(decoder.decode(bytes))),
     wasi ? wasiSdk() : null,

@@ -188,6 +188,12 @@ The browser planner lives in [wiw/](../wiw/README.md). Stage its inputs with
 compiler, guest and replay inputs listed in its README. Copy it into the
 Pages output before deploying from the repository root.
 
+Pass the four `--nano-*` inputs from the [Will it Wasm build guide](../wiw/README.md#start-locally)
+to enable NanoVM. Pass the five `--wanix*` inputs from the same guide to
+enable the unified Wanix Linux guest for WASI and Linux x86-64 plan capture.
+The original Alpine guest also handles Meson, Python configure, and builds that execute x86-64 probes.
+Each guest downloads only after the user starts it.
+
 ```sh
 python3 tools/stage_wiw.py dist wiw/dist
 wrangler pages deploy dist --project-name cpp-inception --branch main
